@@ -1,17 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Principal;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ActivaPro.Infraestructure.Models;
 
-public partial class Categorias
+[Table("Categorias")]
+public class Categorias
 {
-    public int IdCategoria { get; set; }
+    [Key] 
+    public int id_categoria { get; set; }
+    public string nombre_categoria { get; set; }
 
-    public string NombreCategoria { get; set; } = null!;
+    // Relaciones
+    public virtual ICollection<Etiquetas> CategoriaEtiquetas { get; set; } = new List<Etiquetas>();
+    public virtual ICollection<Especialidades> CategoriaEspecialidades { get; set; } = new List<Especialidades>();
 
-    public virtual ICollection<ReglasAutotriage> ReglasAutotriage { get; set; } = new List<ReglasAutotriage>();
-
-    public virtual ICollection<SlaTickets> SlaTickets { get; set; } = new List<SlaTickets>();
-
-    public virtual ICollection<Tickets> Tickets { get; set; } = new List<Tickets>();
+    // Relación con SLA_Tickets
+    public virtual ICollection<SLA_Tickets> SLA_Tickets { get; set; } = new List<SLA_Tickets>();
 }

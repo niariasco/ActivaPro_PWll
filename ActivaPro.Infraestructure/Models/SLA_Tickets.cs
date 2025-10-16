@@ -5,14 +5,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ActivaPro.Infraestructure.Models;
 
-public partial class Etiquetas
+public class SLA_Tickets
 {
     [Key]
-    public int id_etiqueta { get; set; }
-    public string nombre_etiqueta { get; set; }
+    public int id_sla { get; set; }
+    public string descripcion { get; set; }
+    public string prioridad { get; set; }
 
+    [ForeignKey("id_categoria")]
     public int id_categoria { get; set; }
-    public virtual Categorias Categoria { get; set; } 
-
+    public virtual Categorias Categoria { get; set; }
 
 }

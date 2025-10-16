@@ -1,4 +1,9 @@
+using ActivaPro.Application.Profiles;
+using ActivaPro.Application.Services.Implementations;
+using ActivaPro.Application.Services.Interfaces;
 using ActivaPro.Infraestructure.Data;
+using ActivaPro.Infraestructure.Repository.Implementations;
+using ActivaPro.Infraestructure.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -21,6 +26,24 @@ builder.Services.AddControllersWithViews();
 //{
 //  config.AddProfile<AutorProfile>();
 //});
+// Configurar D.I.
+//Repository
+builder.Services.AddTransient<IRepoTecnico, TecnicoRepo>();
+builder.Services.AddTransient<IRepoCategorias, CategoriasRepo>();
+
+//Services
+builder.Services.AddTransient<ITecnicoService, TecnicoService>();
+builder.Services.AddTransient<ICategoriaService, CategoriaService>();
+
+//Configurar Automapper
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<TecnicoProfile>();
+});
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<CategoriaProfile>();
+});
 
 // Configuar Conexión a la Base de Datos SQL 
 builder.Services.AddDbContext<ActivaProContext>(options =>
@@ -30,6 +53,9 @@ builder.Services.AddDbContext<ActivaProContext>(options =>
     if (builder.Environment.IsDevelopment())
         options.EnableSensitiveDataLogging();
 });
+
+
+
 
 //***********************
 //Configuración Serilog
@@ -70,7 +96,7 @@ if (!app.Environment.IsDevelopment())
 else
 {
     // Error control Middleware 
-    app.UseMiddleware<ErrorHandlingMiddleware>();
+  //  app.UseMiddleware<ErrorHandlingMiddleware>();
 }
 
 

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ActivaPro.Infraestructure.Models;
 
 public partial class ValoracionTickets
 {
+    [Key]
     public int IdValoracion { get; set; }
 
     public int IdTicket { get; set; }

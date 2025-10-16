@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ActivaPro.Infraestructure.Models;
 
 public partial class ReglasAutotriage
 {
+    [Key]
     public int IdRegla { get; set; }
 
     public string NombreRegla { get; set; } = null!;

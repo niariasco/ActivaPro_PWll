@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ActivaPro.Infraestructure.Models;
 
 public partial class Especialidades
 {
-    public int IdEspecialidad { get; set; }
+    [Key]
+    public int id_especialidad { get; set; }
+    public string NombreEspecialidad { get; set; }
 
-    public string NombreEspecialidad { get; set; } = null!;
+    [Column("id_categoria")]
+    public int? id_categoria { get; set; }
 
-    public string? Descripcion { get; set; }
-
-    public virtual ICollection<Usuarios> IdUsuario { get; set; } = new List<Usuarios>();
+    [ForeignKey("id_categoria")]
+    public Categorias Categoria { get; set; }
 }
