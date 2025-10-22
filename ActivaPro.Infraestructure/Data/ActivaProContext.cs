@@ -1,8 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Sockets;
+﻿using ActivaPro.Infraestructure.Enums;
 using ActivaPro.Infraestructure.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System;
+using System.Collections.Generic;
+using System.Net.Sockets;
 
 namespace ActivaPro.Infraestructure.Data;
 
@@ -20,6 +22,8 @@ public partial class ActivaProContext : DbContext
     public virtual DbSet<UsuarioRol> UsuarioRoles { get; set; }
     public virtual DbSet<Especialidades> Especialidades { get; set; }
     public virtual DbSet<SLA_Tickets> SLA_Tickets { get; set; }
+    public virtual DbSet<Tickets> Ticketes { get; set; }
+    public virtual DbSet<AsignacionesTickets> AsignacionesTickets { get; set; }
 
     public DbSet<Categorias> Categorias { get; set; }
     public DbSet<Etiquetas> Etiquetas { get; set; }
@@ -160,27 +164,95 @@ public partial class ActivaProContext : DbContext
             entity.Property(e => e.NombreEspecialidad).HasColumnName("nombre_especialidad").HasMaxLength(100).IsRequired();
         });
 
-        /*
-        // Tickets (map básico — extiende según tus columnas)
+
         modelBuilder.Entity<Tickets>(entity =>
         {
             entity.ToTable("Tickets");
-
             entity.HasKey(e => e.IdTicket);
 
             entity.Property(e => e.IdTicket).HasColumnName("id_ticket");
-            entity.Property(e => e.Titulo).HasColumnName("titulo").HasMaxLength(150).IsRequired();
-            entity.Property(e => e.Descripcion).HasColumnName("descripcion").IsRequired();
-            entity.Property(e => e.IdUsuarioSolicitante).HasColumnName("id_usuario_solicitante").IsRequired();
+            entity.Property(e => e.Titulo).HasColumnName("titulo");
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion");
+            entity.Property(e => e.IdUsuarioSolicitante).HasColumnName("id_usuario_solicitante");
             entity.Property(e => e.IdUsuarioAsignado).HasColumnName("id_usuario_asignado");
-            entity.Property(e => e.Estado).HasColumnName("estado").HasMaxLength(20).HasDefaultValue("Pendiente");
-           // entity.Property(e => e.IdCategoria).HasColumnName("id_categoria");
+            entity.Property(e => e.Estado).HasColumnName("estado");  // Sin ValueConverter
+            entity.Property(e => e.IdValoracion).HasColumnName("id_valoracion");
+            entity.Property(e => e.IdCategoria).HasColumnName("id_categoria");
+            entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion");
+            entity.Property(e => e.FechaActualizacion).HasColumnName("fecha_actualizacion");
             entity.Property(e => e.IdSla).HasColumnName("id_sla");
-            entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion").HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
-            entity.Property(e => e.FechaActualizacion).HasColumnName("fecha_actualizacion").HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
-            entity.Property(e => e.FechaLimiteResolucion).HasColumnName("fecha_limite_resolucion").HasColumnType("datetime");
+            entity.Property(e => e.FechaLimiteResolucion).HasColumnName("fecha_limite_resolucion");
 
-        });*/
+            // Configurar relaciones
+            entity.HasOne(t => t.UsuarioSolicitante)
+                .WithMany()
+                .HasForeignKey(t => t.IdUsuarioSolicitante)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(t => t.UsuarioAsignado)
+                .WithMany()
+                .HasForeignKey(t => t.IdUsuarioAsignado)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(t => t.Categoria)
+                .WithMany()
+                .HasForeignKey(t => t.IdCategoria)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(t => t.SLA)
+                .WithMany()
+                .HasForeignKey(t => t.IdSla)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<AsignacionesTickets>(entity =>
+        {
+            entity.ToTable("Asignaciones_Tickets");
+
+            entity.HasKey(e => e.IdAsignacion);
+
+            entity.Property(e => e.IdAsignacion)
+                .HasColumnName("id_asignacion")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.IdTicket)
+                .HasColumnName("id_ticket");
+
+            entity.Property(e => e.IdUsuarioAsignado)
+                .HasColumnName("id_usuario_asignado");
+
+            entity.Property(e => e.IdUsuarioAsignador)
+                .HasColumnName("id_usuario_asignador");
+
+            entity.Property(e => e.TipoAsignacion)
+                .HasColumnName("tipo_asignacion")
+                .HasMaxLength(20)
+                .IsRequired()
+                .HasDefaultValue("Manual");
+
+            entity.Property(e => e.FechaAsignacion)
+                .HasColumnName("fecha_asignacion")
+                .HasDefaultValueSql("GETDATE()");
+
+            // Relaciones
+            entity.HasOne(d => d.IdTicketNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdTicket)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_Asignaciones_Tickets_Tickets");
+
+            entity.HasOne(d => d.IdUsuarioAsignadoNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdUsuarioAsignado)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Asignaciones_Tickets_Usuario_Asignado");
+
+            entity.HasOne(d => d.IdUsuarioAsignadorNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdUsuarioAsignador)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Asignaciones_Tickets_Usuario_Asignador");
+        });
 
         OnModelCreatingPartial(modelBuilder);
     }

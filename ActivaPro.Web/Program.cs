@@ -30,10 +30,14 @@ builder.Services.AddControllersWithViews();
 //Repository
 builder.Services.AddTransient<IRepoTecnico, TecnicoRepo>();
 builder.Services.AddTransient<IRepoCategorias, CategoriasRepo>();
+builder.Services.AddTransient<IRepoTicketes, TicketesRepo>();
+builder.Services.AddTransient<IRepoAsignaciones, AsignacionesRepo>();
 
 //Services
 builder.Services.AddTransient<ITecnicoService, TecnicoService>();
 builder.Services.AddTransient<ICategoriaService, CategoriaService>();
+builder.Services.AddTransient<ITicketesService, TicketesService>();
+builder.Services.AddTransient<IAsignacionesService, AsignacionesService>();
 
 //Configurar Automapper
 builder.Services.AddAutoMapper(cfg =>
@@ -44,6 +48,16 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<CategoriaProfile>();
 });
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<TicketesProfile>();
+});
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<TicketesProfile>();
+    cfg.AddProfile<AsignacionesProfile>();
+});
+
 
 // Configuar Conexión a la Base de Datos SQL 
 builder.Services.AddDbContext<ActivaProContext>(options =>

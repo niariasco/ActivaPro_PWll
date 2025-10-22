@@ -1,0 +1,415 @@
+﻿@model ActivaPro.Application.DTOs.TecnicoAsignacionesDTO
+
+@{
+    ViewData["Title"] = $"Mis Asignaciones - {Model.NombreTecnico}";
+}
+
+<style>
+    .ticket-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+
+        .ticket-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+    .border-danger {
+        border-left: 5px solid #dc3545 !important;
+        background: linear-gradient(to right, rgba(220, 53, 69, 0.05), transparent);
+    }
+
+    .border-warning {
+        border-left: 5px solid #ffc107 !important;
+        background: linear-gradient(to right, rgba(255, 193, 7, 0.05), transparent);
+    }
+
+    .border-info {
+        border-left: 5px solid #0dcaf0 !important;
+        background: linear-gradient(to right, rgba(13, 202, 240, 0.05), transparent);
+    }
+
+    .border-success {
+        border-left: 5px solid #198754 !important;
+        background: linear-gradient(to right, rgba(25, 135, 84, 0.05), transparent);
+    }
+
+    .border-secondary {
+        border-left: 5px solid #6c757d !important;
+        background: linear-gradient(to right, rgba(108, 117, 125, 0.05), transparent);
+    }
+
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 10px;
+    }
+
+    .progress-bar {
+        border-radius: 10px;
+    }
+
+    .semana-card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .alert {
+        border-radius: 8px;
+    }
+
+    .badge {
+        padding: 0.5em 0.75em;
+        font-size: 0.75rem;
+    }
+
+    .card-header.bg-light {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #dee2e6;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">
+                                <i class="bi bi-person-badge"></i> @Model.NombreTecnico
+                            </h2>
+                            <p class="text-muted mb-0">@Model.CorreoTecnico</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver al Tablero
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-ticket-detailed fs-1 text-primary"></i>
+                    <h3 class="mt-2">@Model.TotalTicketsAsignados</h3>
+                    <p class="text-muted mb-0">Total Asignados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+                    <h3 class="mt-2">@Model.TicketsPendientes</h3>
+                    <p class="text-muted mb-0">Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-gear-fill fs-1 text-info"></i>
+                    <h3 class="mt-2">@Model.TicketsEnProceso</h3>
+                    <p class="text-muted mb-0">En Proceso</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-check-circle-fill fs-1 text-success"></i>
+                    <h3 class="mt-2">@Model.TicketsCerrados</h3>
+                    <p class="text-muted mb-0">Cerrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Filtrar por estado</label>
+                            <select class="form-select" id="filtroEstado">
+                                <option value="">Todos</option>
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="En Proceso">En Proceso</option>
+                                <option value="Cerrado">Cerrado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Filtrar por prioridad</label>
+                            <select class="form-select" id="filtroPrioridad">
+                                <option value="">Todas</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Media">Media</option>
+                                <option value="Baja">Baja</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Buscar</label>
+                            <input type="text" class="form-control" id="buscarTicket" placeholder="ID o título...">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" id="btnFiltrar">
+                                <i class="bi bi-funnel"></i> Aplicar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tickets por Semana -->
+    <div class="row">
+        <div class="col-12">
+            @if (!Model.AsignacionesPorSemana.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No tienes tickets asignados.
+                </div>
+            }
+            else
+            {
+                @foreach (var semana in Model.AsignacionesPorSemana)
+                {
+                    <div class="card shadow-sm mb-4 semana-card">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-calendar-week text-primary"></i>
+                                    Semana @semana.NumeroSemana, @semana.Anio
+                                    <span class="text-muted small">(@semana.RangoFechas)</span>
+                                </h5>
+                                <span class="badge bg-primary">@semana.Tickets.Count tickets</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                @foreach (var ticket in semana.Tickets)
+                                {
+                                    <div class="col-md-6 col-lg-4 ticket-item"
+                                         data-estado="@ticket.Estado"
+                                         data-prioridad="@ticket.Prioridad"
+                                         data-titulo="@ticket.Titulo.ToLower()"
+                                         data-id="@ticket.IdTicket">
+                                        <div class="card h-100 ticket-card border-@ticket.ColorUrgencia">
+                                            <div class="card-body">
+                                                <!-- Header del ticket -->
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h6 class="mb-0">
+                                                            <i class="@ticket.IconoCategoria text-primary"></i>
+                                                            <strong>#@ticket.IdTicket</strong>
+                                                        </h6>
+                                                        <small class="text-muted">@ticket.Categoria</small>
+                                                    </div>
+                                                    <span class="badge bg-@ticket.ColorUrgencia">
+                                                        @ticket.Estado
+                                                    </span>
+                                                </div>
+
+                                                <!-- Título -->
+                                                <h6 class="card-title mb-3">@ticket.Titulo</h6>
+
+                                                <!-- Prioridad -->
+                                                <div class="mb-2">
+                                                    <small class="text-muted">Prioridad:</small>
+                                                    <span class="badge bg-@(ticket.Prioridad == "Alta" ? "danger" : ticket.Prioridad == "Media" ? "warning" : "secondary")">
+                                                        @ticket.Prioridad
+                                                    </span>
+                                                </div>
+
+                                                <!-- Tiempo restante SLA -->
+                                                @if (ticket.HorasRestantes.HasValue && ticket.Estado != "Cerrado")
+                                                {
+                                                    <div class="alert alert-@ticket.ColorUrgencia p-2 mb-3">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="bi bi-clock-history me-2"></i>
+                                                            <div class="flex-grow-1">
+                                                                <small class="d-block"><strong>Tiempo restante</strong></small>
+                                                                <small>@ticket.HorasRestantes horas</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                <!-- Barra de progreso -->
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <small class="text-muted">Progreso</small>
+                                                        <small class="text-muted">@ticket.PorcentajeProgreso%</small>
+                                                    </div>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar bg-@ticket.ColorUrgencia"
+                                                             role="progressbar"
+                                                             style="width: @ticket.PorcentajeProgreso%"
+                                                             aria-valuenow="@ticket.PorcentajeProgreso"
+                                                             aria-valuemin="0"
+                                                             aria-valuemax="100"></div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Fecha de asignación -->
+                                                <small class="text-muted d-block mb-3">
+                                                    <i class="bi bi-calendar-plus"></i>
+                                                    Asignado: @ticket.FechaAsignacion.ToString("dd/MM/yyyy HH:mm")
+                                                </small>
+
+                                                <!-- Acciones rápidas -->
+                                                <div class="d-grid gap-2">
+                                                    <a href="@Url.Action("DetalleTicket", "Asignaciones", new { id = ticket.IdTicket })"
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-eye"></i> Ver Detalle
+                                                    </a>
+                                                    <div class="btn-group">
+                                                        <button class="btn btn-outline-secondary btn-sm"
+                                                                disabled
+                                                                title="Próximamente">
+                                                            <i class="bi bi-arrow-repeat"></i> Cambiar Estado
+                                                        </button>
+                                                        <button class="btn btn-outline-secondary btn-sm"
+                                                                disabled
+                                                                title="Próximamente">
+                                                            <i class="bi bi-chat-dots"></i> Comentar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Funcionalidad de filtrado
+        const btnFiltrar = document.getElementById('btnFiltrar');
+        const filtroEstado = document.getElementById('filtroEstado');
+        const filtroPrioridad = document.getElementById('filtroPrioridad');
+        const buscarTicket = document.getElementById('buscarTicket');
+
+        // Aplicar filtros
+        btnFiltrar?.addEventListener('click', aplicarFiltros);
+
+        // Filtrar al presionar Enter en el buscador
+        buscarTicket?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                aplicarFiltros();
+            }
+        });
+
+        function aplicarFiltros() {
+            const estado = filtroEstado.value.toLowerCase();
+            const prioridad = filtroPrioridad.value.toLowerCase();
+            const busqueda = buscarTicket.value.toLowerCase();
+
+            const tickets = document.querySelectorAll('.ticket-item');
+            let totalVisibles = 0;
+
+            tickets.forEach(ticket => {
+                const ticketEstado = ticket.dataset.estado.toLowerCase();
+                const ticketPrioridad = ticket.dataset.prioridad.toLowerCase();
+                const ticketTitulo = ticket.dataset.titulo;
+                const ticketId = ticket.dataset.id;
+
+                const cumpleEstado = !estado || ticketEstado === estado;
+                const cumplePrioridad = !prioridad || ticketPrioridad === prioridad;
+                const cumpleBusqueda = !busqueda ||
+                                      ticketTitulo.includes(busqueda) ||
+                                      ticketId.includes(busqueda);
+
+                if (cumpleEstado && cumplePrioridad && cumpleBusqueda) {
+                    ticket.style.display = '';
+                    totalVisibles++;
+                } else {
+                    ticket.style.display = 'none';
+                }
+            });
+
+            // Ocultar semanas sin tickets visibles
+            document.querySelectorAll('.semana-card').forEach(semana => {
+                const ticketsVisibles = semana.querySelectorAll('.ticket-item:not([style*="display: none"])');
+                if (ticketsVisibles.length === 0) {
+                    semana.style.display = 'none';
+                } else {
+                    semana.style.display = '';
+                    // Actualizar contador
+                    const badge = semana.querySelector('.badge');
+                    if (badge) {
+                        badge.textContent = `${ticketsVisibles.length} tickets`;
+                    }
+                }
+            });
+
+            // Mostrar mensaje si no hay resultados
+            if (totalVisibles === 0) {
+                mostrarMensajeNoResultados();
+            } else {
+                ocultarMensajeNoResultados();
+            }
+        }
+
+        function mostrarMensajeNoResultados() {
+            let mensaje = document.getElementById('mensaje-no-resultados');
+            if (!mensaje) {
+                mensaje = document.createElement('div');
+                mensaje.id = 'mensaje-no-resultados';
+                mensaje.className = 'alert alert-warning';
+                mensaje.innerHTML = '<i class="bi bi-search"></i> No se encontraron tickets con los filtros aplicados.';
+                document.querySelector('.row .col-12').appendChild(mensaje);
+            }
+        }
+
+        function ocultarMensajeNoResultados() {
+            const mensaje = document.getElementById('mensaje-no-resultados');
+            if (mensaje) {
+                mensaje.remove();
+            }
+        }
+
+        // Limpiar filtros
+        document.querySelectorAll('.form-select, .form-control').forEach(input => {
+            input.addEventListener('change', function() {
+                if (!this.value) {
+                    aplicarFiltros();
+                }
+            });
+        });
+
+        // Animación al cargar
+        const cards = document.querySelectorAll('.ticket-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.5s ease';
+
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 50);
+            }, index * 50);
+        });
+    });
+</script>

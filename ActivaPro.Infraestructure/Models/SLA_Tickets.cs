@@ -11,6 +11,7 @@ public class SLA_Tickets
     public int id_sla { get; set; }
     public string descripcion { get; set; }
     public string prioridad { get; set; }
+   
 
     [ForeignKey("id_categoria")]
     public int id_categoria { get; set; }

@@ -1,0 +1,349 @@
+﻿@model ActivaPro.Application.DTOs.TicketesDTO
+
+@{
+    ViewData["Title"] = "Detalle del Ticket";
+}
+
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                <i class="bi bi-ticket-detailed me-2"></i>Ticket #@Model.IdTicket
+            </h1>
+            <p class="text-muted mb-0">@Model.Titulo</p>
+        </div>
+        <div>
+            @if (Model.Estado == "Pendiente")
+            {
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2"> Pendiente</span>
+            }
+            else if (Model.Estado == "En Proceso")
+            {
+                <span class="badge bg-info fs-6 px-3 py-2"> En Proceso</span>
+            }
+            else if (Model.Estado == "Cerrado")
+            {
+                <span class="badge bg-success fs-6 px-3 py-2">✓ Cerrado</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary fs-6 px-3 py-2">@Model.Estado</span>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Columna Principal -->
+        <div class="col-lg-8">
+            <!-- Información General -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">Título</dt>
+                        <dd class="col-sm-8 fw-bold">@Model.Titulo</dd>
+
+                        <dt class="col-sm-4 text-muted">Descripción</dt>
+                        <dd class="col-sm-8">@Model.Descripcion</dd>
+
+                        <dt class="col-sm-4 text-muted">Categoría</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-light text-dark border">
+                                @(Model.CategoriaNombre ?? "Sin categoría")
+                            </span>
+                        </dd>
+
+                        @if (Model.Etiquetas != null && Model.Etiquetas.Any())
+                        {
+                            <dt class="col-sm-4 text-muted">Etiquetas</dt>
+                            <dd class="col-sm-8">
+                                @foreach (var etiqueta in Model.Etiquetas)
+                                {
+                                    <span class="badge bg-secondary me-1">@etiqueta</span>
+                                }
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Usuarios Involucrados -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Usuarios Involucrados</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted"> Solicitante</dt>
+                        <dd class="col-sm-8">
+                            @Model.NombreSolicitante
+                            <small class="text-muted">(ID: @Model.IdUsuarioSolicitante)</small>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted"> Asignado a</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IdUsuarioAsignado.HasValue)
+                            {
+                                @Model.NombreAsignado
+                                <small class="text-muted">(ID: @Model.IdUsuarioAsignado)</small>
+                            }
+                            else
+                            {
+                                <span class="text-warning">Sin asignar</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Imágenes Adjuntas -->
+            @if (Model.Imagenes != null && Model.Imagenes.Any())
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-images me-2"></i>Imágenes Adjuntas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            @foreach (var imagen in Model.Imagenes)
+                            {
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <img src="@imagen.RutaArchivo" class="card-img-top" alt="@imagen.NombreArchivo" style="height: 200px; object-fit: cover;">
+                                        <div class="card-body p-2">
+                                            <small class="text-muted d-block text-truncate" title="@imagen.NombreArchivo">
+                                                @imagen.NombreArchivo
+                                            </small>
+                                            <small class="text-muted">@imagen.FechaSubida.ToString("dd/MM/yyyy")</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Historial de Acciones -->
+            @if (Model.Historial != null && Model.Historial.Any())
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Acciones</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            @foreach (var item in Model.Historial)
+                            {
+                                <div class="timeline-item mb-3 pb-3 border-bottom">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>@item.NombreUsuario</strong>
+                                            <p class="mb-0 text-muted">@item.Accion</p>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar3 me-1"></i>@item.FechaAccion.ToString("dd/MM/yyyy HH:mm")
+                                        </small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Valoración -->
+            @if (Model.Valoracion != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Valoración del Cliente</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4 text-muted">Puntaje</dt>
+                            <dd class="col-sm-8">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= Model.Valoracion.Puntaje)
+                                    {
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-star text-muted"></i>
+                                    }
+                                }
+                                <span class="ms-2">(@Model.Valoracion.Puntaje/5)</span>
+                            </dd>
+
+                            <dt class="col-sm-4 text-muted">Comentario</dt>
+                            <dd class="col-sm-8">@Model.Valoracion.Comentario</dd>
+
+                            <dt class="col-sm-4 text-muted">Fecha</dt>
+                            <dd class="col-sm-8">@Model.Valoracion.FechaValoracion.ToString("dd/MM/yyyy HH:mm")</dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Columna Lateral -->
+        <div class="col-lg-4">
+            <!-- SLA y Prioridad -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>SLA y Prioridad</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6 text-muted">Prioridad</dt>
+                        <dd class="col-sm-6">
+                            @if (!string.IsNullOrEmpty(Model.SLA_Prioridad))
+                            {
+                                if (Model.SLA_Prioridad.Contains("Alta"))
+                                {
+                                    <span class="badge bg-danger"> Alta</span>
+                                }
+                                else if (Model.SLA_Prioridad.Contains("Media"))
+                                {
+                                    <span class="badge bg-warning text-dark">🟡 Media</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary"> Baja</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin prioridad</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-6 text-muted">SLA</dt>
+                        <dd class="col-sm-6">
+                            <small>@(Model.SLA_Descripcion ?? "Sin SLA")</small>
+                        </dd>
+
+                        @if (Model.SLA_TiempoRespuestaHoras.HasValue)
+                        {
+                            <dt class="col-sm-6 text-muted">Tiempo Respuesta</dt>
+                            <dd class="col-sm-6">
+                                <strong>@Model.SLA_TiempoRespuestaHoras h</strong>
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Fechas Importantes -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Fechas Importantes</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6 text-muted">Creación</dt>
+                        <dd class="col-sm-6">
+                            <small>@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</small>
+                        </dd>
+
+                        <dt class="col-sm-6 text-muted">Última Actualización</dt>
+                        <dd class="col-sm-6">
+                            <small>@Model.FechaActualizacion.ToString("dd/MM/yyyy HH:mm")</small>
+                        </dd>
+
+                        @if (Model.FechaLimiteResolucion.HasValue)
+                        {
+                            <dt class="col-sm-6 text-muted">Límite Resolución</dt>
+                            <dd class="col-sm-6">
+                                <small class="text-danger fw-bold">
+                                    @Model.FechaLimiteResolucion.Value.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Métricas -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Métricas</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-8 text-muted">Días desde creación</dt>
+                        <dd class="col-sm-4 text-end">
+                            <span class="badge bg-info">@Model.DiasDesdeCreacion días</span>
+                        </dd>
+
+                        @if (Model.DiasParaResolucion.HasValue)
+                        {
+                            <dt class="col-sm-8 text-muted">Días para resolución</dt>
+                            <dd class="col-sm-4 text-end">
+                                @if (Model.DiasParaResolucion.Value >= 0)
+                                {
+                                    <span class="badge bg-success">@Model.DiasParaResolucion días</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Vencido</span>
+                                }
+                            </dd>
+                        }
+
+                        <dt class="col-sm-8 text-muted">Cumple tiempo respuesta</dt>
+                        <dd class="col-sm-4 text-end">
+                            @if (Model.CumpleRespuesta)
+                            {
+                                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+                            }
+                        </dd>
+
+                        @if (Model.CumpleResolucion.HasValue)
+                        {
+                            <dt class="col-sm-8 text-muted">Cumple resolución</dt>
+                            <dd class="col-sm-4 text-end">
+                                @if (Model.CumpleResolucion.Value)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+                                }
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="d-flex gap-2 mt-4">
+        <a asp-action="Edit" asp-route-id="@Model.IdTicket" class="btn btn-warning">
+            <i class="bi bi-pencil me-2"></i>Editar
+        </a>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Volver al Listado
+        </a>
+        <a asp-action="Delete" asp-route-id="@Model.IdTicket" class="btn btn-danger ms-auto">
+            <i class="bi bi-trash me-2"></i>Eliminar
+        </a>
+    </div>
+</div>
+
+<style>
+    .timeline-item:last-child {
+        border-bottom: none !important;
+    }
+</style>
