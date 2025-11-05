@@ -1,22 +1,82 @@
 ﻿@model IEnumerable<ActivaPro.Application.DTOs.TecnicosDTO>
 
 @{
-    ViewData["Title"] = "Lista de Tecnicos";
+    ViewData["Title"] = "Técnicos";
 }
 
-<h1>Lista de Técnicos</h1>
+<!-- 🎨 Estilos consistentes con Categorías -->
+<style>
+    :root {
+        --azul-principal: #0d6efd;
+        --azul-hover: #0b5ed7;
+        --azul-claro: #e7f1ff;
+        --gris: #6c757d;
+        --gris-claro: #f8f9fa;
+    }
+
+    h1 {
+        color: var(--azul-principal);
+        font-weight: 600;
+    }
+
+    .btn-main {
+        background-color: var(--azul-principal);
+        color: #fff;
+        border: none;
+        transition: background-color 0.2s ease;
+    }
+
+        .btn-main:hover {
+            background-color: var(--azul-hover);
+        }
+
+    .btn-secondary {
+        background-color: var(--gris);
+        color: #fff;
+        border: none;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+    .btn-neutral {
+        background-color: var(--azul-claro);
+        color: var(--azul-hover);
+        border: 1px solid var(--azul-hover);
+    }
+
+        .btn-neutral:hover {
+            background-color: var(--azul-hover);
+            color: white;
+        }
+
+    .table {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+        .table thead {
+            background-color: var(--azul-principal);
+            color: white;
+        }
+</style>
+
+<h1 class="mb-4">Técnicos</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a class="btn btn-main mb-3" asp-action="Create">Crear Nuevo Técnico</a>
 </p>
 
-<table class="table">
+<table class="table table-striped table-bordered">
     <thead>
         <tr>
-            <th>@Html.DisplayNameFor(model => model.CargaTrabajo)</th>
-            <th>@Html.DisplayNameFor(model => model.Disponible)</th>
-            <th>@Html.DisplayNameFor(model => model.Especialidades)</th>
-            <th></th>
+            <th>Carga de Trabajo</th>
+            <th>Disponible</th>
+            <th>Especialidades</th>
+            <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
@@ -24,12 +84,21 @@
         {
             <tr>
                 <td>@Html.DisplayFor(modelItem => item.CargaTrabajo)</td>
-                <td>@Html.DisplayFor(modelItem => item.Disponible)</td>
+                <td>
+                    @if (item.Disponible)
+                    {
+                        <span class="text-success fw-bold">Sí</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger fw-bold">No</span>
+                    }
+                </td>
                 <td>@Html.DisplayFor(modelItem => item.Especialidades)</td>
                 <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.IdTecnico }) |
-                    @Html.ActionLink("Details", "Details", new { id = item.IdTecnico }) |
-                    @Html.ActionLink("Delete", "Delete", new { id = item.IdTecnico })
+                    @Html.ActionLink("Detalles", "Details", new { id = item.IdTecnico }, new { @class = "btn btn-neutral btn-sm me-1" })
+                    @Html.ActionLink("Editar", "Edit", new { id = item.IdTecnico }, new { @class = "btn btn-main btn-sm me-1" })
+                    @Html.ActionLink("Eliminar", "Delete", new { id = item.IdTecnico }, new { @class = "btn btn-secondary btn-sm" })
                 </td>
             </tr>
         }

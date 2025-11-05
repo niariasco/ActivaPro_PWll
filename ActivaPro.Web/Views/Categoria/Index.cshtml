@@ -4,16 +4,76 @@
     ViewData["Title"] = "Categorías";
 }
 
+<!-- 🎨 Estilos consistentes con la página principal -->
+<style>
+    :root {
+        --azul-principal: #0d6efd;
+        --azul-hover: #0b5ed7;
+        --azul-claro: #e7f1ff;
+        --gris: #6c757d;
+        --gris-claro: #f8f9fa;
+    }
+
+    h1 {
+        color: var(--azul-principal);
+        font-weight: 600;
+    }
+
+    .btn-main {
+        background-color: var(--azul-principal);
+        color: #fff;
+        border: none;
+        transition: background-color 0.2s ease;
+    }
+
+        .btn-main:hover {
+            background-color: var(--azul-hover);
+        }
+
+    .btn-secondary {
+        background-color: var(--gris);
+        color: #fff;
+        border: none;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+    .btn-neutral {
+        background-color: var(--azul-claro);
+        color: var(--azul-hover);
+        border: 1px solid var(--azul-hover);
+    }
+
+        .btn-neutral:hover {
+            background-color: var(--azul-hover);
+            color: white;
+        }
+
+    .table {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+        .table thead {
+            background-color: var(--azul-principal);
+            color: white;
+        }
+</style>
+
 <h1 class="mb-4">Categorías</h1>
 
 <p>
-    <a class="btn btn-primary mb-3" asp-action="Create">Crear Nueva Categoría</a>
+    <a class="btn btn-main mb-3" asp-action="Create">Crear Nueva Categoría</a>
 </p>
 
 <table class="table table-striped table-bordered">
-    <thead class="table-primary">
+    <thead>
         <tr>
-            <th>Nombre Categoria</th>
+            <th>Nombre Categoría</th>
             <th>SLA</th>
             <th>Acciones</th>
         </tr>
@@ -22,13 +82,12 @@
         @foreach (var item in Model)
         {
             <tr>
-          
                 <td>@Html.DisplayFor(modelItem => item.nombre_categoria)</td>
                 <td>@(item.SLA.Any() ? string.Join(", ", item.SLA) : "-")</td>
                 <td>
-                    @Html.ActionLink("Detalles", "Details", new { id = item.id_categoria }, new { @class = "btn btn-info btn-sm me-1" })
-                    @Html.ActionLink("Editar", "Edit", new { id = item.id_categoria }, new { @class = "btn btn-warning btn-sm me-1" })
-                    @Html.ActionLink("Eliminar", "Delete", new { id = item.id_categoria }, new { @class = "btn btn-danger btn-sm" })
+                    @Html.ActionLink("Detalles", "Details", new { id = item.id_categoria }, new { @class = "btn btn-neutral btn-sm me-1" })
+                    @Html.ActionLink("Editar", "Edit", new { id = item.id_categoria }, new { @class = "btn btn-main btn-sm me-1" })
+                    @Html.ActionLink("Eliminar", "Delete", new { id = item.id_categoria }, new { @class = "btn btn-secondary btn-sm" })
                 </td>
             </tr>
         }

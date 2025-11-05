@@ -1,0 +1,125 @@
+﻿@model ActivaPro.Application.DTOs.CategoriasDTO
+
+@{
+    ViewData["Title"] = "Editar Categoría";
+}
+
+<style>
+    :root {
+        --azul-principal: #0d6efd;
+        --azul-hover: #0b5ed7;
+        --gris: #6c757d;
+    }
+
+    h2 {
+        color: var(--azul-principal);
+        font-weight: 600;
+    }
+
+    .btn-main {
+        background-color: var(--azul-principal);
+        color: white;
+        border: none;
+    }
+
+        .btn-main:hover {
+            background-color: var(--azul-hover);
+        }
+
+    .btn-secondary {
+        background-color: var(--gris);
+        color: white;
+        border: none;
+    }
+
+    .card {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+</style>
+
+<h2 class="mb-4">Editar Categoría</h2>
+
+<div class="card">
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="id_categoria" />
+
+        <!-- Nombre de la categoría -->
+        <div class="mb-3">
+            <label asp-for="nombre_categoria" class="form-label"></label>
+            <input asp-for="nombre_categoria" class="form-control" />
+        </div>
+
+        <h2 class="mb-4">Editar Categoría</h2>
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" asp-for="id_categoria" />
+
+                    <!-- Nombre de la categoría -->
+                    <div class="mb-3">
+                        <label asp-for="nombre_categoria" class="form-label">Nombre de la Categoría</label>
+                        <input asp-for="nombre_categoria" class="form-control" />
+                    </div>
+
+                    <!-- Etiquetas (MÚLTIPLES) -->
+                    <div class="mb-3">
+                        <label class="form-label">Etiquetas</label>
+                        <select asp-for="Etiquetas" class="form-select" multiple size="5">
+                            @if (ViewBag.Etiquetas != null)
+                            {
+                                @foreach (var e in ViewBag.Etiquetas as List<string>)
+                                {
+                                    <option value="@e" selected="@(Model.Etiquetas?.Contains(e) ?? false)">@e</option>
+                                }
+                            }
+                        </select>
+                        <small class="form-text text-muted">Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples opciones</small>
+                    </div>
+
+                    <!-- Especialidades (MÚLTIPLES) -->
+                    <div class="mb-3">
+                        <label class="form-label">Especialidades</label>
+                        <select asp-for="Especialidades" class="form-select" multiple size="5">
+                            @if (ViewBag.Especialidades != null)
+                            {
+                                @foreach (var esp in ViewBag.Especialidades as List<string>)
+                                {
+                                    <option value="@esp" selected="@(Model.Especialidades?.Contains(esp) ?? false)">@esp</option>
+                                }
+                            }
+                        </select>
+                        <small class="form-text text-muted">Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples opciones</small>
+                    </div>
+
+                    <!-- SLA (ÚNICO) -->
+                    <div class="mb-3">
+                        <label class="form-label">SLA</label>
+                        <select asp-for="SLA" class="form-select">
+                            <option value="">-- Seleccione un SLA --</option>
+                            @if (ViewBag.SLAs != null)
+                            {
+                                @foreach (var sla in ViewBag.SLAs as List<string>)
+                                {
+                                    <option value="@sla" selected="@(Model.SLA == sla)">@sla</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-main">Guardar</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>

@@ -39,5 +39,26 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
            .ToListAsync();
 
         }
+        public async Task CreateAsync(Categorias categoria)
+        {
+            _context.Categorias.Add(categoria);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Categorias categoria)
+        {
+            _context.Categorias.Update(categoria);
+            await _context.SaveChangesAsync();
+        }
+        public async Task DeleteAsync(int id)
+        {
+            var entity = await _context.Categorias.FindAsync(id);
+            if (entity != null)
+            {
+                _context.Categorias.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
+        }
+
     }
 }

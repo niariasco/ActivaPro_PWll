@@ -39,6 +39,15 @@ builder.Services.AddTransient<ICategoriaService, CategoriaService>();
 builder.Services.AddTransient<ITicketesService, TicketesService>();
 builder.Services.AddTransient<IAsignacionesService, AsignacionesService>();
 
+builder.Services.AddScoped<IRepoEtiquetas, EtiquetasRepo>();
+builder.Services.AddScoped<IRepoEspecialidades, EspecialidadesRepo>();
+builder.Services.AddScoped<IRepoSLA_Tickets, SLA_TicketsRepo>();
+
+builder.Services.AddScoped<IEtiquetasService, EtiquetasService>();
+builder.Services.AddScoped<IEspecialidadesService, EspecialidadesService>();
+builder.Services.AddScoped<ISlaService, SlaService>();
+
+
 //Configurar Automapper
 builder.Services.AddAutoMapper(cfg =>
 {

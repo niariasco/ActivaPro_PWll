@@ -11,5 +11,9 @@ namespace ActivaPro.Infraestructure.Repository.Interfaces
     {
         Task<ICollection<Categorias>> ListAsync();
         Task<Categorias> FindByIdAsync(int id);
+        Task UpdateAsync(Categorias categoria);
+        Task CreateAsync(Categorias categoria);
+        Task DeleteAsync(int id); 
+
     }
 }
