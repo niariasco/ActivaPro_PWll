@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace ActivaPro.Infraestructure.Models;
 
 public partial class ValoracionNotificaciones
 {
-    [Key]
     public int IdValoracion { get; set; }
 
     public int IdNotificacion { get; set; }

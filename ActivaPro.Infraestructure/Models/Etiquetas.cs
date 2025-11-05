@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ActivaPro.Infraestructure.Models;
 
 public partial class Etiquetas
 {
-    [Key]
-    public int id_etiqueta { get; set; }
-    public string nombre_etiqueta { get; set; }
+    public int IdEtiqueta { get; set; }
 
-    public int id_categoria { get; set; }
-    public virtual Categorias Categoria { get; set; } 
+    public string NombreEtiqueta { get; set; } = null!;
 
+    public int? IdCategoria { get; set; }
 
+    public virtual Categorias? IdCategoriaNavigation { get; set; }
+
+    public virtual ICollection<Tickets> IdTicket { get; set; } = new List<Tickets>();
 }
