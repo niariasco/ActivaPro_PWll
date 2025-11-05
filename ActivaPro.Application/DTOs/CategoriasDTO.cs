@@ -8,6 +8,6 @@ namespace ActivaPro.Application.DTOs
         public string nombre_categoria { get; set; }
         public List<string> Etiquetas { get; set; } = new ();
        public List<string> Especialidades { get; set; } = new();
-        public List<string> SLA { get; set; } = new();
+        public string SLA { get; set; }  
     }
 }
