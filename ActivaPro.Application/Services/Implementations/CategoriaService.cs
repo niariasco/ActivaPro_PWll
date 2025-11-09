@@ -1,13 +1,10 @@
 ﻿using ActivaPro.Application.DTOs;
 using ActivaPro.Application.Services.Interfaces;
+using ActivaPro.Infraestructure.Data;
 using ActivaPro.Infraestructure.Models;
 using ActivaPro.Infraestructure.Repository.Interfaces;
 using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace ActivaPro.Application.Services.Implementations
 {
@@ -15,17 +12,27 @@ namespace ActivaPro.Application.Services.Implementations
     {
         private readonly IRepoCategorias _repository;
         private readonly IMapper _mapper;
+        private readonly ActivaProContext _context;
 
-        public CategoriaService(IRepoCategorias repository, IMapper mapper)
+        public CategoriaService(IRepoCategorias repository, IMapper mapper, ActivaProContext context)
         {
             _repository = repository;
             _mapper = mapper;
+            _context = context;
         }
 
         public async Task<IEnumerable<CategoriasDTO>> ListAsync()
         {
             var categorias = await _repository.ListAsync();
-            return _mapper.Map<IEnumerable<CategoriasDTO>>(categorias);
+            return categorias.Select(c => new CategoriasDTO
+            {
+                id_categoria = c.id_categoria,
+                nombre_categoria = c.nombre_categoria,
+                Etiquetas = c.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList(),
+                Especialidades = c.CategoriaEspecialidades.Select(e => e.NombreEspecialidad).ToList(),
+                id_sla = c.SLA_Tickets.FirstOrDefault()?.id_sla,
+                SLA = c.SLA_Tickets.FirstOrDefault()?.descripcion
+            });
         }
 
         public async Task<CategoriasDTO?> FindByIdAsync(int id)
@@ -33,22 +40,16 @@ namespace ActivaPro.Application.Services.Implementations
             var categoria = await _repository.FindByIdAsync(id);
             if (categoria == null) return null;
 
+            var firstSla = categoria.SLA_Tickets.FirstOrDefault();
+
             return new CategoriasDTO
             {
                 id_categoria = categoria.id_categoria,
                 nombre_categoria = categoria.nombre_categoria,
-                // Etiquetas asignadas
-                Etiquetas = categoria.CategoriaEtiquetas
-                    .Select(e => e.nombre_etiqueta)
-                    .ToList(),
-                // Especialidades asignadas
-                Especialidades = categoria.CategoriaEspecialidades
-                    .Select(e => e.NombreEspecialidad)
-                    .ToList(),
-
-                SLA = categoria.SLA_Tickets
-                    .Select(s => s.descripcion)
-                    .FirstOrDefault() ?? string.Empty 
+                Etiquetas = categoria.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList(),
+                Especialidades = categoria.CategoriaEspecialidades.Select(e => e.NombreEspecialidad).ToList(),
+                id_sla = firstSla?.id_sla,
+                SLA = firstSla?.descripcion
             };
         }
 
@@ -57,33 +58,80 @@ namespace ActivaPro.Application.Services.Implementations
             var entity = await _repository.FindByIdAsync(dto.id_categoria);
             if (entity == null) throw new Exception("Categoría no encontrada");
 
-            // Actualizar nombre
             entity.nombre_categoria = dto.nombre_categoria;
 
-            // Limpiar relaciones existentes
+            // Etiquetas
             entity.CategoriaEtiquetas.Clear();
+            if (dto.Etiquetas != null && dto.Etiquetas.Any())
+            {
+                var names = dto.Etiquetas.Distinct().ToList();
+                var existentes = await _context.Etiquetas
+                    .Where(x => names.Contains(x.nombre_etiqueta))
+                    .ToListAsync();
+
+                foreach (var nombre in names)
+                {
+                    var existente = existentes.FirstOrDefault(x => x.nombre_etiqueta == nombre);
+                    if (existente != null)
+                    {
+                        // Adjuntar existente
+                        entity.CategoriaEtiquetas.Add(existente);
+                    }
+                    else
+                    {
+                        entity.CategoriaEtiquetas.Add(new Etiquetas { nombre_etiqueta = nombre });
+                    }
+                }
+            }
+
+            // Especialidades
             entity.CategoriaEspecialidades.Clear();
+            if (dto.Especialidades != null && dto.Especialidades.Any())
+            {
+                var names = dto.Especialidades.Distinct().ToList();
+                var existentes = await _context.Especialidades
+                    .Where(x => names.Contains(x.NombreEspecialidad))
+                    .ToListAsync();
+
+                foreach (var nombre in names)
+                {
+                    var existente = existentes.FirstOrDefault(x => x.NombreEspecialidad == nombre);
+                    if (existente != null)
+                    {
+                        entity.CategoriaEspecialidades.Add(existente);
+                    }
+                    else
+                    {
+                        entity.CategoriaEspecialidades.Add(new Especialidades { NombreEspecialidad = nombre });
+                    }
+                }
+            }
+
+            // SLA
             entity.SLA_Tickets.Clear();
-
-            // Agregar nuevas etiquetas
-            foreach (var etiqueta in dto.Etiquetas)
-            {
-                entity.CategoriaEtiquetas.Add(new Etiquetas { nombre_etiqueta = etiqueta });
-            }
-
-            // Agregar nuevas especialidades
-            foreach (var especialidad in dto.Especialidades)
-            {
-                entity.CategoriaEspecialidades.Add(new Especialidades { NombreEspecialidad = especialidad });
-            }
-
-            if (!string.IsNullOrEmpty(dto.SLA))
+            if (dto.id_sla == -1)
             {
                 entity.SLA_Tickets.Add(new SLA_Tickets
                 {
-                    descripcion = dto.SLA,
-                    prioridad = "Media"
+                    descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA,
+                    prioridad = "Media",
+                    id_categoria = entity.id_categoria
                 });
+            }
+            else if (dto.id_sla.HasValue && dto.id_sla.Value > 0)
+            {
+                var slaExistente = await _context.SLA_Tickets
+                    .FirstOrDefaultAsync(s => s.id_sla == dto.id_sla.Value);
+
+                if (slaExistente != null)
+                {
+                    // Aseguramos que no se intente insertar duplicado
+                    _context.Entry(slaExistente).State = EntityState.Unchanged;
+                    // Si la relación implica cambiar el id_categoria del SLA existente, confirmamos el modelo;
+                    // Si SLA es independiente, no tocar id_categoria. Si es per categoría, quizá no debiera reutilizarlo.
+                    // Aquí asumimos independencia y NO cambiamos id_categoria si ya está asignado a otra categoría.
+                    entity.SLA_Tickets.Add(slaExistente);
+                }
             }
 
             await _repository.UpdateAsync(entity);
@@ -96,24 +144,58 @@ namespace ActivaPro.Application.Services.Implementations
                 nombre_categoria = dto.nombre_categoria
             };
 
-            entity.CategoriaEtiquetas = dto.Etiquetas.Select(e => new Etiquetas
+            // Etiquetas
+            entity.CategoriaEtiquetas = new List<Etiquetas>();
+            if (dto.Etiquetas != null && dto.Etiquetas.Any())
             {
-                nombre_etiqueta = e
-            }).ToList();
+                var names = dto.Etiquetas.Distinct().ToList();
+                var existentes = await _context.Etiquetas
+                    .Where(x => names.Contains(x.nombre_etiqueta))
+                    .ToListAsync();
 
-            entity.CategoriaEspecialidades = dto.Especialidades.Select(e => new Especialidades
+                foreach (var nombre in names)
+                {
+                    var existente = existentes.FirstOrDefault(x => x.nombre_etiqueta == nombre);
+                    entity.CategoriaEtiquetas.Add(existente ?? new Etiquetas { nombre_etiqueta = nombre });
+                }
+            }
+
+            // Especialidades
+            entity.CategoriaEspecialidades = new List<Especialidades>();
+            if (dto.Especialidades != null && dto.Especialidades.Any())
             {
-                NombreEspecialidad = e
-            }).ToList();
+                var names = dto.Especialidades.Distinct().ToList();
+                var existentes = await _context.Especialidades
+                    .Where(x => names.Contains(x.NombreEspecialidad))
+                    .ToListAsync();
 
+                foreach (var nombre in names)
+                {
+                    var existente = existentes.FirstOrDefault(x => x.NombreEspecialidad == nombre);
+                    entity.CategoriaEspecialidades.Add(existente ?? new Especialidades { NombreEspecialidad = nombre });
+                }
+            }
+
+            // SLA
             entity.SLA_Tickets = new List<SLA_Tickets>();
-            if (!string.IsNullOrEmpty(dto.SLA))
+            if (dto.id_sla == -1)
             {
                 entity.SLA_Tickets.Add(new SLA_Tickets
                 {
-                    descripcion = dto.SLA,
+                    descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA,
                     prioridad = "Media"
                 });
+            }
+            else if (dto.id_sla.HasValue && dto.id_sla.Value > 0)
+            {
+                var slaExistente = await _context.SLA_Tickets
+                    .FirstOrDefaultAsync(s => s.id_sla == dto.id_sla.Value);
+
+                if (slaExistente != null)
+                {
+                    _context.Entry(slaExistente).State = EntityState.Unchanged;
+                    entity.SLA_Tickets.Add(slaExistente);
+                }
             }
 
             await _repository.CreateAsync(entity);
