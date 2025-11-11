@@ -33,6 +33,7 @@ public partial class ActivaProContext : DbContext
     public DbSet<Categoria_Etiqueta> Categoria_Etiqueta { get; set; }
     public DbSet<Categoria_Especialidad> Categoria_Especialidad { get; set; }
     public DbSet<Categoria_SLA> Categoria_SLA { get; set; }
+    public virtual DbSet<Historial_Tickets> Historial_Tickets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

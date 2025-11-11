@@ -24,8 +24,10 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 .Include(t => t.UsuarioAsignado)
                 .Include(t => t.Categoria)
                     .ThenInclude(c => c.CategoriaEtiquetas)
+                        .ThenInclude(ce => ce.Etiqueta)
                 .Include(t => t.Categoria)
                     .ThenInclude(c => c.CategoriaSLAs)
+                        .ThenInclude(cs => cs.SLA)
                 .Include(t => t.SLA)
                 .Include(t => t.Imagenes)
                 .Include(t => t.Historial)
@@ -41,8 +43,10 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .Include(t => t.UsuarioAsignado)
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaEtiquetas)
+                        .ThenInclude(ce => ce.Etiqueta)
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaSLAs)
+                        .ThenInclude(cs => cs.SLA)
                  .Include(t => t.SLA)
                  .OrderByDescending(t => t.FechaCreacion)
                  .ToListAsync();
@@ -56,8 +60,10 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .Include(t => t.UsuarioAsignado)
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaEtiquetas)
+                        .ThenInclude(ce => ce.Etiqueta)
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaSLAs)
+                        .ThenInclude(cs => cs.SLA)
                  .Include(t => t.SLA)
                  .OrderByDescending(t => t.FechaCreacion)
                  .ToListAsync();
@@ -71,11 +77,26 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .Include(t => t.UsuarioAsignado)
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaEtiquetas)
+                        .ThenInclude(ce => ce.Etiqueta)
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaSLAs)
+                        .ThenInclude(cs => cs.SLA)
                  .Include(t => t.SLA)
                  .OrderByDescending(t => t.FechaCreacion)
                  .ToListAsync();
+        }
+
+       
+        public async Task CreateAsync(Tickets ticket)
+        {
+            _context.Ticketes.Add(ticket);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddHistorialAsync(Historial_Tickets historial)
+        {
+            _context.Historial_Tickets.Add(historial);
+            await _context.SaveChangesAsync();
         }
     }
 }

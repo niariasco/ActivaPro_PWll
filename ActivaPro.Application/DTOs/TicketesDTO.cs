@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ActivaPro.Application.DTOs
 {
@@ -68,5 +69,34 @@ namespace ActivaPro.Application.DTOs
         public int Puntaje { get; set; }
         public string Comentario { get; set; }
         public DateTime FechaValoracion { get; set; }
+    }
+
+    // ✅ Nuevo DTO para creación de tickets
+    public class TicketCreateDTO
+    {
+        [Required(ErrorMessage = "El título es obligatorio")]
+        [StringLength(150, ErrorMessage = "El título no puede exceder 150 caracteres")]
+        public string Titulo { get; set; }
+
+        [Required(ErrorMessage = "La descripción es obligatoria")]
+        public string Descripcion { get; set; }
+
+        [Required(ErrorMessage = "Debe seleccionar una etiqueta")]
+        public int IdEtiqueta { get; set; }
+
+        // Campos automáticos (no editables)
+        public int IdUsuarioSolicitante { get; set; }
+        public string NombreSolicitante { get; set; }
+        public string CorreoSolicitante { get; set; }
+        public int? IdCategoria { get; set; }
+        public string CategoriaNombre { get; set; }
+        public DateTime FechaCreacion { get; set; } = DateTime.Now;
+        public string Estado { get; set; } = "Pendiente";
+
+        // Información del SLA (se calculará automáticamente)
+        public int? IdSLA { get; set; }
+        public string SLA_Prioridad { get; set; }
+        public DateTime? FechaLimiteRespuesta { get; set; }
+        public DateTime? FechaLimiteResolucion { get; set; }
     }
 }

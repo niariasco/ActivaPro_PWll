@@ -46,6 +46,7 @@ builder.Services.AddScoped<IRepoSLA_Tickets, SLA_TicketsRepo>();
 builder.Services.AddScoped<IEtiquetasService, EtiquetasService>();
 builder.Services.AddScoped<IEspecialidadesService, EspecialidadesService>();
 builder.Services.AddScoped<ISlaService, SlaService>();
+builder.Services.AddScoped<IRepoUsuarios, UsuariosRepo>();
 
 
 //Configurar Automapper

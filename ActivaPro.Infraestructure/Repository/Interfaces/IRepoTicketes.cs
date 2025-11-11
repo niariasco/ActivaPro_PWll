@@ -8,8 +8,11 @@ namespace ActivaPro.Infraestructure.Repository.Interfaces
     {
         Task<ICollection<Tickets>> ListAsync();
         Task<Tickets> FindByIdAsync(int id);
-
         Task<ICollection<Tickets>> ListByUsuarioSolicitanteAsync(int idUsuario);
         Task<ICollection<Tickets>> ListByUsuarioAsignadoAsync(int idUsuario);
+
+        // Nuevos métodos para creación
+        Task CreateAsync(Tickets ticket);
+        Task AddHistorialAsync(Historial_Tickets historial);
     }
 }

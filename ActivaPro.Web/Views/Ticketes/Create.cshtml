@@ -1,0 +1,194 @@
+﻿@model ActivaPro.Application.DTOs.TicketCreateDTO
+
+@{
+    ViewData["Title"] = "Crear Ticket";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="bi bi-ticket-detailed"></i> Crear Nuevo Ticket
+                    </h2>
+                </div>
+                <div class="card-body">
+                    @* Mensajes de error *@
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @* Información del usuario solicitante (no editable) *@
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-person-circle"></i> Información del Solicitante
+                        </h5>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Nombre:</strong> @Model.NombreSolicitante
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Correo:</strong> @Model.CorreoSolicitante
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Formulario *@
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        @* Campos ocultos para información del usuario *@
+                        <input type="hidden" asp-for="IdUsuarioSolicitante" />
+                        <input type="hidden" asp-for="NombreSolicitante" />
+                        <input type="hidden" asp-for="CorreoSolicitante" />
+                        <input type="hidden" asp-for="FechaCreacion" />
+                        <input type="hidden" asp-for="Estado" />
+
+                        @* Título *@
+                        <div class="mb-3">
+                            <label asp-for="Titulo" class="form-label fw-bold">
+                                <i class="bi bi-card-heading"></i> Título *
+                            </label>
+                            <input asp-for="Titulo"
+                                   class="form-control"
+                                   placeholder="Ej: Problema con el sistema de inventario"
+                                   maxlength="150" />
+                            <span asp-validation-for="Titulo" class="text-danger"></span>
+                            <small class="text-muted">Máximo 150 caracteres</small>
+                        </div>
+
+                        @* Descripción *@
+                        <div class="mb-3">
+                            <label asp-for="Descripcion" class="form-label fw-bold">
+                                <i class="bi bi-text-paragraph"></i> Descripción *
+                            </label>
+                            <textarea asp-for="Descripcion"
+                                      class="form-control"
+                                      rows="5"
+                                      placeholder="Describa detalladamente el problema o solicitud..."></textarea>
+                            <span asp-validation-for="Descripcion" class="text-danger"></span>
+                            <small class="text-muted">Sea lo más específico posible para ayudarnos a resolver su solicitud</small>
+                        </div>
+
+                        @* Etiqueta (selector) *@
+                        <div class="mb-3">
+                            <label asp-for="IdEtiqueta" class="form-label fw-bold">
+                                <i class="bi bi-tag"></i> Etiqueta *
+                            </label>
+                            <select asp-for="IdEtiqueta"
+                                    id="etiquetaSelect"
+                                    class="form-select">
+                                <option value="">-- Seleccione una etiqueta que describa su problema --</option>
+                                @if (ViewBag.Etiquetas != null)
+                                {
+                                    foreach (var etiqueta in ViewBag.Etiquetas as IEnumerable<ActivaPro.Infraestructure.Models.Etiquetas>)
+                                    {
+                                        <option value="@etiqueta.id_etiqueta">@etiqueta.nombre_etiqueta</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="IdEtiqueta" class="text-danger"></span>
+                            <small class="text-muted">La categoría se asignará automáticamente según la etiqueta seleccionada</small>
+                        </div>
+
+                        @* Información calculada automáticamente (solo vista previa) *@
+                        <div id="autoInfoBox" class="border rounded p-3 mb-3 d-none bg-light">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-info-circle"></i> Información Automática
+                            </h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <strong>📅 Fecha de Creación:</strong><br>
+                                    <span class="text-muted">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong>🔖 Estado Inicial:</strong><br>
+                                    <span class="badge bg-warning text-dark">@Model.Estado</span>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success mt-3 mb-0">
+                                <small>
+                                    <i class="bi bi-lightbulb"></i>
+                                    <strong>Nota:</strong> La categoría, prioridad y fechas límite (SLA) se calcularán automáticamente
+                                    al guardar el ticket según la etiqueta seleccionada.
+                                </small>
+                            </div>
+                        </div>
+
+                        @* Botones de acción *@
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Crear Ticket
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @* Ayuda adicional *@
+            <div class="card mt-3 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-question-circle"></i> ¿Necesitas ayuda?
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Asegúrate de seleccionar la etiqueta que mejor describa tu problema</li>
+                        <li>Proporciona la mayor cantidad de detalles posible en la descripción</li>
+                        <li>El ticket será asignado automáticamente según la categoría y prioridad</li>
+                        <li>Recibirás notificaciones sobre el progreso de tu ticket</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const etiquetaSelect = document.getElementById('etiquetaSelect');
+            const autoInfoBox = document.getElementById('autoInfoBox');
+
+            // Mostrar/ocultar información automática cuando se selecciona una etiqueta
+            function updateAutoInfo() {
+                const val = etiquetaSelect.value;
+                if (val) {
+                    autoInfoBox.classList.remove('d-none');
+                } else {
+                    autoInfoBox.classList.add('d-none');
+                }
+            }
+
+            etiquetaSelect.addEventListener('change', updateAutoInfo);
+
+            // Verificar al cargar la página (por si hay un valor preseleccionado)
+            updateAutoInfo();
+
+            // Validación adicional en el cliente
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const titulo = document.querySelector('[name="Titulo"]').value.trim();
+                const descripcion = document.querySelector('[name="Descripcion"]').value.trim();
+                const etiqueta = etiquetaSelect.value;
+
+                if (!titulo || !descripcion || !etiqueta) {
+                    e.preventDefault();
+                    alert('Por favor complete todos los campos obligatorios (*)');
+                    return false;
+                }
+            });
+        })();
+    </script>
+}

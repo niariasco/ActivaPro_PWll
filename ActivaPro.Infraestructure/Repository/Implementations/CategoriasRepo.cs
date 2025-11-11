@@ -13,32 +13,49 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
     public class CategoriasRepo : IRepoCategorias
     {
         private readonly ActivaProContext _context;
+
         public CategoriasRepo(ActivaProContext context)
         {
             _context = context;
         }
+
         public async Task<Categorias?> FindByIdAsync(int id)
         {
             return await _context.Categorias
                 .Include(c => c.CategoriaEtiquetas)
+                    .ThenInclude(ce => ce.Etiqueta)
                 .Include(c => c.CategoriaEspecialidades)
+                    .ThenInclude(ce => ce.Especialidad)
                 .Include(c => c.CategoriaSLAs)
+                    .ThenInclude(cs => cs.SLA)
                 .FirstOrDefaultAsync(c => c.id_categoria == id);
         }
 
-        public async Task<ICollection<Categorias>> ListAsync()
-      {
-            //Select * from Categorias
-            // var collection = await _context.Set<Categorias>().ToListAsync();
-            //  return collection;
-
+        // ✅ NUEVO MÉTODO IMPLEMENTADO
+        public async Task<Categorias> FindCategoriaByEtiquetaAsync(int idEtiqueta)
+        {
             return await _context.Categorias
-           .Include(c => c.CategoriaEtiquetas)     
-           .Include(c => c.CategoriaEspecialidades)
+                .Include(c => c.CategoriaEtiquetas)
+                    .ThenInclude(ce => ce.Etiqueta)
+                .Include(c => c.CategoriaEspecialidades)
+                    .ThenInclude(ce => ce.Especialidad)
                 .Include(c => c.CategoriaSLAs)
-           .ToListAsync();
-
+                    .ThenInclude(cs => cs.SLA)
+                .FirstOrDefaultAsync(c => c.CategoriaEtiquetas.Any(ce => ce.id_etiqueta == idEtiqueta));
         }
+
+        public async Task<ICollection<Categorias>> ListAsync()
+        {
+            return await _context.Categorias
+                .Include(c => c.CategoriaEtiquetas)
+                    .ThenInclude(ce => ce.Etiqueta)
+                .Include(c => c.CategoriaEspecialidades)
+                    .ThenInclude(ce => ce.Especialidad)
+                .Include(c => c.CategoriaSLAs)
+                    .ThenInclude(cs => cs.SLA)
+                .ToListAsync();
+        }
+
         public async Task CreateAsync(Categorias categoria)
         {
             _context.Categorias.Add(categoria);
@@ -50,6 +67,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
             _context.Categorias.Update(categoria);
             await _context.SaveChangesAsync();
         }
+
         public async Task DeleteAsync(int id)
         {
             var entity = await _context.Categorias.FindAsync(id);
@@ -59,6 +77,5 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 await _context.SaveChangesAsync();
             }
         }
-
     }
 }
