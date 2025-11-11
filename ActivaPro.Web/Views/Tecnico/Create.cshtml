@@ -1,0 +1,65 @@
+﻿@model ActivaPro.Application.DTOs.TecnicosDTO
+@{
+    ViewData["Title"] = "Crear Técnico";
+    var catalogo = ViewBag.EspecialidadesCatalogo as IEnumerable<dynamic>;
+}
+
+<h2>Crear Técnico</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="NombreUsuario" class="form-label">Nombre de Usuario *</label>
+        <input asp-for="NombreUsuario" class="form-control" />
+        <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CorreoUsuario" class="form-label">Correo *</label>
+        <input asp-for="CorreoUsuario" class="form-control" />
+        <span asp-validation-for="CorreoUsuario" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Especialidades (múltiple)</label>
+        <select asp-for="EspecialidadesIds" multiple class="form-select" size="7">
+            @if (catalogo != null)
+            {
+                foreach (var esp in catalogo)
+                {
+                    <option value="@esp.Id">@esp.Nombre</option>
+                }
+            }
+        </select>
+        <small class="text-muted">Ctrl/Cmd para seleccionar varias.</small>
+        <span asp-validation-for="EspecialidadesIds" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Disponible" class="form-label">Disponible</label>
+        <select asp-for="Disponible" class="form-select">
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+        </select>
+        <span asp-validation-for="Disponible" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Carga de Trabajo (solo lectura)</label>
+        <input asp-for="CargaTrabajo" class="form-control" readonly />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -22,7 +22,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
             return await _context.Categorias
                 .Include(c => c.CategoriaEtiquetas)
                 .Include(c => c.CategoriaEspecialidades)
-                .Include(c => c.SLA_Tickets)
+                .Include(c => c.CategoriaSLAs)
                 .FirstOrDefaultAsync(c => c.id_categoria == id);
         }
 
@@ -34,10 +34,31 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
 
             return await _context.Categorias
            .Include(c => c.CategoriaEtiquetas)     
-           .Include(c => c.CategoriaEspecialidades)  
-           .Include(c => c.SLA_Tickets)                     
+           .Include(c => c.CategoriaEspecialidades)
+                .Include(c => c.CategoriaSLAs)
            .ToListAsync();
 
         }
+        public async Task CreateAsync(Categorias categoria)
+        {
+            _context.Categorias.Add(categoria);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Categorias categoria)
+        {
+            _context.Categorias.Update(categoria);
+            await _context.SaveChangesAsync();
+        }
+        public async Task DeleteAsync(int id)
+        {
+            var entity = await _context.Categorias.FindAsync(id);
+            if (entity != null)
+            {
+                _context.Categorias.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
+        }
+
     }
 }

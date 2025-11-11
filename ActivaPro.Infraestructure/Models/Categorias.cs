@@ -12,12 +12,10 @@ public class Categorias
 {
     [Key] 
     public int id_categoria { get; set; }
-    public string nombre_categoria { get; set; }
+    public string nombre_categoria { get; set; } = string.Empty;
 
-    // Relaciones
-    public virtual ICollection<Etiquetas> CategoriaEtiquetas { get; set; } = new List<Etiquetas>();
-    public virtual ICollection<Especialidades> CategoriaEspecialidades { get; set; } = new List<Especialidades>();
-
-    // Relación con SLA_Tickets
-    public virtual ICollection<SLA_Tickets> SLA_Tickets { get; set; } = new List<SLA_Tickets>();
+    // n-n
+    public virtual ICollection<Categoria_Etiqueta> CategoriaEtiquetas { get; set; } = new List<Categoria_Etiqueta>();
+    public virtual ICollection<Categoria_Especialidad> CategoriaEspecialidades { get; set; } = new List<Categoria_Especialidad>();
+    public virtual ICollection<Categoria_SLA> CategoriaSLAs { get; set; } = new List<Categoria_SLA>();
 }

@@ -8,28 +8,38 @@
 
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">@Model.nombre_categoria</h5>
+        <h5 class="card-title">@Model?.nombre_categoria</h5>
+
         <dl class="row">
             <dt class="col-sm-3">ID</dt>
-            <dd class="col-sm-9">@Model.id_categoria</dd>
+            <dd class="col-sm-9">@Model?.id_categoria</dd>
 
             <dt class="col-sm-3">Etiquetas</dt>
             <dd class="col-sm-9">
-                @(Model.Etiquetas.Any() ? string.Join(", ", Model.Etiquetas) : "-")
+                @(Model?.Etiquetas != null && Model.Etiquetas.Any()
+                    ? string.Join(", ", Model.Etiquetas)
+                    : "-")
             </dd>
 
             <dt class="col-sm-3">Especialidades</dt>
             <dd class="col-sm-9">
-                @(Model.Especialidades.Any() ? string.Join(", ", Model.Especialidades) : "-")
+                @(Model?.Especialidades != null && Model.Especialidades.Any()
+                    ? string.Join(", ", Model.Especialidades)
+                    : "-")
             </dd>
 
             <dt class="col-sm-3">SLA</dt>
             <dd class="col-sm-9">
-                @(Model.SLA != null && Model.SLA.Any() ? string.Join(", ", Model.SLA) : "-")
+                @(string.IsNullOrWhiteSpace(Model?.SLA) ? "Sin SLA" : Model.SLA)
+                @if (Model?.id_sla != null)
+                {
+                    <small class="text-muted ms-2">(ID: @Model.id_sla)</small>
+                }
             </dd>
         </dl>
+
         <div class="mt-3">
-            @Html.ActionLink("Editar", "Edit", new { id = Model.id_categoria }, new { @class = "btn btn-warning me-2" })
+            <a asp-action="Edit" asp-route-id="@Model?.id_categoria" class="btn btn-warning me-2">Editar</a>
             <a asp-action="Index" class="btn btn-secondary">Volver a la Lista</a>
         </div>
     </div>

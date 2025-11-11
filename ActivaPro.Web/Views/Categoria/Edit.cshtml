@@ -1,0 +1,160 @@
+﻿@model ActivaPro.Application.DTOs.CategoriasDTO
+
+@{
+    ViewData["Title"] = "Editar Categoría";
+}
+
+<style>
+    :root {
+        --azul-principal: #0d6efd;
+        --azul-hover: #0b5ed7;
+        --gris: #6c757d;
+    }
+    h2 { color: var(--azul-principal); font-weight: 600; }
+    .btn-main { background-color: var(--azul-principal); color: white; border: none; }
+    .btn-main:hover { background-color: var(--azul-hover); }
+    .btn-secondary { background-color: var(--gris); color: white; border: none; }
+    .card { background-color: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; }
+    .form-label { font-weight: 500; }
+</style>
+
+<h2 class="mb-4">Editar Categoría</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Mostrar TODOS los errores de validación -->
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>Errores de validación:</strong>
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="id_categoria" />
+
+            <!-- Nombre de la categoría -->
+            <div class="mb-3">
+                <label asp-for="nombre_categoria" class="form-label">Nombre de la Categoría *</label>
+                <input asp-for="nombre_categoria" class="form-control" placeholder="Ingrese el nombre de la categoría" />
+                <span asp-validation-for="nombre_categoria" class="text-danger"></span>
+            </div>
+
+            <!-- Etiquetas (MÚLTIPLES) -->
+            <div class="mb-3">
+                <label class="form-label">Etiquetas</label>
+                <select asp-for="Etiquetas" class="form-select" multiple size="5">
+                    @if (ViewBag.Etiquetas != null)
+                    {
+                        @foreach (var e in ViewBag.Etiquetas as List<string>)
+                        {
+                            <option value="@e" selected="@(Model.Etiquetas?.Contains(e) ?? false)">@e</option>
+                        }
+                    }
+                </select>
+                <small class="form-text text-muted">Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples opciones</small>
+                <span asp-validation-for="Etiquetas" class="text-danger"></span>
+            </div>
+
+            <!-- Especialidades (MÚLTIPLES) -->
+            <div class="mb-3">
+                <label class="form-label">Especialidades</label>
+                <select asp-for="Especialidades" class="form-select" multiple size="5">
+                    @if (ViewBag.Especialidades != null)
+                    {
+                        @foreach (var esp in ViewBag.Especialidades as List<string>)
+                        {
+                            <option value="@esp" selected="@(Model.Especialidades?.Contains(esp) ?? false)">@esp</option>
+                        }
+                    }
+                </select>
+                <small class="form-text text-muted">Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples opciones</small>
+                <span asp-validation-for="Especialidades" class="text-danger"></span>
+            </div>
+
+            <!-- SLA (ÚNICO) -->
+            <div class="mb-3">
+                <label class="form-label">SLA</label>
+                <select asp-for="id_sla" id="slaSelect" class="form-select">
+                    <option value="">-- Seleccione un SLA --</option>
+                    @if (ViewBag.SLAs != null && ViewBag.SLAsDescripciones != null)
+                    {
+                        @foreach (var slaId in ViewBag.SLAs as List<int>)
+                        {
+                            var descripciones = ViewBag.SLAsDescripciones as Dictionary<int, string>;
+                            var descripcion = descripciones != null && descripciones.ContainsKey(slaId) ? descripciones[slaId] : $"SLA {slaId}";
+                            <option value="@slaId" selected="@(Model.id_sla == slaId)">@descripcion</option>
+                        }
+                    }
+                    <option value="-1">✏️ Establecer SLA personalizado</option>
+                </select>
+            </div>
+
+            <!-- Campos SLA Personalizado (ocultos por defecto)
+            <div id="customSlaFields" style="display: none;">
+                <div class="mb-3">
+                    <label asp-for="tiempo_respuesta_minutos" class="form-label"></label>
+                    <input asp-for="tiempo_respuesta_minutos" type="number" class="form-control" min="1" />
+                    <span asp-validation-for="tiempo_respuesta_minutos" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="tiempo_resolucion_minutos" class="form-label"></label>
+                    <input asp-for="tiempo_resolucion_minutos" type="number" class="form-control" min="1" />
+                    <span asp-validation-for="tiempo_resolucion_minutos" class="text-danger"></span>
+                </div>
+            </div>
+             -->
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-main">
+                    <i class="bi bi-save"></i> Guardar Cambios
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var slaSelect = document.getElementById('slaSelect');
+            var customFields = document.getElementById('customSlaFields');
+
+            function toggleCustomFields() {
+                if (slaSelect && customFields) {
+                    if (slaSelect.value === '-1') {
+                        customFields.style.display = 'block';
+                    } else {
+                        customFields.style.display = 'none';
+                    }
+                }
+            }
+
+            if (slaSelect) {
+                slaSelect.addEventListener('change', toggleCustomFields);
+                toggleCustomFields();
+            }
+        });
+    </script>
+}

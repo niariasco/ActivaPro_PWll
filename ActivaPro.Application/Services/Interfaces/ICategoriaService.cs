@@ -11,5 +11,8 @@ namespace ActivaPro.Application.Services.Interfaces
     {
         Task<IEnumerable<CategoriasDTO>> ListAsync();
         Task<CategoriasDTO?> FindByIdAsync(int id);
+        Task CreateAsync(CategoriasDTO dto);
+        Task UpdateAsync(CategoriasDTO dto);
+
     }
 }

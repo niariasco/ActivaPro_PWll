@@ -7,12 +7,9 @@ using System.Threading.Tasks;
 
 namespace ActivaPro.Infraestructure.Repository.Interfaces
 {
-    public interface IRepoTecnico
+    public interface IRepoEtiquetas
     {
-        Task<ICollection<Tecnicos>> ListAsync();
-        Task<Tecnicos?> FindByIdAsync(int id);
-
-        Task CreateAsync(Tecnicos tecnico);
-        Task UpdateAsync(Tecnicos tecnico);
+        Task<IEnumerable<Etiquetas>> ListAsync();
+        Task<Etiquetas?> FindByIdAsync(int id);
     }
 }
