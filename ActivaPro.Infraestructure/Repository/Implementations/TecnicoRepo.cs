@@ -1,12 +1,9 @@
 ﻿using ActivaPro.Infraestructure.Data;
 using ActivaPro.Infraestructure.Models;
 using ActivaPro.Infraestructure.Repository.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ActivaPro.Infraestructure.Repository.Implementations
 {
@@ -21,16 +18,28 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
 
         public async Task<ICollection<Tecnicos>> ListAsync()
         {
-            // Solo usuarios con rol "Técnico"
-            var collection = await _context.Set<Tecnicos>().ToListAsync();
-            return collection;
+            return await _context.Tecnico
+                .Include(t => t.Usuario)
+                .ToListAsync();
         }
 
         public async Task<Tecnicos?> FindByIdAsync(int id)
         {
             return await _context.Tecnico
-                      .Include(t => t.Usuario) // importante para traer Nombre y Correo
-                      .FirstOrDefaultAsync(t => t.IdTecnico == id);
+                .Include(t => t.Usuario)
+                .FirstOrDefaultAsync(t => t.IdTecnico == id);
+        }
+
+        public async Task CreateAsync(Tecnicos tecnico)
+        {
+            _context.Tecnico.Add(tecnico);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Tecnicos tecnico)
+        {
+            _context.Tecnico.Update(tecnico);
+            await _context.SaveChangesAsync();
         }
     }
 }

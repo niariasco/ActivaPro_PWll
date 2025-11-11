@@ -25,7 +25,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 .Include(t => t.Categoria)
                     .ThenInclude(c => c.CategoriaEtiquetas)
                 .Include(t => t.Categoria)
-                    .ThenInclude(c => c.SLA_Tickets)
+                    .ThenInclude(c => c.CategoriaSLAs)
                 .Include(t => t.SLA)
                 .Include(t => t.Imagenes)
                 .Include(t => t.Historial)
@@ -42,7 +42,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaEtiquetas)
                  .Include(t => t.Categoria)
-                     .ThenInclude(c => c.SLA_Tickets)
+                     .ThenInclude(c => c.CategoriaSLAs)
                  .Include(t => t.SLA)
                  .OrderByDescending(t => t.FechaCreacion)
                  .ToListAsync();
@@ -57,7 +57,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaEtiquetas)
                  .Include(t => t.Categoria)
-                     .ThenInclude(c => c.SLA_Tickets)
+                     .ThenInclude(c => c.CategoriaSLAs)
                  .Include(t => t.SLA)
                  .OrderByDescending(t => t.FechaCreacion)
                  .ToListAsync();
@@ -72,7 +72,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .Include(t => t.Categoria)
                      .ThenInclude(c => c.CategoriaEtiquetas)
                  .Include(t => t.Categoria)
-                     .ThenInclude(c => c.SLA_Tickets)
+                     .ThenInclude(c => c.CategoriaSLAs)
                  .Include(t => t.SLA)
                  .OrderByDescending(t => t.FechaCreacion)
                  .ToListAsync();

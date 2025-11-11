@@ -23,14 +23,12 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
         public async Task<IEnumerable<Especialidades>> ListAsync()
         {
             return await _context.Especialidades
-                .Include(e => e.Categoria)
                 .ToListAsync();
         }
 
         public async Task<Especialidades?> FindByIdAsync(int id)
         {
             return await _context.Especialidades
-                .Include(e => e.Categoria)
                 .FirstOrDefaultAsync(e => e.id_especialidad == id);
         }
     }

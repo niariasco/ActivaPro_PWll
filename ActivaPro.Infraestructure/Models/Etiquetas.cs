@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ActivaPro.Infraestructure.Models;
-
-public partial class Etiquetas
+namespace ActivaPro.Infraestructure.Models
 {
-    public int IdEtiqueta { get; set; }
+    [Table("Etiquetas")]
+    public class Etiquetas
+    {
+        [Key]
+        [Column("id_etiqueta")]
+        public int id_etiqueta { get; set; }
 
-    public string NombreEtiqueta { get; set; } = null!;
-
-    public int? IdCategoria { get; set; }
+        [Required]
+        [Column("nombre_etiqueta")]
+        [MaxLength(100)]
+        public string nombre_etiqueta { get; set; } = string.Empty;
 
     public virtual Categorias? IdCategoriaNavigation { get; set; }
 
-    public virtual ICollection<Tickets> IdTicket { get; set; } = new List<Tickets>();
+    }
 }

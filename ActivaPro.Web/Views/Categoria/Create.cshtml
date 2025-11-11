@@ -1,0 +1,137 @@
+﻿@model ActivaPro.Application.DTOs.CategoriasDTO
+
+@{
+    ViewData["Title"] = "Crear Categoría";
+    // SLAs (serializado en el controlador si agregas soporte de tiempos / descripción)
+    var slasDic = ViewBag.SLAsDescripciones as Dictionary<int, string>;
+    var slaIds = ViewBag.SLAs as List<int>;
+}
+
+<h2 class="mb-4">Crear Categoría</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label asp-for="nombre_categoria" class="form-label">Nombre *</label>
+        <input asp-for="nombre_categoria" class="form-control" />
+        <span asp-validation-for="nombre_categoria" class="text-danger"></span>
+    </div>
+
+    <!-- Etiquetas -->
+    <div class="mb-3">
+        <label class="form-label">Etiquetas (múltiple)</label>
+        <select asp-for="Etiquetas" class="form-select" multiple size="6">
+            @if (ViewBag.Etiquetas != null)
+            {
+                foreach (var et in ViewBag.Etiquetas as List<string>)
+                {
+                    <option value="@et">@et</option>
+                }
+            }
+        </select>
+        <small class="text-muted">Usa Ctrl / Cmd para seleccionar varias.</small>
+        <span asp-validation-for="Etiquetas" class="text-danger"></span>
+    </div>
+
+    <!-- Especialidades -->
+    <div class="mb-3">
+        <label class="form-label">Especialidades (múltiple)</label>
+        <select asp-for="Especialidades" class="form-select" multiple size="6">
+            @if (ViewBag.Especialidades != null)
+            {
+                foreach (var esp in ViewBag.Especialidades as List<string>)
+                {
+                    <option value="@esp">@esp</option>
+                }
+            }
+        </select>
+        <small class="text-muted">Usa Ctrl / Cmd para seleccionar varias.</small>
+        <span asp-validation-for="Especialidades" class="text-danger"></span>
+    </div>
+
+    <!-- SLA -->
+    <div class="mb-3">
+        <label class="form-label">SLA</label>
+        <select asp-for="id_sla" id="slaSelect" class="form-select">
+            <option value="">-- Seleccione un SLA --</option>
+            @if (slaIds != null && slaIds.Any())
+            {
+                foreach (var id in slaIds)
+                {
+                    var desc = (slasDic != null && slasDic.ContainsKey(id))
+                        ? slasDic[id]
+                        : $"SLA {id}";
+                    <option value="@id">@desc</option>
+                }
+            }
+            <option value="-1">✏️ SLA personalizado...</option>
+        </select>
+        <span asp-validation-for="id_sla" class="text-danger"></span>
+    </div>
+
+    <!-- Info SLA existente -->
+    <div id="slaInfo" class="alert alert-info d-none"></div>
+
+    <!-- SLA Personalizado -->
+    <div id="slaCustomFields" class="border rounded p-3 mb-3 d-none">
+        <h6 class="fw-bold mb-3">Definir SLA Personalizado</h6>
+        <div class="mb-3">
+            <label asp-for="SLA" class="form-label">Descripción</label>
+            <input asp-for="SLA" class="form-control" placeholder="Ej: Atención estándar" />
+            <span asp-validation-for="SLA" class="text-danger"></span>
+        </div>
+      
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Guardar
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const slaSelect = document.getElementById('slaSelect');
+            const customBox = document.getElementById('slaCustomFields');
+            const infoBox = document.getElementById('slaInfo');
+
+            // Si el backend te envía también tiempos (extiende el ViewBag cuando lo necesites)
+            // podrías serializar JSON para mostrar aquí. Por ahora usamos solo la descripción del <option>.
+            function updateSlaUI() {
+                const val = slaSelect.value;
+                if (val === '-1') {
+                    customBox.classList.remove('d-none');
+                    infoBox.classList.add('d-none');
+                    infoBox.innerHTML = '';
+                } else if (val) {
+                    customBox.classList.add('d-none');
+                    // Mostrar info básica usando el texto ya en el option
+                    const selectedText = slaSelect.options[slaSelect.selectedIndex].text;
+                    infoBox.innerHTML = `<strong>SLA Seleccionado:</strong> ${selectedText}`;
+                    infoBox.classList.remove('d-none');
+                } else {
+                    customBox.classList.add('d-none');
+                    infoBox.classList.add('d-none');
+                    infoBox.innerHTML = '';
+                }
+            }
+
+            slaSelect.addEventListener('change', updateSlaUI);
+            updateSlaUI();
+        })();
+    </script>
+}

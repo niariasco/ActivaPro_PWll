@@ -11,5 +11,8 @@ namespace ActivaPro.Infraestructure.Repository.Interfaces
     {
         Task<ICollection<Tecnicos>> ListAsync();
         Task<Tecnicos?> FindByIdAsync(int id);
+
+        Task CreateAsync(Tecnicos tecnico);
+        Task UpdateAsync(Tecnicos tecnico);
     }
 }

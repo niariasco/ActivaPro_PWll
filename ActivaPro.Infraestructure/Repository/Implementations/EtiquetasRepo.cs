@@ -22,14 +22,12 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
         public async Task<IEnumerable<Etiquetas>> ListAsync()
         {
             return await _context.Etiquetas
-                .Include(e => e.Categoria)
                 .ToListAsync();
         }
 
         public async Task<Etiquetas?> FindByIdAsync(int id)
         {
             return await _context.Etiquetas
-                .Include(e => e.Categoria)
                 .FirstOrDefaultAsync(e => e.id_etiqueta == id);
         }
     }

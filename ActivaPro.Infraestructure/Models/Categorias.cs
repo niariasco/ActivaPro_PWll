@@ -5,17 +5,12 @@ namespace ActivaPro.Infraestructure.Models;
 
 public partial class Categorias
 {
-    public int IdCategoria { get; set; }
+    [Key] 
+    public int id_categoria { get; set; }
+    public string nombre_categoria { get; set; } = string.Empty;
 
-    public string NombreCategoria { get; set; } = null!;
-
-    public virtual ICollection<Especialidades> Especialidades { get; set; } = new List<Especialidades>();
-
-    public virtual ICollection<Etiquetas> Etiquetas { get; set; } = new List<Etiquetas>();
-
-    public virtual ICollection<ReglasAutotriage> ReglasAutotriage { get; set; } = new List<ReglasAutotriage>();
-
-    public virtual ICollection<SlaTickets> SlaTickets { get; set; } = new List<SlaTickets>();
-
-    public virtual ICollection<Tickets> Tickets { get; set; } = new List<Tickets>();
+    // n-n
+    public virtual ICollection<Categoria_Etiqueta> CategoriaEtiquetas { get; set; } = new List<Categoria_Etiqueta>();
+    public virtual ICollection<Categoria_Especialidad> CategoriaEspecialidades { get; set; } = new List<Categoria_Especialidad>();
+    public virtual ICollection<Categoria_SLA> CategoriaSLAs { get; set; } = new List<Categoria_SLA>();
 }

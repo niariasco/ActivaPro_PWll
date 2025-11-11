@@ -20,31 +20,14 @@ public partial class ActivaProContext : DbContext
 
     public virtual DbSet<Especialidades> Especialidades { get; set; }
 
-    public virtual DbSet<Etiquetas> Etiquetas { get; set; }
+    public DbSet<Categorias> Categorias { get; set; }
+    public DbSet<Etiquetas> Etiquetas { get; set; }
 
-    public virtual DbSet<HistorialTickets> HistorialTickets { get; set; }
-
-    public virtual DbSet<ImagenesTickets> ImagenesTickets { get; set; }
-
-    public virtual DbSet<Notificaciones> Notificaciones { get; set; }
-
-    public virtual DbSet<ReglasAutotriage> ReglasAutotriage { get; set; }
-
-    public virtual DbSet<Roles> Roles { get; set; }
-
-    public virtual DbSet<SlaTickets> SlaTickets { get; set; }
-
-    public virtual DbSet<Tecnicos> Tecnicos { get; set; }
-
-    public virtual DbSet<Tickets> Tickets { get; set; }
-
-    public virtual DbSet<UsuarioRol> UsuarioRol { get; set; }
-
-    public virtual DbSet<Usuarios> Usuarios { get; set; }
-
-    public virtual DbSet<ValoracionNotificaciones> ValoracionNotificaciones { get; set; }
-
-    public virtual DbSet<ValoracionTickets> ValoracionTickets { get; set; }
+    public DbSet<Tecnico_Especialidad> Tecnico_Especialidad { get; set; }
+    public virtual DbSet<EspecialidadesU> EspecialidadesU { get; set; }
+    public DbSet<Categoria_Etiqueta> Categoria_Etiqueta { get; set; }
+    public DbSet<Categoria_Especialidad> Categoria_Especialidad { get; set; }
+    public DbSet<Categoria_SLA> Categoria_SLA { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -103,64 +86,62 @@ public partial class ActivaProContext : DbContext
                 .HasConstraintName("FK__Bitacora___id_us__75A278F5");
         });
 
+        // Categorias
         modelBuilder.Entity<Categorias>(entity =>
         {
-            entity.HasKey(e => e.IdCategoria).HasName("PK__Categori__CD54BC5AA3A1D479");
-
-            entity.HasIndex(e => e.NombreCategoria, "UQ__Categori__4EBF6259C3E8B874").IsUnique();
-
-            entity.Property(e => e.IdCategoria).HasColumnName("id_categoria");
-            entity.Property(e => e.NombreCategoria)
-                .HasMaxLength(100)
-                .HasColumnName("nombre_categoria");
-        });
-
-        modelBuilder.Entity<Especialidades>(entity =>
-        {
-            entity.HasKey(e => e.IdEspecialidad).HasName("PK__Especial__C1D1376323DBCD6E");
-
-            entity.HasIndex(e => e.NombreEspecialidad, "UQ__Especial__B08A68E45CEC4D64").IsUnique();
-
-            entity.HasIndex(e => new { e.NombreEspecialidad, e.IdCategoria }, "UX_Especialidades_Categoria").IsUnique();
-
-            entity.Property(e => e.IdEspecialidad).HasColumnName("id_especialidad");
-            entity.Property(e => e.Descripcion)
-                .HasMaxLength(255)
-                .HasColumnName("descripcion");
-            entity.Property(e => e.IdCategoria).HasColumnName("id_categoria");
-            entity.Property(e => e.NombreEspecialidad)
-                .HasMaxLength(100)
-                .HasColumnName("nombre_especialidad");
-
-            entity.HasOne(d => d.IdCategoriaNavigation).WithMany(p => p.Especialidades)
-                .HasForeignKey(d => d.IdCategoria)
-                .HasConstraintName("FK_Especialidades_Categorias");
+            entity.ToTable("Categorias");
+            entity.HasKey(e => e.id_categoria);
+            entity.Property(e => e.id_categoria).HasColumnName("id_categoria");
+            entity.Property(e => e.nombre_categoria).HasColumnName("nombre_categoria");
         });
 
         modelBuilder.Entity<Etiquetas>(entity =>
         {
-            entity.HasKey(e => e.IdEtiqueta).HasName("PK__Etiqueta__FA0DD2AD726F750F");
-
-            entity.HasIndex(e => e.NombreEtiqueta, "UQ__Etiqueta__3F48E4F15892B0BE").IsUnique();
-
-            entity.HasIndex(e => new { e.NombreEtiqueta, e.IdCategoria }, "UX_Etiquetas_Categoria").IsUnique();
-
-            entity.Property(e => e.IdEtiqueta).HasColumnName("id_etiqueta");
-            entity.Property(e => e.IdCategoria).HasColumnName("id_categoria");
-            entity.Property(e => e.NombreEtiqueta)
-                .HasMaxLength(50)
-                .HasColumnName("nombre_etiqueta");
-
-            entity.HasOne(d => d.IdCategoriaNavigation).WithMany(p => p.Etiquetas)
-                .HasForeignKey(d => d.IdCategoria)
-                .HasConstraintName("FK_Etiquetas_Categorias");
+            entity.ToTable("Etiquetas");
+            entity.HasKey(e => e.id_etiqueta);
+            entity.Property(e => e.id_etiqueta).HasColumnName("id_etiqueta");
+            entity.Property(e => e.nombre_etiqueta).HasColumnName("nombre_etiqueta");
         });
 
-        modelBuilder.Entity<HistorialTickets>(entity =>
+        modelBuilder.Entity<Especialidades>(entity =>
         {
-            entity.HasKey(e => e.IdHistorial).HasName("PK__Historia__76E6C502BC87DC39");
+            entity.ToTable("Especialidades");
+            entity.HasKey(e => e.id_especialidad);
+            entity.Property(e => e.id_especialidad).HasColumnName("id_especialidad");
+            entity.Property(e => e.NombreEspecialidad).HasColumnName("nombre_especialidad");
+        });
 
-            entity.ToTable("Historial_Tickets");
+        modelBuilder.Entity<SLA_Tickets>(entity =>
+        {
+            entity.ToTable("SLA_Tickets");
+            entity.HasKey(e => e.id_sla);
+            entity.Property(e => e.id_sla).HasColumnName("id_sla");
+            entity.Property(e => e.descripcion).HasColumnName("descripcion");
+            entity.Property(e => e.prioridad).HasColumnName("prioridad");
+        });
+
+        // Join: Categoria_Etiqueta
+        modelBuilder.Entity<Categoria_Etiqueta>(entity =>
+        {
+            entity.ToTable("Categoria_Etiqueta");
+            entity.HasKey(e => new { e.id_categoria, e.id_etiqueta });
+
+            entity.HasOne(e => e.Categoria)
+                  .WithMany(c => c.CategoriaEtiquetas)
+                  .HasForeignKey(e => e.id_categoria)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Etiqueta)
+                  .WithMany()
+                  .HasForeignKey(e => e.id_etiqueta)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Join: Categoria_Especialidad
+        modelBuilder.Entity<Categoria_Especialidad>(entity =>
+        {
+            entity.ToTable("Categoria_Especialidad");
+            entity.HasKey(e => new { e.id_categoria, e.id_especialidad });
 
             entity.Property(e => e.IdHistorial).HasColumnName("id_historial");
             entity.Property(e => e.Accion)
@@ -173,41 +154,32 @@ public partial class ActivaProContext : DbContext
             entity.Property(e => e.IdTicket).HasColumnName("id_ticket");
             entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
 
-            entity.HasOne(d => d.IdTicketNavigation).WithMany(p => p.HistorialTickets)
-                .HasForeignKey(d => d.IdTicket)
-                .HasConstraintName("FK__Historial__id_ti__6383C8BA");
-
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.HistorialTickets)
-                .HasForeignKey(d => d.IdUsuario)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Historial__id_us__6477ECF3");
+            entity.HasOne(e => e.Especialidad)
+                  .WithMany()
+                  .HasForeignKey(e => e.id_especialidad)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<ImagenesTickets>(entity =>
+        // Join: Categoria_SLA
+        modelBuilder.Entity<Categoria_SLA>(entity =>
         {
-            entity.HasKey(e => e.IdImagen).HasName("PK__Imagenes__27CC2689C3F63172");
+            entity.ToTable("Categoria_SLA");
+            entity.HasKey(e => new { e.id_categoria, e.id_sla });
 
-            entity.ToTable("Imagenes_Tickets");
+            entity.HasOne(e => e.Categoria)
+                  .WithMany(c => c.CategoriaSLAs)
+                  .HasForeignKey(e => e.id_categoria)
+                  .OnDelete(DeleteBehavior.Cascade);
 
-            entity.Property(e => e.IdImagen).HasColumnName("id_imagen");
-            entity.Property(e => e.FechaSubida)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("fecha_subida");
-            entity.Property(e => e.IdTicket).HasColumnName("id_ticket");
-            entity.Property(e => e.NombreArchivo)
-                .HasMaxLength(255)
-                .HasColumnName("nombre_archivo");
-            entity.Property(e => e.RutaArchivo)
-                .HasMaxLength(500)
-                .HasColumnName("ruta_archivo");
-
-            entity.HasOne(d => d.IdTicketNavigation).WithMany(p => p.ImagenesTickets)
-                .HasForeignKey(d => d.IdTicket)
-                .HasConstraintName("FK__Imagenes___id_ti__5FB337D6");
+            entity.HasOne(e => e.SLA)
+                  .WithMany()
+                  .HasForeignKey(e => e.id_sla)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<Notificaciones>(entity =>
+   
+    // Tecinicos
+    modelBuilder.Entity<Tecnicos>(entity =>
         {
             entity.HasKey(e => e.IdNotificacion).HasName("PK__Notifica__8270F9A52F5D12F3");
 
@@ -264,13 +236,12 @@ public partial class ActivaProContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("nombre_regla");
 
-            entity.HasOne(d => d.AccionCategoriaNavigation).WithMany(p => p.ReglasAutotriage)
-                .HasForeignKey(d => d.AccionCategoria)
-                .HasConstraintName("FK__Reglas_Au__accio__02084FDA");
-
-            entity.HasOne(d => d.AccionUsuarioNavigation).WithMany(p => p.ReglasAutotriage)
-                .HasForeignKey(d => d.AccionUsuario)
-                .HasConstraintName("FK__Reglas_Au__accio__02FC7413");
+            //  entity.Property(e => e.IdTecnico).HasColumnName("idTecnico");
+            // FK a Usuario
+            //  entity.Property(e => e.IdUsuario).HasColumnName("idUsuario").IsRequired();
+          
+            entity.Property(e => e.CargaTrabajo).HasColumnName("cargaTrabajo").IsRequired();
+            entity.Property(e => e.Disponible).HasColumnName("disponible") .IsRequired().HasDefaultValue(true);
         });
 
         modelBuilder.Entity<Roles>(entity =>
@@ -288,7 +259,34 @@ public partial class ActivaProContext : DbContext
                 .HasColumnName("nombre_rol");
         });
 
-        modelBuilder.Entity<SlaTickets>(entity =>
+        modelBuilder.Entity<EspecialidadesU>(entity =>
+        {
+            entity.ToTable("EspecialidadesU");
+            entity.HasKey(e => e.IdEspecialidadesU);
+            entity.Property(e => e.IdEspecialidadesU).HasColumnName("id_especialidadesU");
+            entity.Property(e => e.NombreEspecialidadU).HasColumnName("descripcion").HasMaxLength(100).IsRequired();
+        });
+
+
+
+        // Join Tecnico_Especialidad apuntando a EspecialidadesU
+        modelBuilder.Entity<Tecnico_Especialidad>(entity =>
+        {
+            entity.HasKey(e => new { e.IdTecnico, e.IdEspecialidadesU });
+
+            entity.HasOne(e => e.Tecnico)
+                  .WithMany()
+                  .HasForeignKey(e => e.IdTecnico)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.EspecialidadU)
+                  .WithMany()
+                  .HasForeignKey(e => e.IdEspecialidadesU)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Usuario_Rol (join)
+        modelBuilder.Entity<UsuarioRol>(entity =>
         {
             entity.HasKey(e => e.IdSla).HasName("PK__SLA_Tick__6D6C1A3A6096A290");
 

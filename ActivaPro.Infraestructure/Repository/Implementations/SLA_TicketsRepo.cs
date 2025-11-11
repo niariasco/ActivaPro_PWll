@@ -22,14 +22,12 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
         public async Task<IEnumerable<SLA_Tickets>> ListAsync()
         {
             return await _context.SLA_Tickets
-                .Include(s => s.Categoria)
                 .ToListAsync();
         }
 
         public async Task<SLA_Tickets?> FindByIdAsync(int id)
         {
             return await _context.SLA_Tickets
-                .Include(s => s.Categoria)
                 .FirstOrDefaultAsync(s => s.id_sla == id);
         }
     }

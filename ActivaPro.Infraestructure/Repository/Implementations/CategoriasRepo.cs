@@ -22,7 +22,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
             return await _context.Categorias
                 .Include(c => c.CategoriaEtiquetas)
                 .Include(c => c.CategoriaEspecialidades)
-                .Include(c => c.SLA_Tickets)
+                .Include(c => c.CategoriaSLAs)
                 .FirstOrDefaultAsync(c => c.id_categoria == id);
         }
 
@@ -34,8 +34,8 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
 
             return await _context.Categorias
            .Include(c => c.CategoriaEtiquetas)     
-           .Include(c => c.CategoriaEspecialidades)  
-           .Include(c => c.SLA_Tickets)                     
+           .Include(c => c.CategoriaEspecialidades)
+                .Include(c => c.CategoriaSLAs)
            .ToListAsync();
 
         }

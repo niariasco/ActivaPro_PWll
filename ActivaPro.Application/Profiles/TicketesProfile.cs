@@ -32,9 +32,18 @@ namespace ActivaPro.Application.Profiles
 
                 .ForMember(dest => dest.CategoriaNombre, opt => opt.MapFrom(src =>
                     src.Categoria != null ? src.Categoria.nombre_categoria : "Sin categoría"))
-                .ForMember(dest => dest.Etiquetas, opt => opt.MapFrom(src =>
+                         // .ForMember(dest => dest.Etiquetas, opt => opt.MapFrom(src =>
+                         //     src.Categoria != null && src.Categoria.CategoriaEtiquetas != null
+                         //        ? src.Categoria.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList()
+                         //        : new List<string>()))
+
+                         .ForMember(dest => dest.Etiquetas, opt => opt.MapFrom(src =>
                     src.Categoria != null && src.Categoria.CategoriaEtiquetas != null
-                        ? src.Categoria.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList()
+                        ? src.Categoria.CategoriaEtiquetas
+                            .Where(ce => ce.Etiqueta != null)
+                            .Select(ce => ce.Etiqueta.nombre_etiqueta)
+                            .Distinct()
+                            .ToList()
                         : new List<string>()))
 
                 .ForMember(dest => dest.SLA_Descripcion, opt => opt.MapFrom(src =>
