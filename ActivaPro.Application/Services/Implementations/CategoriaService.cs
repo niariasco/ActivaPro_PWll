@@ -23,181 +23,201 @@ namespace ActivaPro.Application.Services.Implementations
 
         public async Task<IEnumerable<CategoriasDTO>> ListAsync()
         {
-            var categorias = await _repository.ListAsync();
+            var categorias = await _context.Categorias
+                .Include(c => c.CategoriaEtiquetas).ThenInclude(ce => ce.Etiqueta)
+                .Include(c => c.CategoriaEspecialidades).ThenInclude(cs => cs.Especialidad)
+                .Include(c => c.CategoriaSLAs).ThenInclude(csla => csla.SLA)
+                .ToListAsync();
+
             return categorias.Select(c => new CategoriasDTO
             {
                 id_categoria = c.id_categoria,
                 nombre_categoria = c.nombre_categoria,
-                Etiquetas = c.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList(),
-                Especialidades = c.CategoriaEspecialidades.Select(e => e.NombreEspecialidad).ToList(),
-                id_sla = c.SLA_Tickets.FirstOrDefault()?.id_sla,
-                SLA = c.SLA_Tickets.FirstOrDefault()?.descripcion
+                Etiquetas = c.CategoriaEtiquetas.Select(x => x.Etiqueta.nombre_etiqueta).ToList(),
+                Especialidades = c.CategoriaEspecialidades.Select(x => x.Especialidad.NombreEspecialidad).ToList(),
+                id_sla = c.CategoriaSLAs.FirstOrDefault()?.id_sla,
+                SLA = c.CategoriaSLAs.FirstOrDefault()?.SLA.descripcion
             });
         }
 
         public async Task<CategoriasDTO?> FindByIdAsync(int id)
         {
-            var categoria = await _repository.FindByIdAsync(id);
-            if (categoria == null) return null;
+            var c = await _context.Categorias
+                .Include(x => x.CategoriaEtiquetas).ThenInclude(ce => ce.Etiqueta)
+                .Include(x => x.CategoriaEspecialidades).ThenInclude(cs => cs.Especialidad)
+                .Include(x => x.CategoriaSLAs).ThenInclude(csla => csla.SLA)
+                .FirstOrDefaultAsync(x => x.id_categoria == id);
 
-            var firstSla = categoria.SLA_Tickets.FirstOrDefault();
+            if (c == null) return null;
 
+            var firstSla = c.CategoriaSLAs.FirstOrDefault();
             return new CategoriasDTO
             {
-                id_categoria = categoria.id_categoria,
-                nombre_categoria = categoria.nombre_categoria,
-                Etiquetas = categoria.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList(),
-                Especialidades = categoria.CategoriaEspecialidades.Select(e => e.NombreEspecialidad).ToList(),
+                id_categoria = c.id_categoria,
+                nombre_categoria = c.nombre_categoria,
+                Etiquetas = c.CategoriaEtiquetas.Select(x => x.Etiqueta.nombre_etiqueta).ToList(),
+                Especialidades = c.CategoriaEspecialidades.Select(x => x.Especialidad.NombreEspecialidad).ToList(),
                 id_sla = firstSla?.id_sla,
-                SLA = firstSla?.descripcion
+                SLA = firstSla?.SLA.descripcion
             };
         }
 
         public async Task UpdateAsync(CategoriasDTO dto)
         {
-            var entity = await _repository.FindByIdAsync(dto.id_categoria);
-            if (entity == null) throw new Exception("Categoría no encontrada");
+            // Cargar la categoría con las colecciones n-n (joins)
+            var entity = await _context.Categorias
+                .Include(c => c.CategoriaEtiquetas)
+                .Include(c => c.CategoriaEspecialidades)
+                .Include(c => c.CategoriaSLAs)
+                .FirstOrDefaultAsync(c => c.id_categoria == dto.id_categoria);
 
+            if (entity == null)
+                throw new KeyNotFoundException("Categoría no encontrada");
+
+            // Nombre
             entity.nombre_categoria = dto.nombre_categoria;
 
-            // Etiquetas
+            // Reemplazar Etiquetas (nombres -> catálogos -> joins)
             entity.CategoriaEtiquetas.Clear();
             if (dto.Etiquetas != null && dto.Etiquetas.Any())
             {
-                var names = dto.Etiquetas.Distinct().ToList();
+                var nombres = dto.Etiquetas
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Select(n => n.Trim())
+                    .Distinct()
+                    .ToList();
+
                 var existentes = await _context.Etiquetas
-                    .Where(x => names.Contains(x.nombre_etiqueta))
+                    .Where(e => nombres.Contains(e.nombre_etiqueta))
                     .ToListAsync();
 
-                foreach (var nombre in names)
+                // Crear las que no existan
+                var faltantes = nombres.Except(existentes.Select(e => e.nombre_etiqueta)).ToList();
+                foreach (var nombre in faltantes)
                 {
-                    var existente = existentes.FirstOrDefault(x => x.nombre_etiqueta == nombre);
-                    if (existente != null)
+                    var nueva = new Etiquetas { nombre_etiqueta = nombre };
+                    _context.Etiquetas.Add(nueva);
+                    existentes.Add(nueva);
+                }
+
+                foreach (var et in existentes)
+                {
+                    entity.CategoriaEtiquetas.Add(new Categoria_Etiqueta
                     {
-                        // Adjuntar existente
-                        entity.CategoriaEtiquetas.Add(existente);
-                    }
-                    else
-                    {
-                        entity.CategoriaEtiquetas.Add(new Etiquetas { nombre_etiqueta = nombre });
-                    }
+                        id_categoria = entity.id_categoria,
+                        id_etiqueta = et.id_etiqueta,
+                        Etiqueta = et
+                    });
                 }
             }
 
-            // Especialidades
+            // Reemplazar Especialidades (nombres -> catálogos -> joins)
             entity.CategoriaEspecialidades.Clear();
             if (dto.Especialidades != null && dto.Especialidades.Any())
             {
-                var names = dto.Especialidades.Distinct().ToList();
+                var nombres = dto.Especialidades
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Select(n => n.Trim())
+                    .Distinct()
+                    .ToList();
+
                 var existentes = await _context.Especialidades
-                    .Where(x => names.Contains(x.NombreEspecialidad))
+                    .Where(e => nombres.Contains(e.NombreEspecialidad))
                     .ToListAsync();
 
-                foreach (var nombre in names)
+                // Crear las que no existan
+                var faltantes = nombres.Except(existentes.Select(e => e.NombreEspecialidad)).ToList();
+                foreach (var nombre in faltantes)
                 {
-                    var existente = existentes.FirstOrDefault(x => x.NombreEspecialidad == nombre);
-                    if (existente != null)
+                    var nueva = new Especialidades { NombreEspecialidad = nombre };
+                    _context.Especialidades.Add(nueva);
+                    existentes.Add(nueva);
+                }
+
+                foreach (var esp in existentes)
+                {
+                    entity.CategoriaEspecialidades.Add(new Categoria_Especialidad
                     {
-                        entity.CategoriaEspecialidades.Add(existente);
-                    }
-                    else
-                    {
-                        entity.CategoriaEspecialidades.Add(new Especialidades { NombreEspecialidad = nombre });
-                    }
+                        id_categoria = entity.id_categoria,
+                        id_especialidad = esp.id_especialidad,
+                        Especialidad = esp
+                    });
                 }
             }
 
-            // SLA
-            entity.SLA_Tickets.Clear();
-            if (dto.id_sla == -1)
+            // Reemplazar SLA (n-n, pero DTO actual soporta uno solo)
+            entity.CategoriaSLAs.Clear();
+            if (dto.id_sla.HasValue && dto.id_sla.Value > 0)
             {
-                entity.SLA_Tickets.Add(new SLA_Tickets
-                {
-                    descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA,
-                    prioridad = "Media",
-                    id_categoria = entity.id_categoria
-                });
-            }
-            else if (dto.id_sla.HasValue && dto.id_sla.Value > 0)
-            {
-                var slaExistente = await _context.SLA_Tickets
+                var sla = await _context.SLA_Tickets
                     .FirstOrDefaultAsync(s => s.id_sla == dto.id_sla.Value);
 
-                if (slaExistente != null)
+                if (sla != null)
                 {
-                    // Aseguramos que no se intente insertar duplicado
-                    _context.Entry(slaExistente).State = EntityState.Unchanged;
-                    // Si la relación implica cambiar el id_categoria del SLA existente, confirmamos el modelo;
-                    // Si SLA es independiente, no tocar id_categoria. Si es per categoría, quizá no debiera reutilizarlo.
-                    // Aquí asumimos independencia y NO cambiamos id_categoria si ya está asignado a otra categoría.
-                    entity.SLA_Tickets.Add(slaExistente);
+                    entity.CategoriaSLAs.Add(new Categoria_SLA
+                    {
+                        id_categoria = entity.id_categoria,
+                        id_sla = sla.id_sla,
+                        SLA = sla
+                    });
                 }
             }
+            else if (dto.id_sla == -1)
+            {
+                var slaPersonal = new SLA_Tickets
+                {
+                    descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA!,
+                    prioridad = "Media"
+                };
+                _context.SLA_Tickets.Add(slaPersonal);
 
-            await _repository.UpdateAsync(entity);
+                entity.CategoriaSLAs.Add(new Categoria_SLA
+                {
+                    id_categoria = entity.id_categoria,
+                    SLA = slaPersonal
+                });
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task CreateAsync(CategoriasDTO dto)
         {
-            var entity = new Categorias
-            {
-                nombre_categoria = dto.nombre_categoria
-            };
+            var entity = new Categorias { nombre_categoria = dto.nombre_categoria };
 
-            // Reutilizar Etiquetas existentes
-            entity.CategoriaEtiquetas = new List<Etiquetas>();
-            if (dto.Etiquetas?.Any() == true)
-            {
-                var etiquetasExist = await _context.Etiquetas
-                    .Where(x => dto.Etiquetas.Contains(x.nombre_etiqueta))
-                    .ToListAsync();
+            // Etiquetas
+            var etiquetas = await _context.Etiquetas
+                .Where(e => (dto.Etiquetas ?? new List<string>()).Contains(e.nombre_etiqueta))
+                .ToListAsync();
+            foreach (var et in etiquetas)
+                entity.CategoriaEtiquetas.Add(new Categoria_Etiqueta { Etiqueta = et });
 
-                foreach (var nombre in dto.Etiquetas.Distinct())
-                {
-                    var existente = etiquetasExist.FirstOrDefault(x => x.nombre_etiqueta == nombre);
-                    entity.CategoriaEtiquetas.Add(existente ?? new Etiquetas { nombre_etiqueta = nombre });
-                }
+            // Especialidades
+            var especialidades = await _context.Especialidades
+                .Where(e => (dto.Especialidades ?? new List<string>()).Contains(e.NombreEspecialidad))
+                .ToListAsync();
+            foreach (var es in especialidades)
+                entity.CategoriaEspecialidades.Add(new Categoria_Especialidad { Especialidad = es });
+
+            // SLA (permite uno con el DTO actual)
+            if (dto.id_sla.HasValue && dto.id_sla.Value > 0)
+            {
+                var sla = await _context.SLA_Tickets.FirstOrDefaultAsync(s => s.id_sla == dto.id_sla.Value);
+                if (sla != null) entity.CategoriaSLAs.Add(new Categoria_SLA { SLA = sla });
             }
-
-            // Reutilizar Especialidades existentes
-            entity.CategoriaEspecialidades = new List<Especialidades>();
-            if (dto.Especialidades?.Any() == true)
+            else if (dto.id_sla == -1)
             {
-                var especialidadesExist = await _context.Especialidades
-                    .Where(x => dto.Especialidades.Contains(x.NombreEspecialidad))
-                    .ToListAsync();
-
-                foreach (var nombre in dto.Especialidades.Distinct())
-                {
-                    var existente = especialidadesExist.FirstOrDefault(x => x.NombreEspecialidad == nombre);
-                    entity.CategoriaEspecialidades.Add(existente ?? new Especialidades { NombreEspecialidad = nombre });
-                }
-            }
-
-            // SLA
-            entity.SLA_Tickets = new List<SLA_Tickets>();
-            if (dto.id_sla == -1)
-            {
-                entity.SLA_Tickets.Add(new SLA_Tickets
+                var slaPersonal = new SLA_Tickets
                 {
                     descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA!,
-                    prioridad = "Media",
-
-                });
-            }
-            else if (dto.id_sla.HasValue && dto.id_sla.Value > 0)
-            {
-                var slaExistente = await _context.SLA_Tickets
-                    .FirstOrDefaultAsync(s => s.id_sla == dto.id_sla.Value);
-
-                if (slaExistente != null)
-                {
-                    _context.Entry(slaExistente).State = EntityState.Unchanged;
-                    entity.SLA_Tickets.Add(slaExistente);
-                }
+                    prioridad = "Media"
+                };
+                _context.SLA_Tickets.Add(slaPersonal);
+                entity.CategoriaSLAs.Add(new Categoria_SLA { SLA = slaPersonal });
             }
 
-            await _repository.CreateAsync(entity);
+            _context.Categorias.Add(entity);
+            await _context.SaveChangesAsync();
         }
     }
 }

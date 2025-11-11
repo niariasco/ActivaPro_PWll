@@ -29,8 +29,10 @@ public partial class ActivaProContext : DbContext
     public DbSet<Etiquetas> Etiquetas { get; set; }
 
     public DbSet<Tecnico_Especialidad> Tecnico_Especialidad { get; set; }
-    public virtual DbSet<EspecialidadesU> EspecialidadesU { get; set; } 
-
+    public virtual DbSet<EspecialidadesU> EspecialidadesU { get; set; }
+    public DbSet<Categoria_Etiqueta> Categoria_Etiqueta { get; set; }
+    public DbSet<Categoria_Especialidad> Categoria_Especialidad { get; set; }
+    public DbSet<Categoria_SLA> Categoria_SLA { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,64 +50,95 @@ public partial class ActivaProContext : DbContext
             entity.Property(e => e.Contrasena).HasColumnName("contrasena").HasMaxLength(255).IsRequired();
             entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion").HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
         });
-        // Categoría
-        // Configurar relaciones (FKs)
-        modelBuilder.Entity<Categorias>()
-            .HasMany(c => c.CategoriaEtiquetas)
-            .WithOne(e => e.Categoria)
-            .HasForeignKey(e => e.id_categoria)
-            .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Categorias>()
-            .HasMany(c => c.CategoriaEspecialidades)
-            .WithOne(e => e.Categoria)
-            .HasForeignKey(e => e.id_categoria)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Categorias
+        modelBuilder.Entity<Categorias>(entity =>
+        {
+            entity.ToTable("Categorias");
+            entity.HasKey(e => e.id_categoria);
+            entity.Property(e => e.id_categoria).HasColumnName("id_categoria");
+            entity.Property(e => e.nombre_categoria).HasColumnName("nombre_categoria");
+        });
 
-        modelBuilder.Entity<SLA_Tickets>()
-       .HasOne(s => s.Categoria)        
-       .WithMany(c => c.SLA_Tickets)        
-       .HasForeignKey(s => s.id_categoria)   
-       .OnDelete(DeleteBehavior.Cascade);
-
-        // CategoriaEtiqueta (Many-to-Many)
         modelBuilder.Entity<Etiquetas>(entity =>
         {
             entity.ToTable("Etiquetas");
-
             entity.HasKey(e => e.id_etiqueta);
-
-            entity.Property(e => e.nombre_etiqueta)
-                  .IsRequired()
-                  .HasMaxLength(100);
-
-            entity.HasOne(e => e.Categoria)    
-                  .WithMany(c => c.CategoriaEtiquetas) 
-                  .HasForeignKey(e => e.id_categoria)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.id_etiqueta).HasColumnName("id_etiqueta");
+            entity.Property(e => e.nombre_etiqueta).HasColumnName("nombre_etiqueta");
         });
 
-        // CategoriaEspecialidad (Many-to-Many)
         modelBuilder.Entity<Especialidades>(entity =>
         {
             entity.ToTable("Especialidades");
             entity.HasKey(e => e.id_especialidad);
+            entity.Property(e => e.id_especialidad).HasColumnName("id_especialidad");
+            entity.Property(e => e.NombreEspecialidad).HasColumnName("nombre_especialidad");
+        });
 
-            entity.Property(e => e.NombreEspecialidad)
-        .IsRequired()
-        .HasMaxLength(100);
+        modelBuilder.Entity<SLA_Tickets>(entity =>
+        {
+            entity.ToTable("SLA_Tickets");
+            entity.HasKey(e => e.id_sla);
+            entity.Property(e => e.id_sla).HasColumnName("id_sla");
+            entity.Property(e => e.descripcion).HasColumnName("descripcion");
+            entity.Property(e => e.prioridad).HasColumnName("prioridad");
+        });
+
+        // Join: Categoria_Etiqueta
+        modelBuilder.Entity<Categoria_Etiqueta>(entity =>
+        {
+            entity.ToTable("Categoria_Etiqueta");
+            entity.HasKey(e => new { e.id_categoria, e.id_etiqueta });
+
+            entity.HasOne(e => e.Categoria)
+                  .WithMany(c => c.CategoriaEtiquetas)
+                  .HasForeignKey(e => e.id_categoria)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Etiqueta)
+                  .WithMany()
+                  .HasForeignKey(e => e.id_etiqueta)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Join: Categoria_Especialidad
+        modelBuilder.Entity<Categoria_Especialidad>(entity =>
+        {
+            entity.ToTable("Categoria_Especialidad");
+            entity.HasKey(e => new { e.id_categoria, e.id_especialidad });
 
             entity.HasOne(e => e.Categoria)
                   .WithMany(c => c.CategoriaEspecialidades)
                   .HasForeignKey(e => e.id_categoria)
                   .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(e => e.Especialidad)
+                  .WithMany()
+                  .HasForeignKey(e => e.id_especialidad)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Join: Categoria_SLA
+        modelBuilder.Entity<Categoria_SLA>(entity =>
+        {
+            entity.ToTable("Categoria_SLA");
+            entity.HasKey(e => new { e.id_categoria, e.id_sla });
+
+            entity.HasOne(e => e.Categoria)
+                  .WithMany(c => c.CategoriaSLAs)
+                  .HasForeignKey(e => e.id_categoria)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SLA)
+                  .WithMany()
+                  .HasForeignKey(e => e.id_sla)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
    
-
-        // Tecinicos
-        modelBuilder.Entity<Tecnicos>(entity =>
+    // Tecinicos
+    modelBuilder.Entity<Tecnicos>(entity =>
         {
             entity.ToTable("Tecnicos");
 
