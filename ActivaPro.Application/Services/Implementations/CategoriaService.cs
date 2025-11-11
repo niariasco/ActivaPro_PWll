@@ -144,34 +144,32 @@ namespace ActivaPro.Application.Services.Implementations
                 nombre_categoria = dto.nombre_categoria
             };
 
-            // Etiquetas
+            // Reutilizar Etiquetas existentes
             entity.CategoriaEtiquetas = new List<Etiquetas>();
-            if (dto.Etiquetas != null && dto.Etiquetas.Any())
+            if (dto.Etiquetas?.Any() == true)
             {
-                var names = dto.Etiquetas.Distinct().ToList();
-                var existentes = await _context.Etiquetas
-                    .Where(x => names.Contains(x.nombre_etiqueta))
+                var etiquetasExist = await _context.Etiquetas
+                    .Where(x => dto.Etiquetas.Contains(x.nombre_etiqueta))
                     .ToListAsync();
 
-                foreach (var nombre in names)
+                foreach (var nombre in dto.Etiquetas.Distinct())
                 {
-                    var existente = existentes.FirstOrDefault(x => x.nombre_etiqueta == nombre);
+                    var existente = etiquetasExist.FirstOrDefault(x => x.nombre_etiqueta == nombre);
                     entity.CategoriaEtiquetas.Add(existente ?? new Etiquetas { nombre_etiqueta = nombre });
                 }
             }
 
-            // Especialidades
+            // Reutilizar Especialidades existentes
             entity.CategoriaEspecialidades = new List<Especialidades>();
-            if (dto.Especialidades != null && dto.Especialidades.Any())
+            if (dto.Especialidades?.Any() == true)
             {
-                var names = dto.Especialidades.Distinct().ToList();
-                var existentes = await _context.Especialidades
-                    .Where(x => names.Contains(x.NombreEspecialidad))
+                var especialidadesExist = await _context.Especialidades
+                    .Where(x => dto.Especialidades.Contains(x.NombreEspecialidad))
                     .ToListAsync();
 
-                foreach (var nombre in names)
+                foreach (var nombre in dto.Especialidades.Distinct())
                 {
-                    var existente = existentes.FirstOrDefault(x => x.NombreEspecialidad == nombre);
+                    var existente = especialidadesExist.FirstOrDefault(x => x.NombreEspecialidad == nombre);
                     entity.CategoriaEspecialidades.Add(existente ?? new Especialidades { NombreEspecialidad = nombre });
                 }
             }
@@ -182,8 +180,9 @@ namespace ActivaPro.Application.Services.Implementations
             {
                 entity.SLA_Tickets.Add(new SLA_Tickets
                 {
-                    descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA,
-                    prioridad = "Media"
+                    descripcion = string.IsNullOrWhiteSpace(dto.SLA) ? "SLA Personalizado" : dto.SLA!,
+                    prioridad = "Media",
+
                 });
             }
             else if (dto.id_sla.HasValue && dto.id_sla.Value > 0)

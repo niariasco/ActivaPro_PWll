@@ -23,6 +23,7 @@ namespace ActivaPro.Web.Controllers
             _slaService = slaService;
         }
 
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -30,6 +31,18 @@ namespace ActivaPro.Web.Controllers
             if (TempData["Success"] != null) ViewBag.SuccessMessage = TempData["Success"];
             if (TempData["Error"] != null) ViewBag.ErrorMessage = TempData["Error"];
             return View(categorias);
+        }
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var categoria = await _categoriaService.FindByIdAsync(id);
+            if (categoria == null)
+            {
+                TempData["Error"] = $"Categoría con ID {id} no existe o fue eliminada.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(categoria);
         }
 
         [HttpGet]
