@@ -15,7 +15,6 @@ namespace ActivaPro.Infraestructure.Models
         public int IdUsuario { get; set; }  // FK hacia Usuario
         public int CargaTrabajo { get; set; } = 0;
         public bool Disponible { get; set; } = true;
-        public string? Especialidades { get; set; }
 
         // Información del Usuario relacionada
         [ForeignKey("IdUsuario")]

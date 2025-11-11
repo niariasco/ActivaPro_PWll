@@ -27,7 +27,11 @@ public partial class ActivaProContext : DbContext
 
     public DbSet<Categorias> Categorias { get; set; }
     public DbSet<Etiquetas> Etiquetas { get; set; }
-    
+
+    public DbSet<Tecnico_Especialidad> Tecnico_Especialidad { get; set; }
+    public virtual DbSet<EspecialidadesU> EspecialidadesU { get; set; } 
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Usuarios
@@ -113,7 +117,6 @@ public partial class ActivaProContext : DbContext
           
             entity.Property(e => e.CargaTrabajo).HasColumnName("cargaTrabajo").IsRequired();
             entity.Property(e => e.Disponible).HasColumnName("disponible") .IsRequired().HasDefaultValue(true);
-            entity.Property(e => e.Especialidades).HasColumnName("especialidades").HasMaxLength(200);
         });
 
         // Roles
@@ -126,6 +129,32 @@ public partial class ActivaProContext : DbContext
             entity.Property(e => e.IdRol).HasColumnName("id_rol");
             entity.Property(e => e.NombreRol).HasColumnName("nombre_rol").HasMaxLength(50).IsRequired();
             entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<EspecialidadesU>(entity =>
+        {
+            entity.ToTable("EspecialidadesU");
+            entity.HasKey(e => e.IdEspecialidadesU);
+            entity.Property(e => e.IdEspecialidadesU).HasColumnName("id_especialidadesU");
+            entity.Property(e => e.NombreEspecialidadU).HasColumnName("descripcion").HasMaxLength(100).IsRequired();
+        });
+
+
+
+        // Join Tecnico_Especialidad apuntando a EspecialidadesU
+        modelBuilder.Entity<Tecnico_Especialidad>(entity =>
+        {
+            entity.HasKey(e => new { e.IdTecnico, e.IdEspecialidadesU });
+
+            entity.HasOne(e => e.Tecnico)
+                  .WithMany()
+                  .HasForeignKey(e => e.IdTecnico)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.EspecialidadU)
+                  .WithMany()
+                  .HasForeignKey(e => e.IdEspecialidadesU)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Usuario_Rol (join)

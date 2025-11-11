@@ -1,8 +1,5 @@
 ﻿using ActivaPro.Application.DTOs;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ActivaPro.Application.Services.Interfaces
@@ -11,5 +8,10 @@ namespace ActivaPro.Application.Services.Interfaces
     {
         Task<ICollection<TecnicosDTO>> ListAsync();
         Task<TecnicosDTO?> FindByIdAsync(int id);
+        Task CreateAsync(TecnicosDTO dto);
+        Task UpdateAsync(TecnicosDTO dto);
+
+        // Catálogo para dropdown desde EspecialidadesU
+        Task<List<(int Id, string Nombre)>> GetEspecialidadesUCatalogAsync();
     }
 }
