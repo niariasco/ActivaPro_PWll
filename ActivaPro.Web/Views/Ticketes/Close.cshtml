@@ -1,0 +1,161 @@
+﻿@model ActivaPro.Application.DTOs.TicketesDTO
+
+@{
+    ViewData["Title"] = $"Cerrar Ticket #{Model.IdTicket}";
+    var rolUsuario = ViewBag.RolUsuario as string ?? "Cliente";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle"></i> Confirmar Cierre de Ticket
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Información:</strong> Al cerrar el ticket, este ya no podrá ser modificado.
+                    </div>
+
+                    <h5 class="text-primary mb-3">¿Está seguro que desea cerrar este ticket?</h5>
+
+                    <!-- INFORMACIÓN DEL TICKET A CERRAR -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <strong>Ticket #@Model.IdTicket</strong>
+                            <span class="badge badge-@(Model.Estado == "Pendiente" ? "warning" : Model.Estado == "En Proceso" ? "info" : "secondary") float-right">
+                                @Model.Estado
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">@Model.Titulo</h6>
+
+                            <p class="card-text">
+                                <strong>Descripción:</strong><br />
+                                @Model.Descripcion
+                            </p>
+
+                            <hr />
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Solicitante:</strong> @Model.NombreSolicitante</p>
+                                    <p><strong>Categoría:</strong> @Model.CategoriaNombre</p>
+                                    @if (Model.Etiquetas != null && Model.Etiquetas.Any())
+                                    {
+                                        <p>
+                                            <strong>Etiquetas:</strong>
+                                            @foreach (var etiqueta in Model.Etiquetas)
+                                            {
+                                                <span class="badge badge-primary">@etiqueta</span>
+                                            }
+                                        </p>
+                                    }
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Asignado a:</strong> @Model.NombreAsignado</p>
+                                    <p>
+                                        <strong>Prioridad:</strong>
+                                        <span class="badge badge-@(Model.SLA_Prioridad == "Alta" ? "danger" : Model.SLA_Prioridad == "Media" ? "warning" : "secondary")">
+                                            @Model.SLA_Prioridad
+                                        </span>
+                                    </p>
+                                    <p><strong>Fecha Creación:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</p>
+                                    @if (Model.FechaLimiteResolucion.HasValue)
+                                    {
+                                        <p><strong>Fecha Límite:</strong> @Model.FechaLimiteResolucion.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Imágenes adjuntas -->
+                            @if (Model.Imagenes != null && Model.Imagenes.Any())
+                            {
+                                <hr />
+                                <p>
+                                    <strong><i class="fas fa-images"></i> Imágenes adjuntas:</strong>
+                                    <span class="badge badge-info">@Model.Imagenes.Count</span>
+                                </p>
+                            }
+
+                            <!-- Historial -->
+                            @if (Model.Historial != null && Model.Historial.Any())
+                            {
+                                <p>
+                                    <strong><i class="fas fa-history"></i> Registros en historial:</strong>
+                                    <span class="badge badge-info">@Model.Historial.Count</span>
+                                </p>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- INFORMACIÓN SOBRE EL CIERRE -->
+                    <div class="card border-info mb-3">
+                        <div class="card-header bg-info text-white">
+                            <strong><i class="fas fa-info-circle"></i> Sobre el cierre del ticket:</strong>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0">
+                                <li>El estado del ticket cambiará a <strong>"Cerrado"</strong></li>
+                                <li>Se registrará la acción en el historial del ticket</li>
+                                <li>El ticket permanecerá en la base de datos para consultas futuras</li>
+                                <li>Todas las imágenes y el historial se conservarán</li>
+                                @if (Model.FechaLimiteResolucion.HasValue)
+                                {
+                                    var cumpleResolucion = DateTime.Now <= Model.FechaLimiteResolucion.Value;
+                                    <li>
+                                        @if (cumpleResolucion)
+                                        {
+                                            <span class="text-success">
+                                                <i class="fas fa-check-circle"></i>
+                                                <strong>El ticket se cerrará dentro del tiempo límite establecido</strong>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                <strong>El ticket se cerrará fuera del tiempo límite establecido</strong>
+                                            </span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- FORMULARIO DE CONFIRMACIÓN -->
+                    <form asp-action="Close" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="IdTicket" />
+                        <input type="hidden" name="userRole" value="@ViewBag.RolUsuario" />
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg px-5">
+                                <i class="fas fa-check-circle"></i> Sí, Cerrar Ticket
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.IdTicket"
+                               class="btn btn-secondary btn-lg px-5 ml-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Confirmación adicional con JavaScript
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!confirm('¿Está seguro que desea cerrar este ticket?')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}

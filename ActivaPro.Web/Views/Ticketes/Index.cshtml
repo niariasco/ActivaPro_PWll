@@ -152,7 +152,28 @@
                     <td>
                         @Html.ActionLink("Ver Detalle", "Details", new { id = item.IdTicket }, new { @class = "btn btn-info btn-sm me-1" })
                         @Html.ActionLink("Editar", "Edit", new { id = item.IdTicket }, new { @class = "btn btn-warning btn-sm me-1" })
-                        @Html.ActionLink("Eliminar", "Delete", new { id = item.IdTicket }, new { @class = "btn btn-danger btn-sm" })
+
+                        @* Solo Administradores y Clientes pueden cerrar tickets *@
+                        @if (item.Estado != "Cerrado" && (rolUsuario == "Administrador" || rolUsuario == "Cliente"))
+                        {
+                            <a asp-action="Close"
+                               asp-route-id="@item.IdTicket"
+                               asp-route-userId="@idUsuario"
+                               asp-route-userRole="@rolUsuario"
+                               class="btn btn-success btn-sm">
+                                <i class="bi bi-check-circle"></i> Cerrar
+                            </a>
+                        }
+                        else if (item.Estado == "Cerrado")
+                        {
+                            <span class="badge bg-secondary">Ya cerrado</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-muted" title="Solo clientes y administradores pueden cerrar tickets">
+                                <i class="bi bi-lock"></i> Cerrar
+                            </span>
+                        }
                     </td>
                 </tr>
             }

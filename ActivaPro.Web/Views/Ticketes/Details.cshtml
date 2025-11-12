@@ -5,6 +5,22 @@
 }
 
 <div class="container-fluid py-4">
+    <!-- Mensajes de éxito/error -->
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@ViewBag.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>@ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <!-- Encabezado -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -22,9 +38,17 @@
             {
                 <span class="badge bg-info fs-6 px-3 py-2"> En Proceso</span>
             }
+            else if (Model.Estado == "Resuelto")
+            {
+                <span class="badge bg-success fs-6 px-3 py-2"> Resuelto</span>
+            }
             else if (Model.Estado == "Cerrado")
             {
-                <span class="badge bg-success fs-6 px-3 py-2">✓ Cerrado</span>
+                <span class="badge bg-success fs-6 px-3 py-2"> Cerrado</span>
+            }
+            else if (Model.Estado == "Cancelado")
+            {
+                <span class="badge bg-danger fs-6 px-3 py-2"> Cancelado</span>
             }
             else
             {
@@ -104,20 +128,30 @@
             {
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-images me-2"></i>Imágenes Adjuntas</h5>
+                        <h5 class="mb-0">
+                            <i class="bi bi-images me-2"></i>Imágenes Adjuntas
+                            <span class="badge bg-light text-dark ms-2">@Model.Imagenes.Count</span>
+                        </h5>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
                             @foreach (var imagen in Model.Imagenes)
                             {
-                                <div class="col-md-4">
-                                    <div class="card">
-                                        <img src="@imagen.RutaArchivo" class="card-img-top" alt="@imagen.NombreArchivo" style="height: 200px; object-fit: cover;">
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="card h-100">
+                                        <a href="@imagen.RutaArchivo" target="_blank" data-bs-toggle="tooltip" title="Click para ver en tamaño completo">
+                                            <img src="@imagen.RutaArchivo"
+                                                 class="card-img-top"
+                                                 alt="@imagen.NombreArchivo"
+                                                 style="height: 200px; object-fit: cover; cursor: pointer;">
+                                        </a>
                                         <div class="card-body p-2">
                                             <small class="text-muted d-block text-truncate" title="@imagen.NombreArchivo">
-                                                @imagen.NombreArchivo
+                                                <i class="bi bi-file-image me-1"></i>@imagen.NombreArchivo
                                             </small>
-                                            <small class="text-muted">@imagen.FechaSubida.ToString("dd/MM/yyyy")</small>
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar3 me-1"></i>@imagen.FechaSubida.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
@@ -132,19 +166,25 @@
             {
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Acciones</h5>
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i>Historial de Acciones
+                            <span class="badge bg-light text-dark ms-2">@Model.Historial.Count</span>
+                        </h5>
                     </div>
                     <div class="card-body">
                         <div class="timeline">
                             @foreach (var item in Model.Historial)
                             {
                                 <div class="timeline-item mb-3 pb-3 border-bottom">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <strong>@item.NombreUsuario</strong>
-                                            <p class="mb-0 text-muted">@item.Accion</p>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-1">
+                                                <i class="bi bi-person-circle me-2 text-primary"></i>
+                                                <strong>@item.NombreUsuario</strong>
+                                            </div>
+                                            <p class="mb-0 text-muted ms-4">@item.Accion</p>
                                         </div>
-                                        <small class="text-muted">
+                                        <small class="text-muted text-nowrap ms-3">
                                             <i class="bi bi-calendar3 me-1"></i>@item.FechaAccion.ToString("dd/MM/yyyy HH:mm")
                                         </small>
                                     </div>
@@ -177,14 +217,16 @@
                                         <i class="bi bi-star text-muted"></i>
                                     }
                                 }
-                                <span class="ms-2">(@Model.Valoracion.Puntaje/5)</span>
+                                <span class="ms-2 fw-bold">(@Model.Valoracion.Puntaje/5)</span>
                             </dd>
 
                             <dt class="col-sm-4 text-muted">Comentario</dt>
                             <dd class="col-sm-8">@Model.Valoracion.Comentario</dd>
 
                             <dt class="col-sm-4 text-muted">Fecha</dt>
-                            <dd class="col-sm-8">@Model.Valoracion.FechaValoracion.ToString("dd/MM/yyyy HH:mm")</dd>
+                            <dd class="col-sm-8">
+                                <i class="bi bi-calendar3 me-1"></i>@Model.Valoracion.FechaValoracion.ToString("dd/MM/yyyy HH:mm")
+                            </dd>
                         </dl>
                     </div>
                 </div>
@@ -210,7 +252,7 @@
                                 }
                                 else if (Model.SLA_Prioridad.Contains("Media"))
                                 {
-                                    <span class="badge bg-warning text-dark">🟡 Media</span>
+                                    <span class="badge bg-warning text-dark"> Media</span>
                                 }
                                 else
                                 {
@@ -342,8 +384,35 @@
     </div>
 </div>
 
+@section Scripts {
+    <script>
+        // Activar tooltips de Bootstrap 5
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        // Auto-ocultar mensajes después de 5 segundos
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+}
+
 <style>
     .timeline-item:last-child {
         border-bottom: none !important;
     }
+
+    .card-img-top {
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .card-img-top:hover {
+            transform: scale(1.05);
+        }
 </style>

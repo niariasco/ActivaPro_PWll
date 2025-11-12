@@ -1,4 +1,5 @@
 ﻿@model ActivaPro.Application.DTOs.TicketCreateDTO
+@using System.Linq
 
 @{
     ViewData["Title"] = "Crear Ticket";
@@ -23,6 +24,20 @@
                         </div>
                     }
 
+                    @* Mostrar errores de validación específicos *@
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <strong>Errores de validación:</strong>
+                            <ul class="mb-0">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
                     @* Información del usuario solicitante (no editable) *@
                     <div class="alert alert-info mb-4">
                         <h5 class="alert-heading">
@@ -40,7 +55,7 @@
                     </div>
 
                     @* Formulario *@
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
 
                         @* Campos ocultos para información del usuario *@
@@ -97,6 +112,27 @@
                             <small class="text-muted">La categoría se asignará automáticamente según la etiqueta seleccionada</small>
                         </div>
 
+                     
+                        <div class="mb-3">
+                            <label asp-for="ImagenesAdjuntas" class="form-label fw-bold">
+                                <i class="bi bi-image"></i> Imágenes Adjuntas (Opcional)
+                            </label>
+                            <input type="file"
+                                   asp-for="ImagenesAdjuntas"
+                                   class="form-control"
+                                   id="imagenesInput"
+                                   accept="image/*"
+                                   multiple />
+                            <span asp-validation-for="ImagenesAdjuntas" class="text-danger"></span>
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-info-circle"></i>
+                                Puede adjuntar hasta 5 imágenes (JPG, PNG, GIF, BMP). Máximo 5MB por imagen.
+                            </small>
+
+                            @* Vista previa de imágenes *@
+                            <div id="imagenPreview" class="mt-3 row g-2"></div>
+                        </div>
+
                         @* Información calculada automáticamente (solo vista previa) *@
                         <div id="autoInfoBox" class="border rounded p-3 mb-3 d-none bg-light">
                             <h6 class="fw-bold mb-3">
@@ -105,11 +141,11 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-2">
-                                    <strong>📅 Fecha de Creación:</strong><br>
+                                    <strong> Fecha de Creación:</strong><br>
                                     <span class="text-muted">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
                                 </div>
                                 <div class="col-md-6 mb-2">
-                                    <strong>🔖 Estado Inicial:</strong><br>
+                                    <strong> Estado Inicial:</strong><br>
                                     <span class="badge bg-warning text-dark">@Model.Estado</span>
                                 </div>
                             </div>
@@ -145,6 +181,7 @@
                     <ul class="mb-0">
                         <li>Asegúrate de seleccionar la etiqueta que mejor describa tu problema</li>
                         <li>Proporciona la mayor cantidad de detalles posible en la descripción</li>
+                        <li>Puedes adjuntar hasta 5 imágenes para ilustrar mejor el problema</li>
                         <li>El ticket será asignado automáticamente según la categoría y prioridad</li>
                         <li>Recibirás notificaciones sobre el progreso de tu ticket</li>
                     </ul>
@@ -160,11 +197,13 @@
         (function () {
             const etiquetaSelect = document.getElementById('etiquetaSelect');
             const autoInfoBox = document.getElementById('autoInfoBox');
+            const imagenesInput = document.getElementById('imagenesInput');
+            const imagenPreview = document.getElementById('imagenPreview');
 
             // Mostrar/ocultar información automática cuando se selecciona una etiqueta
             function updateAutoInfo() {
                 const val = etiquetaSelect.value;
-                if (val) {
+                if (val && val !== '0' && val !== '') {
                     autoInfoBox.classList.remove('d-none');
                 } else {
                     autoInfoBox.classList.add('d-none');
@@ -172,22 +211,120 @@
             }
 
             etiquetaSelect.addEventListener('change', updateAutoInfo);
-
-            // Verificar al cargar la página (por si hay un valor preseleccionado)
             updateAutoInfo();
 
-            // Validación adicional en el cliente
+           
+            imagenesInput.addEventListener('change', function(e) {
+                imagenPreview.innerHTML = '';
+                const files = Array.from(e.target.files);
+
+                // Validar cantidad
+                if (files.length > 5) {
+                    alert(' Solo puede seleccionar hasta 5 imágenes');
+                    e.target.value = '';
+                    return;
+                }
+
+                files.forEach((file, index) => {
+                    // Validar tipo de archivo
+                    if (!file.type.startsWith('image/')) {
+                        alert(` El archivo "${file.name}" no es una imagen válida`);
+                        return;
+                    }
+
+                    // Validar tamaño (5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert(` La imagen "${file.name}" excede el tamaño máximo de 5MB`);
+                        return;
+                    }
+
+                    // Crear vista previa
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-3 col-6';
+
+                        col.innerHTML = `
+                            <div class="card h-100">
+                                <img src="${event.target.result}"
+                                     class="card-img-top"
+                                     style="height: 150px; object-fit: cover;"
+                                     alt="${file.name}">
+                                <div class="card-body p-2">
+                                    <small class="text-muted text-truncate d-block"
+                                           title="${file.name}">
+                                        📎 ${file.name}
+                                    </small>
+                                    <small class="text-success">
+                                        <i class="bi bi-check-circle"></i> ${(file.size / 1024).toFixed(1)} KB
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+
+                        imagenPreview.appendChild(col);
+                    };
+
+                    reader.readAsDataURL(file);
+                });
+
+                // Mostrar mensaje de confirmación
+                if (files.length > 0) {
+                    const mensaje = document.createElement('div');
+                    mensaje.className = 'col-12';
+                    mensaje.innerHTML = `
+                        <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <strong>${files.length} imagen(es) seleccionada(s)</strong> - Lista para adjuntar al ticket
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
+                    imagenPreview.insertBefore(mensaje, imagenPreview.firstChild);
+                }
+            });
+
+            // ========== VALIDACIÓN DEL FORMULARIO ==========
             const form = document.querySelector('form');
             form.addEventListener('submit', function(e) {
                 const titulo = document.querySelector('[name="Titulo"]').value.trim();
                 const descripcion = document.querySelector('[name="Descripcion"]').value.trim();
                 const etiqueta = etiquetaSelect.value;
 
-                if (!titulo || !descripcion || !etiqueta) {
+                if (!titulo || titulo.length < 5) {
                     e.preventDefault();
-                    alert('Por favor complete todos los campos obligatorios (*)');
+                    alert(' Por favor ingrese un título para el ticket (mínimo 5 caracteres)');
+                    document.querySelector('[name="Titulo"]').focus();
                     return false;
                 }
+
+                if (!descripcion || descripcion.length < 10) {
+                    e.preventDefault();
+                    alert(' Por favor ingrese una descripción del problema (mínimo 10 caracteres)');
+                    document.querySelector('[name="Descripcion"]').focus();
+                    return false;
+                }
+
+                if (!etiqueta || etiqueta === '0' || etiqueta === '') {
+                    e.preventDefault();
+                    alert(' Por favor seleccione una etiqueta que describa su problema');
+                    etiquetaSelect.focus();
+                    return false;
+                }
+
+                // Validar imágenes si fueron seleccionadas
+                const files = imagenesInput.files;
+                if (files.length > 5) {
+                    e.preventDefault();
+                    alert(' Solo puede adjuntar hasta 5 imágenes');
+                    return false;
+                }
+
+                // Mostrar indicador de carga
+                const btnSubmit = form.querySelector('button[type="submit"]');
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando ticket...';
+
+                return true;
             });
         })();
     </script>

@@ -31,7 +31,7 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 .FirstOrDefaultAsync(c => c.id_categoria == id);
         }
 
-        // ✅ NUEVO MÉTODO IMPLEMENTADO
+        
         public async Task<Categorias> FindCategoriaByEtiquetaAsync(int idEtiqueta)
         {
             return await _context.Categorias

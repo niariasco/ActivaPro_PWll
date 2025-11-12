@@ -17,6 +17,8 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
             _context = context;
         }
 
+        // ========== CONSULTAS ==========
+
         public async Task<Tickets> FindByIdAsync(int id)
         {
             return await _context.Ticketes
@@ -86,7 +88,8 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .ToListAsync();
         }
 
-       
+        // ========== CREACIÓN ==========
+
         public async Task CreateAsync(Tickets ticket)
         {
             _context.Ticketes.Add(ticket);
@@ -97,6 +100,49 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
         {
             _context.Historial_Tickets.Add(historial);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task AddImagenAsync(Imagenes_Tickets imagen)
+        {
+            _context.Imagenes_Tickets.Add(imagen);
+            await _context.SaveChangesAsync();
+        }
+
+        // ========== ACTUALIZACIÓN ==========
+
+        /// <summary>
+        /// Actualiza un ticket existente (incluye cambio de estado a "Cerrado")
+        /// </summary>
+        public async Task UpdateAsync(Tickets ticket)
+        {
+            _context.Ticketes.Update(ticket);
+            await _context.SaveChangesAsync();
+        }
+
+        // ========== GESTIÓN DE IMÁGENES ==========
+
+        /// <summary>
+        /// Busca una imagen específica por ID
+        /// </summary>
+        public async Task<Imagenes_Tickets> FindImagenByIdAsync(int idImagen)
+        {
+            return await _context.Imagenes_Tickets
+                .FirstOrDefaultAsync(i => i.IdImagen == idImagen);
+        }
+
+        /// <summary>
+        /// Elimina una imagen específica
+        /// </summary>
+        public async Task DeleteImagenAsync(int idImagen)
+        {
+            var imagen = await _context.Imagenes_Tickets
+                .FirstOrDefaultAsync(i => i.IdImagen == idImagen);
+
+            if (imagen != null)
+            {
+                _context.Imagenes_Tickets.Remove(imagen);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

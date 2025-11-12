@@ -33,6 +33,8 @@ namespace ActivaPro.Application.Services.Implementations
             _mapper = mapper;
         }
 
+        // ========== CONSULTAS ==========
+
         public async Task<TicketesDTO?> FindByIdAsync(int id)
         {
             var ticket = await _repository.FindByIdAsync(id);
@@ -65,7 +67,6 @@ namespace ActivaPro.Application.Services.Implementations
                     tickets = await _repository.ListByUsuarioSolicitanteAsync(idUsuario);
                     break;
                 default:
-                    // Por defecto, mostrar solo tickets del usuario
                     tickets = await _repository.ListByUsuarioSolicitanteAsync(idUsuario);
                     break;
             }
@@ -73,29 +74,22 @@ namespace ActivaPro.Application.Services.Implementations
             return _mapper.Map<IEnumerable<TicketesDTO>>(tickets);
         }
 
-        /// <summary>
-        /// Obtiene información del usuario usando reflexión para manejar diferentes estructuras de datos
-        /// </summary>
         public async Task<UsuarioDTO> GetUsuarioInfoAsync(int idUsuario)
         {
             var usuario = await _usuarioRepository.FindByIdAsync(idUsuario);
             if (usuario == null)
                 throw new KeyNotFoundException($"Usuario con ID {idUsuario} no encontrado");
 
-            // Valor por defecto
             string rolNombre = "Cliente";
-
-            // Obtener el primer rol del usuario si existe
             var usuarioRol = usuario.UsuarioRoles?.FirstOrDefault();
+
             if (usuarioRol != null)
             {
                 try
                 {
-                    // Usar reflexión para obtener el nombre del rol de forma flexible
                     var urType = usuarioRol.GetType();
-
-                    // 1) Buscar navegación al objeto rol (IdRolNavigation o Rol)
                     var navProp = urType.GetProperty("IdRolNavigation") ?? urType.GetProperty("Rol");
+
                     if (navProp != null)
                     {
                         var navValue = navProp.GetValue(usuarioRol);
@@ -112,7 +106,6 @@ namespace ActivaPro.Application.Services.Implementations
                         }
                     }
 
-                    // 2) Si no se encontró, buscar directamente en UsuarioRol
                     if (rolNombre == "Cliente")
                     {
                         var directNombreProp = urType.GetProperty("NombreRol") ?? urType.GetProperty("Nombre");
@@ -126,7 +119,7 @@ namespace ActivaPro.Application.Services.Implementations
                 }
                 catch
                 {
-                    // Mantener rol por defecto en caso de error
+                    // Mantener rol por defecto
                 }
             }
 
@@ -139,9 +132,6 @@ namespace ActivaPro.Application.Services.Implementations
             };
         }
 
-        /// <summary>
-        /// Prepara el DTO para crear un ticket con información del usuario prellenada
-        /// </summary>
         public async Task<TicketCreateDTO> PrepareCreateDTOAsync(int idUsuarioSolicitante)
         {
             var usuario = await GetUsuarioInfoAsync(idUsuarioSolicitante);
@@ -156,29 +146,32 @@ namespace ActivaPro.Application.Services.Implementations
             };
         }
 
-        /// <summary>
-        /// Crea un ticket con cálculos automáticos de SLA basados en la etiqueta seleccionada
-        /// </summary>
+
         public async Task<int> CreateTicketAsync(TicketCreateDTO dto)
         {
-            // 1. Validar que la etiqueta existe
+            return await CreateTicketAsync(dto, null);
+        }
+
+        public async Task<int> CreateTicketAsync(TicketCreateDTO dto, string rutaImagenes)
+        {
+            // Validar etiqueta
             var etiqueta = await _etiquetaRepository.FindByIdAsync(dto.IdEtiqueta);
             if (etiqueta == null)
                 throw new KeyNotFoundException("La etiqueta seleccionada no existe");
 
-            // 2. Obtener la categoría asociada a la etiqueta
+            // Obtener categoría asociada
             var categoria = await _categoriaRepository.FindCategoriaByEtiquetaAsync(dto.IdEtiqueta);
             if (categoria == null)
                 throw new InvalidOperationException($"No se encontró una categoría asociada a la etiqueta '{etiqueta.nombre_etiqueta}'");
 
-            // 3. Obtener el SLA de la categoría
+            // Obtener SLA
             var categoriaSLA = categoria.CategoriaSLAs?.FirstOrDefault();
             if (categoriaSLA == null || categoriaSLA.SLA == null)
                 throw new InvalidOperationException($"La categoría '{categoria.nombre_categoria}' no tiene un SLA configurado");
 
             var sla = categoriaSLA.SLA;
 
-            // 4. Calcular fecha límite de resolución basada en el SLA
+            // Calcular fechas
             DateTime fechaCreacion = DateTime.Now;
             DateTime? fechaLimiteResolucion = null;
 
@@ -187,7 +180,7 @@ namespace ActivaPro.Application.Services.Implementations
                 fechaLimiteResolucion = fechaCreacion.AddHours(sla.tiempo_resolucion_horas.Value);
             }
 
-            // 5. Crear el ticket
+            // Crear ticket
             var ticket = new Tickets
             {
                 Titulo = dto.Titulo,
@@ -201,22 +194,257 @@ namespace ActivaPro.Application.Services.Implementations
                 FechaLimiteResolucion = fechaLimiteResolucion
             };
 
-            // Guardar el ticket en la base de datos
             await _repository.CreateAsync(ticket);
 
-            // 6. Registrar en el historial
+            // Procesar imágenes
+            int cantidadImagenes = 0;
+            if (dto.ImagenesAdjuntas != null && dto.ImagenesAdjuntas.Any() && !string.IsNullOrEmpty(rutaImagenes))
+            {
+                foreach (var imagenFile in dto.ImagenesAdjuntas)
+                {
+                    if (imagenFile != null && imagenFile.Length > 0)
+                    {
+                        string extension = System.IO.Path.GetExtension(imagenFile.FileName);
+                        string nombreUnico = $"ticket_{ticket.IdTicket}_{Guid.NewGuid()}{extension}";
+                        string rutaCompleta = System.IO.Path.Combine(rutaImagenes, nombreUnico);
+
+                        using (var stream = new System.IO.FileStream(rutaCompleta, System.IO.FileMode.Create))
+                        {
+                            await imagenFile.CopyToAsync(stream);
+                        }
+
+                        var imagen = new Imagenes_Tickets
+                        {
+                            IdTicket = ticket.IdTicket,
+                            NombreArchivo = imagenFile.FileName,
+                            RutaArchivo = $"/uploads/tickets/{nombreUnico}",
+                            FechaSubida = DateTime.Now
+                        };
+
+                        await _repository.AddImagenAsync(imagen);
+                        cantidadImagenes++;
+                    }
+                }
+            }
+
+            // Registrar historial
+            string accionHistorial = $"Ticket creado - Categoría: '{categoria.nombre_categoria}' | Prioridad: '{sla.prioridad ?? "Media"}' | Etiqueta: '{etiqueta.nombre_etiqueta}'";
+            if (cantidadImagenes > 0)
+            {
+                accionHistorial += $" | {cantidadImagenes} imagen(es) adjuntada(s)";
+            }
+
             var historial = new Historial_Tickets
             {
                 IdTicket = ticket.IdTicket,
                 IdUsuario = dto.IdUsuarioSolicitante,
-                Accion = $"Ticket creado - Categoría: '{categoria.nombre_categoria}' | Prioridad: '{sla.prioridad ?? "Media"}' | Etiqueta: '{etiqueta.nombre_etiqueta}'",
+                Accion = accionHistorial,
                 FechaAccion = DateTime.Now
             };
 
             await _repository.AddHistorialAsync(historial);
 
-            // 7. Retornar el ID del ticket creado
             return ticket.IdTicket;
+        }
+
+
+        public async Task<TicketEditDTO> PrepareEditDTOAsync(int idTicket)
+        {
+            var ticket = await _repository.FindByIdAsync(idTicket);
+            if (ticket == null)
+                throw new KeyNotFoundException($"Ticket con ID {idTicket} no encontrado");
+
+            var dto = new TicketEditDTO
+            {
+                IdTicket = ticket.IdTicket,
+                Titulo = ticket.Titulo,
+                Descripcion = ticket.Descripcion,
+                Estado = ticket.Estado,
+                IdUsuarioSolicitante = ticket.IdUsuarioSolicitante,
+                NombreSolicitante = ticket.UsuarioSolicitante?.Nombre,
+                CorreoSolicitante = ticket.UsuarioSolicitante?.Correo,
+                IdUsuarioAsignado = ticket.IdUsuarioAsignado,
+                NombreUsuarioAsignado = ticket.UsuarioAsignado?.Nombre ?? "Sin asignar",
+                FechaCreacion = ticket.FechaCreacion,
+                FechaActualizacion = ticket.FechaActualizacion,
+                IdCategoria = ticket.IdCategoria,
+                CategoriaNombre = ticket.Categoria?.nombre_categoria,
+                IdSLA = ticket.IdSla,
+                SLA_Descripcion = ticket.SLA?.descripcion,
+                SLA_Prioridad = ticket.SLA?.prioridad,
+                FechaLimiteResolucion = ticket.FechaLimiteResolucion,
+                ImagenesExistentes = ticket.Imagenes?.Select(i => new ImagenTicketDTO
+                {
+                    IdImagen = i.IdImagen,
+                    NombreArchivo = i.NombreArchivo,
+                    RutaArchivo = i.RutaArchivo,
+                    FechaSubida = i.FechaSubida
+                }).ToList() ?? new List<ImagenTicketDTO>()
+            };
+
+            return dto;
+        }
+
+        public async Task UpdateTicketAsync(TicketEditDTO dto, string rutaImagenes, int idUsuarioActual)
+        {
+            var ticket = await _repository.FindByIdAsync(dto.IdTicket);
+            if (ticket == null)
+                throw new KeyNotFoundException($"Ticket con ID {dto.IdTicket} no encontrado");
+
+            // Construir registro de cambios para el historial
+            var cambios = new List<string>();
+
+            // Detectar cambios
+            if (ticket.Titulo != dto.Titulo)
+                cambios.Add($"Título: '{ticket.Titulo}' → '{dto.Titulo}'");
+
+            if (ticket.Descripcion != dto.Descripcion)
+                cambios.Add("Descripción modificada");
+
+            if (ticket.Estado != dto.Estado)
+                cambios.Add($"Estado: '{ticket.Estado}' → '{dto.Estado}'");
+
+            if (ticket.IdUsuarioAsignado != dto.IdUsuarioAsignado)
+            {
+                var nombreAnterior = ticket.UsuarioAsignado?.Nombre ?? "Sin asignar";
+                var nombreNuevo = dto.NombreUsuarioAsignado ?? "Sin asignar";
+                cambios.Add($"Asignado: '{nombreAnterior}' → '{nombreNuevo}'");
+            }
+
+            // Aplicar cambios
+            ticket.Titulo = dto.Titulo;
+            ticket.Descripcion = dto.Descripcion;
+            ticket.Estado = dto.Estado;
+            ticket.IdUsuarioAsignado = dto.IdUsuarioAsignado;
+            ticket.FechaActualizacion = DateTime.Now;
+
+            await _repository.UpdateAsync(ticket);
+
+            // Eliminar imágenes marcadas
+            if (dto.ImagenesAEliminar != null && dto.ImagenesAEliminar.Any())
+            {
+                foreach (var idImagen in dto.ImagenesAEliminar)
+                {
+                    var imagen = await _repository.FindImagenByIdAsync(idImagen);
+                    if (imagen != null)
+                    {
+                        // Eliminar archivo físico
+                        if (!string.IsNullOrEmpty(rutaImagenes))
+                        {
+                            var nombreArchivo = System.IO.Path.GetFileName(imagen.RutaArchivo);
+                            var rutaFisica = System.IO.Path.Combine(rutaImagenes, nombreArchivo);
+
+                            if (System.IO.File.Exists(rutaFisica))
+                            {
+                                System.IO.File.Delete(rutaFisica);
+                            }
+                        }
+
+                        // Eliminar de BD
+                        await _repository.DeleteImagenAsync(idImagen);
+                        cambios.Add($"Imagen eliminada: '{imagen.NombreArchivo}'");
+                    }
+                }
+            }
+
+            // Agregar nuevas imágenes
+            int imagenesAgregadas = 0;
+            if (dto.NuevasImagenes != null && dto.NuevasImagenes.Any() && !string.IsNullOrEmpty(rutaImagenes))
+            {
+                foreach (var imagenFile in dto.NuevasImagenes)
+                {
+                    if (imagenFile != null && imagenFile.Length > 0)
+                    {
+                        string extension = System.IO.Path.GetExtension(imagenFile.FileName);
+                        string nombreUnico = $"ticket_{ticket.IdTicket}_{Guid.NewGuid()}{extension}";
+                        string rutaCompleta = System.IO.Path.Combine(rutaImagenes, nombreUnico);
+
+                        using (var stream = new System.IO.FileStream(rutaCompleta, System.IO.FileMode.Create))
+                        {
+                            await imagenFile.CopyToAsync(stream);
+                        }
+
+                        var imagen = new Imagenes_Tickets
+                        {
+                            IdTicket = ticket.IdTicket,
+                            NombreArchivo = imagenFile.FileName,
+                            RutaArchivo = $"/uploads/tickets/{nombreUnico}",
+                            FechaSubida = DateTime.Now
+                        };
+
+                        await _repository.AddImagenAsync(imagen);
+                        imagenesAgregadas++;
+                    }
+                }
+
+                if (imagenesAgregadas > 0)
+                    cambios.Add($"{imagenesAgregadas} imagen(es) agregada(s)");
+            }
+
+            // Registrar en historial
+            if (cambios.Any())
+            {
+                var historial = new Historial_Tickets
+                {
+                    IdTicket = ticket.IdTicket,
+                    IdUsuario = idUsuarioActual,
+                    Accion = $"Ticket actualizado: {string.Join(" | ", cambios)}",
+                    FechaAccion = DateTime.Now
+                };
+
+                await _repository.AddHistorialAsync(historial);
+            }
+        }
+
+        
+
+        /// <summary>
+        /// Cierra un ticket cambiando su estado a "Cerrado"
+        /// </summary>
+        public async Task CloseTicketAsync(int idTicket, int idUsuarioActual)
+        {
+            var ticket = await _repository.FindByIdAsync(idTicket);
+            if (ticket == null)
+                throw new KeyNotFoundException($"Ticket con ID {idTicket} no encontrado");
+
+            // Validar que no esté ya cerrado
+            if (ticket.Estado.ToLower() == "cerrado")
+                throw new InvalidOperationException($"El ticket #{idTicket} ya está cerrado");
+
+            // Cambiar estado a Cerrado
+            ticket.Estado = "Cerrado";
+            ticket.FechaActualizacion = DateTime.Now;
+
+            await _repository.UpdateAsync(ticket);
+
+            // Registrar en historial
+            var historial = new Historial_Tickets
+            {
+                IdTicket = ticket.IdTicket,
+                IdUsuario = idUsuarioActual,
+                Accion = $"Ticket cerrado - Título: '{ticket.Titulo}'",
+                FechaAccion = DateTime.Now
+            };
+
+            await _repository.AddHistorialAsync(historial);
+        }
+
+        
+
+        public async Task DeleteImagenAsync(int idImagen, string rutaFisica)
+        {
+            var imagen = await _repository.FindImagenByIdAsync(idImagen);
+            if (imagen == null)
+                throw new KeyNotFoundException($"Imagen con ID {idImagen} no encontrada");
+
+            // Eliminar archivo físico
+            if (System.IO.File.Exists(rutaFisica))
+            {
+                System.IO.File.Delete(rutaFisica);
+            }
+
+            // Eliminar de BD
+            await _repository.DeleteImagenAsync(idImagen);
         }
     }
 }

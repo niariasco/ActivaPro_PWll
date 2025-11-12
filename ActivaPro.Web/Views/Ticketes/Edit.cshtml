@@ -1,0 +1,270 @@
+﻿@model ActivaPro.Application.DTOs.TicketEditDTO
+
+@{
+    ViewData["Title"] = $"Editar Ticket #{Model.IdTicket}";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Editar Ticket #@Model.IdTicket
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Mensajes de error -->
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+                            <button type="button" class="close" data-dismiss="alert">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                    }
+
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="IdTicket" />
+                        <input type="hidden" asp-for="IdUsuarioSolicitante" />
+                        <input type="hidden" asp-for="IdCategoria" />
+                        <input type="hidden" asp-for="IdSLA" />
+                        <input type="hidden" asp-for="FechaCreacion" />
+                        <input type="hidden" asp-for="FechaLimiteResolucion" />
+
+                        <!-- INFORMACIÓN DEL SOLICITANTE (No editable) -->
+                        <div class="card mb-3 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">
+                                    <i class="fas fa-user"></i> Información del Solicitante
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Nombre:</strong> @Model.NombreSolicitante
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Correo:</strong> @Model.CorreoSolicitante
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Creado:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TÍTULO -->
+                        <div class="form-group">
+                            <label asp-for="Titulo" class="font-weight-bold">
+                                Título <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Titulo"
+                                   class="form-control"
+                                   maxlength="150" />
+                            <span asp-validation-for="Titulo" class="text-danger"></span>
+                        </div>
+
+                        <!-- DESCRIPCIÓN -->
+                        <div class="form-group">
+                            <label asp-for="Descripcion" class="font-weight-bold">
+                                Descripción <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="Descripcion"
+                                      class="form-control"
+                                      rows="5"
+                                      maxlength="2000"></textarea>
+                            <span asp-validation-for="Descripcion" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <!-- ESTADO -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Estado" class="font-weight-bold">
+                                        Estado <span class="text-danger">*</span>
+                                    </label>
+                                    <select asp-for="Estado" class="form-control">
+                                        @foreach (var estado in Model.EstadosDisponibles)
+                                        {
+                                            <option value="@estado">@estado</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="Estado" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- USUARIO ASIGNADO -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="IdUsuarioAsignado" class="font-weight-bold">
+                                        Asignado a
+                                    </label>
+                                    <select asp-for="IdUsuarioAsignado" class="form-control">
+                                        <option value="">-- Sin asignar --</option>
+                                        <!-- Aquí se cargarían los técnicos disponibles desde ViewBag si los necesitas -->
+                                        @if (Model.IdUsuarioAsignado.HasValue)
+                                        {
+                                            <option value="@Model.IdUsuarioAsignado" selected>@Model.NombreUsuarioAsignado</option>
+                                        }
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        Actualmente: @Model.NombreUsuarioAsignado
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CATEGORÍA Y SLA (Solo lectura) -->
+                        <div class="card mb-3 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">
+                                    <i class="fas fa-info-circle"></i> Categorización (No editable)
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Categoría:</strong> @Model.CategoriaNombre
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Prioridad:</strong>
+                                        <span class="badge badge-warning">@Model.SLA_Prioridad</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>SLA:</strong> @Model.SLA_Descripcion
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GESTIÓN DE IMÁGENES -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="fas fa-images"></i> Gestión de Imágenes</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- IMÁGENES EXISTENTES -->
+                                @if (Model.ImagenesExistentes != null && Model.ImagenesExistentes.Any())
+                                {
+                                    <div class="mb-3">
+                                        <label class="font-weight-bold">Imágenes Actuales</label>
+                                        <div class="row mt-2">
+                                            @foreach (var imagen in Model.ImagenesExistentes)
+                                            {
+                                                <div class="col-md-3 col-sm-4 col-6 mb-3">
+                                                    <div class="position-relative">
+                                                        <img src="@imagen.RutaArchivo"
+                                                             class="img-thumbnail"
+                                                             alt="@imagen.NombreArchivo"
+                                                             style="width: 100%; height: 150px; object-fit: cover;" />
+                                                        <div class="custom-control custom-checkbox position-absolute"
+                                                             style="top: 5px; left: 5px; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 3px;">
+                                                            <input type="checkbox"
+                                                                   class="custom-control-input"
+                                                                   name="ImagenesAEliminar"
+                                                                   value="@imagen.IdImagen"
+                                                                   id="eliminar_@imagen.IdImagen" />
+                                                            <label class="custom-control-label" for="eliminar_@imagen.IdImagen">
+                                                                <small>Eliminar</small>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <small class="d-block text-muted text-center mt-1">
+                                                        @imagen.NombreArchivo
+                                                    </small>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">No hay imágenes adjuntas</p>
+                                }
+
+                                <!-- AGREGAR NUEVAS IMÁGENES -->
+                                <div class="form-group">
+                                    <label for="NuevasImagenes" class="font-weight-bold">
+                                        <i class="fas fa-plus-circle"></i> Agregar Nuevas Imágenes
+                                    </label>
+                                    <div class="custom-file">
+                                        <input type="file"
+                                               name="NuevasImagenes"
+                                               id="NuevasImagenes"
+                                               class="custom-file-input"
+                                               accept=".jpg,.jpeg,.png,.gif,.bmp"
+                                               multiple
+                                               onchange="mostrarNuevasImagenes(this)" />
+                                        <label class="custom-file-label" for="NuevasImagenes">
+                                            Seleccionar imágenes...
+                                        </label>
+                                    </div>
+                                    <span asp-validation-for="NuevasImagenes" class="text-danger"></span>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i>
+                                        Máximo 5 imágenes en total. Formatos: JPG, PNG, GIF, BMP. Tamaño máximo: 5MB por imagen
+                                    </small>
+
+                                    <!-- Previsualización de nuevas imágenes -->
+                                    <div id="previsualizacionNuevas" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOTONES -->
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-success btn-lg px-5">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.IdTicket" class="btn btn-secondary btn-lg px-5 ml-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Mostrar previsualización de nuevas imágenes
+        function mostrarNuevasImagenes(input) {
+            const label = input.nextElementSibling;
+            const previsualizacion = document.getElementById('previsualizacionNuevas');
+            previsualizacion.innerHTML = '';
+
+            if (input.files && input.files.length > 0) {
+                if (input.files.length === 1) {
+                    label.textContent = input.files[0].name;
+                } else {
+                    label.textContent = `${input.files.length} imágenes seleccionadas`;
+                }
+
+                Array.from(input.files).forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.className = 'd-inline-block mr-2 mb-2 position-relative';
+                        div.innerHTML = `
+                            <img src="${e.target.result}"
+                                 class="img-thumbnail"
+                                 style="width: 100px; height: 100px; object-fit: cover;"
+                                 title="${file.name}">
+                            <span class="badge badge-success position-absolute"
+                                  style="top: 5px; right: 5px; font-size: 0.7rem;">
+                                ${(file.size / 1024).toFixed(0)} KB
+                            </span>
+                        `;
+                        previsualizacion.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                label.textContent = 'Seleccionar imágenes...';
+            }
+        }
+    </script>
+}
