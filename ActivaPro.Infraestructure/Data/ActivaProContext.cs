@@ -35,22 +35,22 @@ public partial class ActivaProContext : DbContext
     public DbSet<Categoria_SLA> Categoria_SLA { get; set; }
     public virtual DbSet<Historial_Tickets> Historial_Tickets { get; set; }
     public virtual DbSet<Imagenes_Tickets> Imagenes_Tickets { get; set; }
-
+    public DbSet<Notificacion> Notificaciones { get; set; } = null!;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Usuarios
         modelBuilder.Entity<Usuarios>(entity =>
         {
             entity.ToTable("Usuarios");
-
             entity.HasKey(e => e.IdUsuario);
-
-            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
-            entity.Property(e => e.Nombre).HasColumnName("nombre").HasMaxLength(100).IsRequired();
-            entity.Property(e => e.NumeroSucursal).HasColumnName("numero_sucursal").IsRequired();
             entity.Property(e => e.Correo).HasColumnName("correo").HasMaxLength(150).IsRequired();
-            entity.Property(e => e.Contrasena).HasColumnName("contrasena").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion").HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+            entity.HasIndex(e => e.Correo).IsUnique();
+            entity.Property(e => e.UltimoInicioSesion).HasColumnName("ultimo_inicio_sesion").HasColumnType("datetime");
+        });
+        //notificaciones
+        modelBuilder.Entity<Notificacion>(entity =>
+        {
+            entity.HasIndex(n => new { n.IdUsuario, n.Leido });
         });
 
         // Categorias
