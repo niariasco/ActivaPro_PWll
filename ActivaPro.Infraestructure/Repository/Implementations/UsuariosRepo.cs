@@ -8,19 +8,29 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
 {
     public class UsuariosRepo : IRepoUsuarios
     {
-        private readonly ActivaProContext _context;
+        private readonly ActivaProContext _ctx;
+        public UsuariosRepo(ActivaProContext ctx) => _ctx = ctx;
 
-        public UsuariosRepo(ActivaProContext context)
+        public Task<Usuarios?> FindByIdAsync(int id) =>
+            _ctx.Usuarios
+                .Include(u => u.UsuarioRoles).ThenInclude(ur => ur.Rol)
+                .FirstOrDefaultAsync(u => u.IdUsuario == id);
+
+        public Task<Usuarios?> FindByCorreoAsync(string correo) =>
+            _ctx.Usuarios
+                .Include(u => u.UsuarioRoles).ThenInclude(ur => ur.Rol)
+                .FirstOrDefaultAsync(u => u.Correo == correo);
+
+        public async Task CreateAsync(Usuarios usuario)
         {
-            _context = context;
+            _ctx.Usuarios.Add(usuario);
+            await _ctx.SaveChangesAsync();
         }
 
-        public async Task<Usuarios?> FindByIdAsync(int id)
+        public async Task UpdateAsync(Usuarios usuario)
         {
-            return await _context.Usuarios
-                .Include(u => u.UsuarioRoles)
-                    .ThenInclude(ur => ur.Rol)
-                .FirstOrDefaultAsync(u => u.IdUsuario == id);
+            _ctx.Usuarios.Update(usuario);
+            await _ctx.SaveChangesAsync();
         }
     }
 }
