@@ -1,0 +1,31 @@
+﻿@model ActivaPro.Application.DTOs.ProfileDTO
+@{
+    ViewData["Title"] = "Mi perfil";
+}
+<h2>Mi Perfil</h2>
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+<form asp-action="Profile" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IdUsuario" />
+    <div class="mb-3">
+        <label asp-for="Nombre"></label>
+        <input asp-for="Nombre" class="form-control" />
+        <span asp-validation-for="Nombre" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="NumeroSucursal"></label>
+        <input asp-for="NumeroSucursal" type="number" class="form-control" />
+        <span asp-validation-for="NumeroSucursal" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Correo"></label>
+        <input asp-for="Correo" class="form-control" />
+        <span asp-validation-for="Correo" class="text-danger"></span>
+    </div>
+    <button class="btn btn-primary">Guardar</button>
+    <a asp-action="ChangePassword" class="btn btn-link">Cambiar contraseña</a>
+</form>
+<partial name="_ValidationScriptsPartial" />

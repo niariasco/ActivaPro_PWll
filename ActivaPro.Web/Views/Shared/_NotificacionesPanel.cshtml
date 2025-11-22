@@ -1,0 +1,23 @@
+<div class="notif-wrapper">
+    <button type="button" class="btn btn-link p-0" onclick="document.getElementById('notif-dropdown').classList.toggle('show')">
+        <span class="position-relative">
+            <i class="bi bi-bell fs-4"></i>
+            <span id="notif-count" class="badge bg-danger position-absolute top-0 start-100 translate-middle">0</span>
+        </span>
+    </button>
+    <div id="notif-dropdown" class="notif-dropdown">
+        <div class="d-flex justify-content-between align-items-center px-3 pt-2">
+            <h6 class="mb-0">Notificaciones</h6>
+            <small class="text-muted" style="cursor:pointer" onclick="loadPanel()">Actualizar</small>
+        </div>
+        <ul id="notif-list" class="list-unstyled m-0 p-2"></ul>
+    </div>
+</div>
+<style>
+.notif-wrapper { position:relative; }
+.notif-dropdown { display:none; position:absolute; right:0; top:115%; width:360px; background:#fff; border:1px solid #ddd; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.15); max-height:420px; overflow:auto; z-index:1500;}
+.notif-dropdown.show { display:block; }
+.notif-item { padding:.6rem .6rem .8rem; border-bottom:1px solid #eee; font-size:.85rem; }
+.notif-item.unread { background:#eef7ff; }
+.notif-item.read { background:#fff; opacity:.8; }
+</style>
