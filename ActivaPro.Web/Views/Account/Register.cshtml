@@ -1,0 +1,31 @@
+﻿@model ActivaPro.Application.DTOs.RegisterDTO
+@{
+    ViewData["Title"] = "Registro";
+}
+<h2>Crear cuenta</h2>
+<form asp-action="Register" method="post">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <label asp-for="Nombre"></label>
+        <input asp-for="Nombre" class="form-control" />
+        <span asp-validation-for="Nombre" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="NumeroSucursal"></label>
+        <input asp-for="NumeroSucursal" type="number" class="form-control" />
+        <span asp-validation-for="NumeroSucursal" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Correo"></label>
+        <input asp-for="Correo" class="form-control" />
+        <span asp-validation-for="Correo" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Contrasena"></label>
+        <input asp-for="Contrasena" type="password" class="form-control" />
+        <span asp-validation-for="Contrasena" class="text-danger"></span>
+        <small class="text-muted">Mínimo 6 caracteres; ideal incluir mayúsculas, minúsculas, números y símbolo.</small>
+    </div>
+    <button class="btn btn-success">Crear cuenta</button>
+</form>
+<partial name="_ValidationScriptsPartial" />

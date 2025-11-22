@@ -1,0 +1,20 @@
+﻿@using System.Security.Claims
+@if (User?.Identity?.IsAuthenticated == true)
+{
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small">
+            Hola, @User.FindFirst(ClaimTypes.Name)?.Value (@User.FindFirst(ClaimTypes.Role)?.Value)
+        </span>
+        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button class="btn btn-sm btn-outline-danger">Salir</button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center gap-2">
+        <a asp-controller="Account" asp-action="Login" class="btn btn-sm btn-outline-primary">Ingresar</a>
+        <a asp-controller="Account" asp-action="Register" class="btn btn-sm btn-outline-success">Registro</a>
+    </div>
+}

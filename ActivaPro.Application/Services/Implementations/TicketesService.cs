@@ -18,19 +18,22 @@ namespace ActivaPro.Application.Services.Implementations
         private readonly IRepoEtiquetas _etiquetaRepository;
         private readonly IRepoCategorias _categoriaRepository;
         private readonly IMapper _mapper;
+        private readonly INotificacionService _notificacionService;
 
         public TicketesService(
             IRepoTicketes repository,
             IRepoUsuarios usuarioRepository,
             IRepoEtiquetas etiquetaRepository,
             IRepoCategorias categoriaRepository,
-            IMapper mapper)
+            IMapper mapper,
+             INotificacionService notificacionService)
         {
             _repository = repository;
             _usuarioRepository = usuarioRepository;
             _etiquetaRepository = etiquetaRepository;
             _categoriaRepository = categoriaRepository;
             _mapper = mapper;
+                _notificacionService = notificacionService;
         }
 
         // ========== CONSULTAS ==========
@@ -196,6 +199,20 @@ namespace ActivaPro.Application.Services.Implementations
 
             await _repository.CreateAsync(ticket);
 
+
+            // Notify creator 
+            var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante };
+            if (ticket.IdUsuarioAsignado.HasValue)
+                usuariosDestino.Add(ticket.IdUsuarioAsignado.Value);
+
+            await _notificacionService.CrearCambioEstadoTicketAsync(
+                usuariosDestino,
+                ticket.IdTicket,
+                "N/A",
+                ticket.Estado,
+                dto.NombreSolicitante ?? "Sistema",
+                "Creación del ticket");
+
             // Procesar imágenes
             int cantidadImagenes = 0;
             if (dto.ImagenesAdjuntas != null && dto.ImagenesAdjuntas.Any() && !string.IsNullOrEmpty(rutaImagenes))
@@ -311,6 +328,12 @@ namespace ActivaPro.Application.Services.Implementations
                 cambios.Add($"Asignado: '{nombreAnterior}' → '{nombreNuevo}'");
             }
 
+            if (ticket == null)
+                throw new KeyNotFoundException($"Ticket con ID {dto.IdTicket} no encontrado");
+
+            var estadoAnterior = ticket.Estado;
+            var asignadoAnterior = ticket.IdUsuarioAsignado;
+
             // Aplicar cambios
             ticket.Titulo = dto.Titulo;
             ticket.Descripcion = dto.Descripcion;
@@ -319,6 +342,35 @@ namespace ActivaPro.Application.Services.Implementations
             ticket.FechaActualizacion = DateTime.Now;
 
             await _repository.UpdateAsync(ticket);
+
+            // Notify when state changes
+            if (estadoAnterior != ticket.Estado)
+            {
+                var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante };
+                if (ticket.IdUsuarioAsignado.HasValue)
+                    usuariosDestino.Add(ticket.IdUsuarioAsignado.Value);
+
+                await _notificacionService.CrearCambioEstadoTicketAsync(
+                    usuariosDestino,
+                    ticket.IdTicket,
+                    estadoAnterior,
+                    ticket.Estado,
+                    idUsuarioActual.ToString(),
+                    "Actualización de estado");
+            }
+
+            // Optionally notify assignment change
+            if (asignadoAnterior != ticket.IdUsuarioAsignado && ticket.IdUsuarioAsignado.HasValue)
+            {
+                await _notificacionService.CrearCambioEstadoTicketAsync(
+                    new[] { ticket.IdUsuarioAsignado.Value },
+                    ticket.IdTicket,
+                    estadoAnterior,
+                    ticket.Estado,
+                    idUsuarioActual.ToString(),
+                    "Nuevo técnico asignado");
+            }
+
 
             // Eliminar imágenes marcadas
             if (dto.ImagenesAEliminar != null && dto.ImagenesAEliminar.Any())
@@ -411,11 +463,34 @@ namespace ActivaPro.Application.Services.Implementations
             if (ticket.Estado.ToLower() == "cerrado")
                 throw new InvalidOperationException($"El ticket #{idTicket} ya está cerrado");
 
+            if (ticket == null)
+                throw new KeyNotFoundException($"Ticket con ID {idTicket} no encontrado");
+
+            if (ticket.Estado.ToLower() == "cerrado")
+                throw new InvalidOperationException($"El ticket #{idTicket} ya está cerrado");
+
+            var estadoAnterior = ticket.Estado;
+            ticket.Estado = "Cerrado";
+            ticket.FechaActualizacion = DateTime.Now;
+
             // Cambiar estado a Cerrado
             ticket.Estado = "Cerrado";
             ticket.FechaActualizacion = DateTime.Now;
 
             await _repository.UpdateAsync(ticket);
+
+            // Notify participants
+            var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante };
+            if (ticket.IdUsuarioAsignado.HasValue)
+                usuariosDestino.Add(ticket.IdUsuarioAsignado.Value);
+
+            await _notificacionService.CrearCambioEstadoTicketAsync(
+                usuariosDestino,
+                ticket.IdTicket,
+                estadoAnterior,
+                ticket.Estado,
+                idUsuarioActual.ToString(),
+                "Cierre del ticket");
 
             // Registrar en historial
             var historial = new Historial_Tickets

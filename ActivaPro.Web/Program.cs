@@ -4,6 +4,9 @@ using ActivaPro.Application.Services.Interfaces;
 using ActivaPro.Infraestructure.Data;
 using ActivaPro.Infraestructure.Repository.Implementations;
 using ActivaPro.Infraestructure.Repository.Interfaces;
+using ActivaPro.Web.Hubs;
+using ActivaPro.Web.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -11,138 +14,124 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// MVC + (opcional) filtro global de autorización
 builder.Services.AddControllersWithViews();
 
-// Configurar D.I.
-//Repository 
-//AUTOR - builder.Services.AddTransient<IRepositoryAutor, RepositoryAutor>();
-//Services 
-//AUTOR -builder.Services.AddTransient<IServiceAutor, ServiceAutor>();
+// AUTENTICACIÓN (cookie)
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(opt =>
+    {
+        opt.LoginPath = "/Account/Login";
+        opt.LogoutPath = "/Account/Logout";
+        opt.AccessDeniedPath = "/Account/AccessDenied";
+        opt.SlidingExpiration = true;
+        opt.ExpireTimeSpan = TimeSpan.FromDays(7); // duración para “Recordarme”
+    });
 
-//Configurar Automapper 
-//AUTOR -
-//builder.Services.AddAutoMapper(config =>
-//{
-//  config.AddProfile<AutorProfile>();
-//});
-// Configurar D.I.
-//Repository
+// Repositorios
 builder.Services.AddTransient<IRepoTecnico, TecnicoRepo>();
 builder.Services.AddTransient<IRepoCategorias, CategoriasRepo>();
 builder.Services.AddTransient<IRepoTicketes, TicketesRepo>();
 builder.Services.AddTransient<IRepoAsignaciones, AsignacionesRepo>();
+builder.Services.AddScoped<IRepoEtiquetas, EtiquetasRepo>();
+builder.Services.AddScoped<IRepoEspecialidades, EspecialidadesRepo>();
+builder.Services.AddScoped<IRepoSLA_Tickets, SLA_TicketsRepo>();
+builder.Services.AddScoped<IRepoUsuarios, UsuariosRepo>();
 
-//Services
+// Servicios
 builder.Services.AddTransient<ITecnicoService, TecnicoService>();
 builder.Services.AddTransient<ICategoriaService, CategoriaService>();
 builder.Services.AddTransient<ITicketesService, TicketesService>();
 builder.Services.AddTransient<IAsignacionesService, AsignacionesService>();
-
-builder.Services.AddScoped<IRepoEtiquetas, EtiquetasRepo>();
-builder.Services.AddScoped<IRepoEspecialidades, EspecialidadesRepo>();
-builder.Services.AddScoped<IRepoSLA_Tickets, SLA_TicketsRepo>();
-
 builder.Services.AddScoped<IEtiquetasService, EtiquetasService>();
 builder.Services.AddScoped<IEspecialidadesService, EspecialidadesService>();
 builder.Services.AddScoped<ISlaService, SlaService>();
-builder.Services.AddScoped<IRepoUsuarios, UsuariosRepo>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Notificaciones (SignalR)
+builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificacionRepo, NotificacionRepo>();
+builder.Services.AddScoped<INotificacionRealtimeSender, SignalRNotificacionRealtimeSender>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, ActivaPro.Web.Security.UserIdProvider>();
 
-//Configurar Automapper
-builder.Services.AddAutoMapper(cfg =>
-{
-    cfg.AddProfile<TecnicoProfile>();
-});
-builder.Services.AddAutoMapper(cfg =>
-{
-    cfg.AddProfile<CategoriaProfile>();
-});
-builder.Services.AddAutoMapper(cfg =>
-{
-    cfg.AddProfile<TicketesProfile>();
-});
+// AutoMapper
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<TecnicoProfile>());
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<CategoriaProfile>());
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<TicketesProfile>());
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<TicketesProfile>();
     cfg.AddProfile<AsignacionesProfile>();
 });
 
-
-// Configuar Conexión a la Base de Datos SQL 
-builder.Services.AddDbContext<ActivaProContext>(options =>
+// DB
+builder.Services.AddDbContext<ActivaProContext>(opt =>
 {
-    // it read appsettings.json file 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerDataBase"));
-    if (builder.Environment.IsDevelopment())
-        options.EnableSensitiveDataLogging();
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerDataBase"));
+    if (builder.Environment.IsDevelopment()) opt.EnableSensitiveDataLogging();
 });
 
-
-
-
-//***********************
-//Configuración Serilog
-// Logger. P.E. Verbose = muestra SQl Statement
+// Serilog
 var logger = new LoggerConfiguration()
-                    // Limitar la información de depuración
-                    .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
-                    .Enrich.FromLogContext()
-                    // Log LogEventLevel.Verbose muestra mucha información, pero no es necesaria solo para el proceso de depuración
-                    .WriteTo.Console(LogEventLevel.Information)
-                    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information).WriteTo.File(@"Logs\Info-.log", shared: true, encoding: Encoding.ASCII, rollingInterval: RollingInterval.Day))
-                    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Debug).WriteTo.File(@"Logs\Debug-.log", shared: true, encoding: System.Text.Encoding.ASCII, rollingInterval: RollingInterval.Day))
-                    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Warning).WriteTo.File(@"Logs\Warning-.log", shared: true, encoding: System.Text.Encoding.ASCII, rollingInterval: RollingInterval.Day))
-                    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Error).WriteTo.File(@"Logs\Error-.log", shared: true, encoding: Encoding.ASCII, rollingInterval: RollingInterval.Day))
-                    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Fatal).WriteTo.File(@"Logs\Fatal-.log", shared: true, encoding: Encoding.ASCII, rollingInterval: RollingInterval.Day))
-                    .CreateLogger();
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(LogEventLevel.Information)
+    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information)
+        .WriteTo.File(@"Logs\Info-.log", shared: true, encoding: Encoding.ASCII, rollingInterval: RollingInterval.Day))
+    .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Error)
+        .WriteTo.File(@"Logs\Error-.log", shared: true, encoding: Encoding.ASCII, rollingInterval: RollingInterval.Day))
+    .CreateLogger();
 
 builder.Host.UseSerilog(logger);
-//***************************
-
-//Activar soporte a la solicitud de registrocon SERILOG 
-
-
 
 var app = builder.Build();
-
 app.UseSerilogRequestLogging();
 
-
-
-// Configure the HTTP request pipeline.
+// Error pages / HSTS
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-else
-{
-    // Error control Middleware 
-  //  app.UseMiddleware<ErrorHandlingMiddleware>();
-}
-
-
-
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 
+// IMPORTANTE: Autenticación antes de Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
+// Hub notificaciones
+app.MapHub<NotificacionesHub>("/hubs/notificaciones");
+
+// Rutas
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+// Redirección a Login si no autenticado (excepto endpoints públicos)
+app.Use(async (ctx, next) =>
+{
+    if (!ctx.User.Identity?.IsAuthenticated ?? true)
+    {
+        var path = ctx.Request.Path.Value?.ToLower();
+        if (!path!.StartsWith("/account/login") &&
+            !path.StartsWith("/account/register") &&
+            !path.StartsWith("/account/accessdenied") &&
+            !path.StartsWith("/css") &&
+            !path.StartsWith("/js") &&
+            !path.StartsWith("/lib") &&
+            !path.StartsWith("/hubs"))
+        {
+            ctx.Response.Redirect("/Account/Login");
+            return;
+        }
+    }
+    await next();
+});
 
-app.UseSerilogRequestLogging();
-app.UseHttpsRedirection();
-app.UseRouting();
-//Activar Antiforgery
-app.UseAntiforgery();
+app.Run();
