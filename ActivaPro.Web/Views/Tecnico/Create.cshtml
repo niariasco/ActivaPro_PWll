@@ -44,10 +44,14 @@
 
     <div class="mb-3">
         <label asp-for="Disponible" class="form-label">Disponible</label>
-        <select asp-for="Disponible" class="form-select">
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-        </select>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" asp-for="Disponible" id="DisponibleTrue" value="true" />
+            <label class="form-check-label" for="DisponibleTrue">Sí</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" asp-for="Disponible" id="DisponibleFalse" value="false" />
+            <label class="form-check-label" for="DisponibleFalse">No</label>
+        </div>
         <span asp-validation-for="Disponible" class="text-danger"></span>
     </div>
 
