@@ -12,28 +12,27 @@ namespace ActivaPro.Web.Controllers
     {
         private readonly IAuthService _auth;
 
-        public AccountController(IAuthService auth)
-        {
-            _auth = auth;
-        }
+        public AccountController(IAuthService auth) => _auth = auth;
 
         [HttpGet]
-        public IActionResult Login()
-        {
-            return View(new LoginDTO());
-        }
+        public IActionResult Login() => View(new LoginDTO());
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginDTO dto)
         {
             if (!ModelState.IsValid)
+            {
+                if (IsAjax()) return BadRequest(new { ok = false, error = "Revisa los campos del formulario." });
                 return View(dto);
+            }
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
             var result = await _auth.LoginAsync(dto, ip);
+
             if (!result.ok)
             {
+                if (IsAjax()) return BadRequest(new { ok = false, error = result.error });
                 ModelState.AddModelError(string.Empty, result.error);
                 return View(dto);
             }
@@ -49,11 +48,9 @@ namespace ActivaPro.Web.Controllers
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
+            if (IsAjax()) return Json(new { ok = true, redirect = Url.Action("Index", "Home") });
             return RedirectToAction("Index", "Home");
         }   
-
-        [HttpGet]
-        public IActionResult Logout() => RedirectToAction("Index", "Home");
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -69,24 +66,11 @@ namespace ActivaPro.Web.Controllers
             return RedirectToAction(nameof(Login));
         }
 
-        [HttpGet]
-        public IActionResult Register() => View(new RegisterDTO());
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterDTO dto)
+        private bool IsAjax()
         {
-            if (!ModelState.IsValid) return View(dto);
-            try
-            {
-                await _auth.RegisterAsync(dto);
-                return RedirectToAction(nameof(Login));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                return View(dto);
-            }
+            var xrw = Request.Headers["X-Requested-With"].ToString();
+            var accept = Request.Headers["Accept"].ToString();
+            return xrw == "XMLHttpRequest" || accept.Contains("application/json");
         }
     }
 }

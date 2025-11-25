@@ -4,26 +4,89 @@
 }
 <div class="container mt-5" style="max-width:420px;">
     <h4 class="mb-3" style="color:#1E4E8C;">Iniciar Sesión</h4>
-    <form asp-action="Login" method="post">
+
+    <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+
+    <form id="login-form" asp-action="Login" method="post" novalidate>
         @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
         <div class="mb-3">
             <label class="form-label">Correo</label>
-            <input asp-for="Correo" class="form-control" />
+            <input asp-for="Correo" type="email" class="form-control" />
             <span class="text-danger" asp-validation-for="Correo"></span>
         </div>
+
         <div class="mb-3">
             <label class="form-label">Contraseña</label>
             <input asp-for="Contrasena" type="password" class="form-control" />
             <span class="text-danger" asp-validation-for="Contrasena"></span>
         </div>
+
         <div class="form-check mb-3">
             <input asp-for="Recordarme" class="form-check-input" />
             <label class="form-check-label" asp-for="Recordarme">Recordarme</label>
         </div>
-        <button type="submit" class="btn btn-primary w-100 mb-2">Ingresar</button>
-        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary w-100">Registrate</a>
+
+        <button id="login-submit" type="submit" class="btn btn-primary w-100">Ingresar</button>
+        <a asp-action="Register" class="btn btn-outline-primary w-100 mt-2">Registrate</a>
     </form>
 </div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const form = document.getElementById('login-form');
+            const btn = document.getElementById('login-submit');
+            const alertBox = document.getElementById('login-error');
+
+            function showError(msg) {
+                alertBox.textContent = msg || 'Error de autenticación.';
+                alertBox.classList.remove('d-none');
+            }
+            function clearError() {
+                alertBox.classList.add('d-none');
+                alertBox.textContent = '';
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                clearError();
+
+                // Validación cliente con jQuery Validate (unobtrusive)
+                if (typeof $ !== 'undefined' && typeof $.fn !== 'undefined' && typeof $(form).valid === 'function') {
+                    if (!$(form).valid()) return;
+                }
+
+                btn.disabled = true;
+
+                const formData = new URLSearchParams(new FormData(form));
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                    .then(async r => {
+                        const isJson = r.headers.get('content-type')?.includes('application/json');
+                        const payload = isJson ? await r.json() : {};
+                        if (!r.ok) {
+                            showError(payload.error || 'Credenciales inválidas');
+                            return;
+                        }
+                        if (payload.ok && payload.redirect) {
+                            window.location.href = payload.redirect;
+                        } else {
+                            // fallback por si no viene JSON
+                            window.location.href = '/';
+                        }
+                    })
+                    .catch(() => showError('No se pudo procesar la solicitud.'))
+                    .finally(() => btn.disabled = false);
+            });
+        })();
+    </script>
 }
