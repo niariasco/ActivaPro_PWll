@@ -1,7 +1,6 @@
 ﻿using ActivaPro.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -33,7 +32,14 @@ namespace ActivaPro.Web.Controllers
         public async Task<IActionResult> MarkRead(int id)
         {
             var ok = await _service.MarcarLeidaAsync(id, GetUserId());
-            return Json(new { success = ok });
+            var count = await _service.NoLeidasAsync(GetUserId());
+            return Json(new { success = ok, unread = count });
+        }
+
+        [HttpGet]
+        public IActionResult Historial()
+        {
+            return View(); // Se carga vía JS para paginación dinámica
         }
 
         private int GetUserId()

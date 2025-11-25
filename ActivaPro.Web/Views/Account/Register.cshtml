@@ -2,30 +2,34 @@
 @{
     ViewData["Title"] = "Registro";
 }
-<h2>Crear cuenta</h2>
-<form asp-action="Register" method="post">
-    @Html.AntiForgeryToken()
-    <div class="mb-3">
-        <label asp-for="Nombre"></label>
-        <input asp-for="Nombre" class="form-control" />
-        <span asp-validation-for="Nombre" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="NumeroSucursal"></label>
-        <input asp-for="NumeroSucursal" type="number" class="form-control" />
-        <span asp-validation-for="NumeroSucursal" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Correo"></label>
-        <input asp-for="Correo" class="form-control" />
-        <span asp-validation-for="Correo" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Contrasena"></label>
-        <input asp-for="Contrasena" type="password" class="form-control" />
-        <span asp-validation-for="Contrasena" class="text-danger"></span>
-        <small class="text-muted">Mínimo 6 caracteres; ideal incluir mayúsculas, minúsculas, números y símbolo.</small>
-    </div>
-    <button class="btn btn-success">Crear cuenta</button>
-</form>
-<partial name="_ValidationScriptsPartial" />
+<div class="container mt-5" style="max-width:480px;">
+    <h4 class="mb-3" style="color:#1E4E8C;">Crear Cuenta</h4>
+    <form asp-action="Register" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input asp-for="Nombre" class="form-control" />
+            <span class="text-danger" asp-validation-for="Nombre"></span>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Número Sucursal</label>
+            <input asp-for="NumeroSucursal" class="form-control" />
+            <span class="text-danger" asp-validation-for="NumeroSucursal"></span>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Correo</label>
+            <input asp-for="Correo" class="form-control" />
+            <span class="text-danger" asp-validation-for="Correo"></span>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input asp-for="Contrasena" type="password" class="form-control" />
+            <span class="text-danger" asp-validation-for="Contrasena"></span>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Registrarme</button>
+        <a asp-action="Login" class="btn btn-outline-secondary w-100 mt-2">Volver a Login</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

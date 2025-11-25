@@ -50,6 +50,9 @@ public partial class ActivaProContext : DbContext
         //notificaciones
         modelBuilder.Entity<Notificacion>(entity =>
         {
+            entity.Property(n => n.FechaEnvio)
+        .HasColumnType("datetime")
+        .HasDefaultValueSql("GETDATE()");
             entity.HasIndex(n => new { n.IdUsuario, n.Leido });
         });
 

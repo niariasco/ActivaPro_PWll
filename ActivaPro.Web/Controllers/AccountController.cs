@@ -2,9 +2,9 @@
 using ActivaPro.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ActivaPro.Web.Controllers
 {
@@ -18,71 +18,61 @@ namespace ActivaPro.Web.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
-        public IActionResult Login(string? returnUrl = null)
+        public IActionResult Login()
         {
-            if (User.Identity?.IsAuthenticated == true)
-                return RedirectToAction("Index", "Home");
-
-            ViewBag.ReturnUrl = returnUrl;
             return View(new LoginDTO());
         }
 
         [HttpPost]
-        [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginDTO dto, string? returnUrl = null)
+        public async Task<IActionResult> Login(LoginDTO dto)
         {
-            if (!ModelState.IsValid) return View(dto);
+            if (!ModelState.IsValid)
+                return View(dto);
 
-            var (ok, userId, nombre, rol, error) = await _auth.LoginAsync(
-                dto,
-                HttpContext.Connection.RemoteIpAddress?.ToString() ?? "IP");
-
-            if (!ok)
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
+            var result = await _auth.LoginAsync(dto, ip);
+            if (!result.ok)
             {
-                ModelState.AddModelError(string.Empty, error);
+                ModelState.AddModelError(string.Empty, result.error);
                 return View(dto);
             }
 
-            var claims = new List<Claim>
+            var claims = new[]
             {
-                new Claim("id_usuario", userId.ToString()),
-                new Claim(ClaimTypes.Name, nombre),
-                new Claim(ClaimTypes.Role, rol)
+                new Claim(ClaimTypes.NameIdentifier, result.userId.ToString()),
+                new Claim(ClaimTypes.Name, result.nombre),
+                new Claim("rol", result.rol),
+                new Claim("id_usuario", result.userId.ToString())
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                principal,
-                new AuthenticationProperties
-                {
-                    IsPersistent = dto.Recordarme,
-                    ExpiresUtc = dto.Recordarme ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddHours(8)
-                });
-
-            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                return Redirect(returnUrl);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
             return RedirectToAction("Index", "Home");
-        }
+        }   
 
-        [Authorize]
-        public async Task<IActionResult> Logout()
+        [HttpGet]
+        public IActionResult Logout() => RedirectToAction("Index", "Home");
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LogoutPost()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var id = User.FindFirstValue("id_usuario");
+            if (int.TryParse(id, out var usuarioId))
+            {
+                await _auth.LogoutAsync(usuarioId);
+            }
+
+            await HttpContext.SignOutAsync();
             return RedirectToAction(nameof(Login));
         }
 
         [HttpGet]
-        [AllowAnonymous]
         public IActionResult Register() => View(new RegisterDTO());
 
         [HttpPost]
-        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterDTO dto)
         {
@@ -90,70 +80,13 @@ namespace ActivaPro.Web.Controllers
             try
             {
                 await _auth.RegisterAsync(dto);
-                TempData["Success"] = "Cuenta creada. Inicie sesión.";
                 return RedirectToAction(nameof(Login));
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", ex.Message);
+                ModelState.AddModelError(string.Empty, ex.Message);
                 return View(dto);
             }
         }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> Profile()
-        {
-            var id = int.Parse(User.FindFirst("id_usuario")!.Value);
-            var profile = await _auth.GetProfileAsync(id);
-            return View(profile);
-        }
-
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Profile(ProfileDTO dto)
-        {
-            if (!ModelState.IsValid) return View(dto);
-            try
-            {
-                var ok = await _auth.UpdateProfileAsync(dto);
-                if (ok) TempData["Success"] = "Perfil actualizado.";
-                return View(dto);
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View(dto);
-            }
-        }
-
-        [Authorize]
-        [HttpGet]
-        public IActionResult ChangePassword() => View(new ChangePasswordDTO());
-
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePassword(ChangePasswordDTO dto)
-        {
-            if (!ModelState.IsValid) return View(dto);
-            var id = int.Parse(User.FindFirst("id_usuario")!.Value);
-            try
-            {
-                await _auth.ChangePasswordAsync(id, dto);
-                TempData["Success"] = "Contraseña actualizada.";
-                return RedirectToAction(nameof(Profile));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View(dto);
-            }
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult AccessDenied() => View();
     }
 }

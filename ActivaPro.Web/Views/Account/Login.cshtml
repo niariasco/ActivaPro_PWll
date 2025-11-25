@@ -2,37 +2,28 @@
 @{
     ViewData["Title"] = "Login";
 }
-<h2>Iniciar Sesión</h2>
-
-@if (ViewData.ModelState.ErrorCount > 0)
-{
-    <div class="alert alert-danger">
-        @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-        {
-            <div>@err.ErrorMessage</div>
-        }
-    </div>
+<div class="container mt-5" style="max-width:420px;">
+    <h4 class="mb-3" style="color:#1E4E8C;">Iniciar Sesión</h4>
+    <form asp-action="Login" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label">Correo</label>
+            <input asp-for="Correo" class="form-control" />
+            <span class="text-danger" asp-validation-for="Correo"></span>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input asp-for="Contrasena" type="password" class="form-control" />
+            <span class="text-danger" asp-validation-for="Contrasena"></span>
+        </div>
+        <div class="form-check mb-3">
+            <input asp-for="Recordarme" class="form-check-input" />
+            <label class="form-check-label" asp-for="Recordarme">Recordarme</label>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mb-2">Ingresar</button>
+        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary w-100">Registrate</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }
-
-<form asp-action="Login" method="post">
-    @Html.AntiForgeryToken()
-    <div class="mb-3">
-        <label asp-for="Correo"></label>
-        <input asp-for="Correo" class="form-control" autocomplete="username" />
-        <span asp-validation-for="Correo" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Contrasena"></label>
-        <input asp-for="Contrasena" type="password" class="form-control" autocomplete="current-password" />
-        <span asp-validation-for="Contrasena" class="text-danger"></span>
-    </div>
-    <div class="form-check mb-3">
-        <input asp-for="Recordarme" class="form-check-input" />
-        <label asp-for="Recordarme" class="form-check-label">Recordarme</label>
-    </div>
-    <button class="btn btn-primary w-100">Entrar</button>
-    <div class="mt-3 text-center">
-        <a asp-action="Register">Crear cuenta</a>
-    </div>
-</form>
-<partial name="_ValidationScriptsPartial" />

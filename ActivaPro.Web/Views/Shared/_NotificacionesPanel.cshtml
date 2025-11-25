@@ -1,17 +1,20 @@
-    <div class="notif-wrapper">
+<div class="notif-wrapper">
     <button type="button"
             class="btn btn-link p-0"
             title="Notificaciones"
             onclick="document.getElementById('notif-dropdown').classList.toggle('show')">
-        <span class="position-relative">
-            <i class="bi bi-bell fs-4"></i>
-            <span id="notif-count"
-                  class="badge bg-danger position-absolute top-0 start-100 translate-middle">0</span>
+        <span class="position-relative d-inline-flex align-items-center" style="gap:6px;">
+            <i class="bi bi-bell fs-4" style="color:#1E4E8C;"></i>
+            <span class="d-inline-flex align-items-center" style="gap:2px;">
+                <i class="bi bi-bell-fill" style="color:#1E4E8C;font-size:0.9rem;"></i>
+                <span id="notif-count"
+                      class="badge notif-count-badge">0</span>
+            </span>
         </span>
     </button>
     <div id="notif-dropdown" class="notif-dropdown">
         <div class="d-flex justify-content-between align-items-center px-3 pt-2">
-            <h6 class="mb-0">Notificaciones</h6>
+            <h6 class="mb-0" style="color:#1E4E8C;">Notificaciones</h6>
             <small class="text-muted" style="cursor:pointer" onclick="Notifs.load()">Actualizar</small>
         </div>
         <ul id="notif-list" class="list-unstyled m-0 p-2"></ul>
@@ -24,13 +27,23 @@
     .notif-wrapper { position:relative; }
     .notif-dropdown {
         display:none; position:absolute; right:0; top:115%;
-        width:360px; background:#fff; border:1px solid #ddd;
-        border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.15);
+        width:360px; background:#ffffff; border:1px solid #d0d4da;
+        border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.12);
         max-height:420px; overflow:auto; z-index:1500;
     }
     .notif-dropdown.show { display:block; }
-    .notif-item { padding:.6rem .6rem .8rem; border-bottom:1px solid #eee; font-size:.85rem; }
-    .notif-item.unread { background:#eef7ff; }
-    .notif-item.read { background:#fff; opacity:.85; }
-    .notif-item .badge { font-size:.60rem; }
+    .notif-item { padding:.65rem .65rem .75rem; border-bottom:1px solid #e3e6ea; font-size:.85rem; transition:background-color .3s,border-color .3s; }
+    .notif-item.unread { background:#f0f5fa; border-left:4px solid #1E4E8C; }
+    .notif-item.read { background:#ffffff; border-left:4px solid #6c757d; opacity:.92; }
+    .notif-item .badge { font-size:.60rem; letter-spacing:.5px; }
+    .badge.notif-count-badge { background:#1E4E8C; }
+    .notif-badge-blue { background:#1E4E8C; color:#fff; }
+    .notif-badge-gray { background:#6c757d; color:#fff; }
+    .notif-btn {
+        --bs-btn-color:#1E4E8C;
+        --bs-btn-border-color:#1E4E8C;
+        --bs-btn-hover-bg:#143763;
+        --bs-btn-hover-border-color:#143763;
+        --bs-btn-active-bg:#143763;
+    }
 </style>

@@ -19,7 +19,7 @@ public partial class ValoracionNotificaciones
 
     public DateTime? FechaValoracion { get; set; }
 
-    public virtual Notificaciones IdNotificacionNavigation { get; set; } = null!;
+    public virtual Notificacion IdNotificacionNavigation { get; set; } = null!;
 
     public virtual Usuarios IdUsuarioNavigation { get; set; } = null!;
 }

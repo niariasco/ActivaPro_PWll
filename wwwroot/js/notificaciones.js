@@ -8,6 +8,17 @@ const list = document.getElementById("notif-list");
 
 function fmt(dt) { return new Date(dt + "Z").toLocaleString(); }
 
+function fmtFecha(iso) {
+    const d = new Date(iso);
+    // Corrección defensiva: si fecha > ahora + 2 horas, asumir desfase y restar horas.
+    const ahora = new Date();
+    if (d - ahora > 2 * 60 * 60 * 1000) {
+        // Ajusta según tu zona (ejemplo -5 horas)
+        d.setHours(d.getHours() - 5);
+    }
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+}
+
 function render(n) {
     return `<li class="notif-item ${n.leido ? 'read' : 'unread'}" data-id="${n.idNotificacion}">
         <div class="d-flex justify-content-between">

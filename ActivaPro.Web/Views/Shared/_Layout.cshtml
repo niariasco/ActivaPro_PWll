@@ -108,6 +108,7 @@
                                 <i class="bi bi-person-lines-fill"></i> Mis Asignaciones
                             </a>
                         </li>
+                       
                     </ul>
 
                     <!-- Estado de usuario + Notificaciones + Logout -->
@@ -116,7 +117,7 @@
                         <partial name="_NotificacionesPanel" />
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
-                            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            <form asp-controller="Account" asp-action="LogoutPost" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
                             </form>
@@ -146,8 +147,8 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <script src="~/js/notificaciones.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="~/js/notificaciones.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
