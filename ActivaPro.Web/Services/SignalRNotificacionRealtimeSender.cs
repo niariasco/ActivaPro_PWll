@@ -2,6 +2,7 @@ using ActivaPro.Application.DTOs;
 using ActivaPro.Application.Services.Interfaces;
 using ActivaPro.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using System.Threading.Tasks;
 
 namespace ActivaPro.Web.Services
 {
@@ -17,7 +18,7 @@ namespace ActivaPro.Web.Services
         public Task SendNuevaAsync(int userId, NotificacionDTO dto) =>
             _hub.Clients.User(userId.ToString()).SendAsync("notificaciones:nueva", dto);
 
-        public Task SendActualizadaAsync(int userId, long idNotificacion, bool leido) =>
+        public Task SendActualizadaAsync(int userId, int idNotificacion, bool leido) =>
             _hub.Clients.User(userId.ToString()).SendAsync("notificaciones:actualizada", new { IdNotificacion = idNotificacion, Leido = leido });
     }
 }

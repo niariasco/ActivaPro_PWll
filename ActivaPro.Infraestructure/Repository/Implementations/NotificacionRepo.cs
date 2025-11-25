@@ -32,5 +32,14 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
         public Task MarkReadAsync(Notificacion n) { n.Leido = true; return Task.CompletedTask; }
 
         public async Task SaveAsync() => await _ctx.SaveChangesAsync();
+
+        public async Task<int> MarkAllUnreadAsync(int userId)
+        {
+            var list = await _ctx.Notificaciones
+                .Where(n => n.IdUsuario == userId && !n.Leido)
+                .ToListAsync();
+            foreach (var n in list) n.Leido = true;
+            return list.Count;
+        }
     }
 }

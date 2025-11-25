@@ -21,16 +21,6 @@ namespace ActivaPro.Application.DTOs
         public int NumeroSucursal { get; set; } = 0;
     }
 
-    public class LoginDTO
-    {
-        [Required, EmailAddress]
-        public string Correo { get; set; } = string.Empty;
-
-        [Required]
-        public string Contrasena { get; set; } = string.Empty;
-
-        public bool Recordarme { get; set; }
-    }
 
     public class ProfileDTO
     {

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ActivaPro.Web.Controllers
 {
@@ -31,7 +32,23 @@ namespace ActivaPro.Web.Controllers
         public async Task<IActionResult> MarkRead(int id)
         {
             var ok = await _service.MarcarLeidaAsync(id, GetUserId());
-            return Json(new { success = ok });
+            var count = await _service.NoLeidasAsync(GetUserId());
+            return Json(new { success = ok, unread = count });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkAllRead()
+        {
+            var uid = GetUserId();
+            var changed = await _service.MarcarTodasLeidasAsync(uid);
+            var unread = await _service.NoLeidasAsync(uid);
+            return Json(new { success = true, changed, unread });
+        }
+
+        [HttpGet]
+        public IActionResult Historial()
+        {
+            return View(); // Se carga vía JS para paginación dinámica
         }
 
         private int GetUserId()

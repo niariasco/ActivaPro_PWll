@@ -2,9 +2,9 @@
 using ActivaPro.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ActivaPro.Web.Controllers
 {
@@ -12,148 +12,65 @@ namespace ActivaPro.Web.Controllers
     {
         private readonly IAuthService _auth;
 
-        public AccountController(IAuthService auth)
-        {
-            _auth = auth;
-        }
+        public AccountController(IAuthService auth) => _auth = auth;
 
         [HttpGet]
-        [AllowAnonymous]
-        public IActionResult Login(string? returnUrl = null)
-        {
-            if (User.Identity?.IsAuthenticated == true)
-                return RedirectToAction("Index", "Home");
-
-            ViewBag.ReturnUrl = returnUrl;
-            return View(new LoginDTO());
-        }
+        public IActionResult Login() => View(new LoginDTO());
 
         [HttpPost]
-        [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginDTO dto, string? returnUrl = null)
+        public async Task<IActionResult> Login(LoginDTO dto)
         {
-            if (!ModelState.IsValid) return View(dto);
-
-            var (ok, userId, nombre, rol, error) = await _auth.LoginAsync(
-                dto,
-                HttpContext.Connection.RemoteIpAddress?.ToString() ?? "IP");
-
-            if (!ok)
+            if (!ModelState.IsValid)
             {
-                ModelState.AddModelError(string.Empty, error);
+                if (IsAjax()) return BadRequest(new { ok = false, error = "Revisa los campos del formulario." });
                 return View(dto);
             }
 
-            var claims = new List<Claim>
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
+            var result = await _auth.LoginAsync(dto, ip);
+
+            if (!result.ok)
             {
-                new Claim("id_usuario", userId.ToString()),
-                new Claim(ClaimTypes.Name, nombre),
-                new Claim(ClaimTypes.Role, rol)
+                if (IsAjax()) return BadRequest(new { ok = false, error = result.error });
+                ModelState.AddModelError(string.Empty, result.error);
+                return View(dto);
+            }
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, result.userId.ToString()),
+                new Claim(ClaimTypes.Name, result.nombre),
+                new Claim("rol", result.rol),
+                new Claim("id_usuario", result.userId.ToString())
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                principal,
-                new AuthenticationProperties
-                {
-                    IsPersistent = dto.Recordarme,
-                    ExpiresUtc = dto.Recordarme ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddHours(8)
-                });
-
-            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                return Redirect(returnUrl);
-
+            if (IsAjax()) return Json(new { ok = true, redirect = Url.Action("Index", "Home") });
             return RedirectToAction("Index", "Home");
-        }
+        }   
 
-        [Authorize]
-        public async Task<IActionResult> Logout()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LogoutPost()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var id = User.FindFirstValue("id_usuario");
+            if (int.TryParse(id, out var usuarioId))
+            {
+                await _auth.LogoutAsync(usuarioId);
+            }
+
+            await HttpContext.SignOutAsync();
             return RedirectToAction(nameof(Login));
         }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult Register() => View(new RegisterDTO());
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterDTO dto)
+        private bool IsAjax()
         {
-            if (!ModelState.IsValid) return View(dto);
-            try
-            {
-                await _auth.RegisterAsync(dto);
-                TempData["Success"] = "Cuenta creada. Inicie sesión.";
-                return RedirectToAction(nameof(Login));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View(dto);
-            }
+            var xrw = Request.Headers["X-Requested-With"].ToString();
+            var accept = Request.Headers["Accept"].ToString();
+            return xrw == "XMLHttpRequest" || accept.Contains("application/json");
         }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> Profile()
-        {
-            var id = int.Parse(User.FindFirst("id_usuario")!.Value);
-            var profile = await _auth.GetProfileAsync(id);
-            return View(profile);
-        }
-
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Profile(ProfileDTO dto)
-        {
-            if (!ModelState.IsValid) return View(dto);
-            try
-            {
-                var ok = await _auth.UpdateProfileAsync(dto);
-                if (ok) TempData["Success"] = "Perfil actualizado.";
-                return View(dto);
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View(dto);
-            }
-        }
-
-        [Authorize]
-        [HttpGet]
-        public IActionResult ChangePassword() => View(new ChangePasswordDTO());
-
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePassword(ChangePasswordDTO dto)
-        {
-            if (!ModelState.IsValid) return View(dto);
-            var id = int.Parse(User.FindFirst("id_usuario")!.Value);
-            try
-            {
-                await _auth.ChangePasswordAsync(id, dto);
-                TempData["Success"] = "Contraseña actualizada.";
-                return RedirectToAction(nameof(Profile));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View(dto);
-            }
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult AccessDenied() => View();
     }
 }

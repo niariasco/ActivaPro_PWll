@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using ActivaPro.Application.DTOs;
 using ActivaPro.Application.Services.Interfaces;
 using ActivaPro.Infraestructure.Models;
 using ActivaPro.Infraestructure.Repository.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using ActivaPro.Application.Security;
 
 namespace ActivaPro.Application.Services.Implementations
@@ -15,7 +12,7 @@ namespace ActivaPro.Application.Services.Implementations
     public class AuthService : IAuthService
     {
         private readonly IRepoUsuarios _usuarios;
-        private readonly INotificacionService _notifs; // para notificar login
+        private readonly INotificacionService _notifs;
 
         public AuthService(IRepoUsuarios usuarios, INotificacionService notifs)
         {
@@ -38,14 +35,9 @@ namespace ActivaPro.Application.Services.Implementations
             };
 
             await _usuarios.CreateAsync(usuario);
-
-            // Asignación de rol por defecto mediante UsuarioRol si ya tienes esa tabla
-            // (Opcional) aquí podrías insertar en Usuario_Rol; omitido por no tener el repo en el snippet.
-
             return usuario.IdUsuario;
         }
 
-        // Añade lógica de compatibilidad para usuarios existentes con contraseñas antiguas (texto plano).
         public async Task<(bool ok, int userId, string nombre, string rol, string error)> LoginAsync(LoginDTO dto, string ipForAudit)
         {
             var user = await _usuarios.FindByCorreoAsync(dto.Correo);
@@ -58,25 +50,29 @@ namespace ActivaPro.Application.Services.Implementations
             }
             else
             {
-                // Legacy: contraseña almacenada en claro. Verificar directo y actualizar a hash seguro.
                 credOk = string.Equals(dto.Contrasena, user.Contrasena, StringComparison.Ordinal);
                 if (credOk)
                 {
-                    user.Contrasena = PasswordHasher.Hash(dto.Contrasena); // upgrade transparente
-                    await _usuarios.UpdateAsync(user);
+                    user.Contrasena = PasswordHasher.Hash(dto.Contrasena);
                 }
             }
 
             if (!credOk) return (false, 0, "", "", "Credenciales inválidas");
 
-            var rol = user.UsuarioRoles?.FirstOrDefault()?.Rol?.NombreRol ?? "Cliente";
-
-            // Si decides volver a agregar último inicio de sesión y la columna existe: user.UltimoInicioSesion = DateTime.Now;
+            user.UltimoInicioSesion = DateTime.Now;
             await _usuarios.UpdateAsync(user);
 
-            await _notifs.CrearLoginAsync(user.IdUsuario, ipForAudit);
+            var rol = user.UsuarioRoles?.FirstOrDefault()?.Rol?.NombreRol ?? "Cliente";
+
+            // Notificación de login
+            await _notifs.CrearLoginAsync(user.IdUsuario);
 
             return (true, user.IdUsuario, user.Nombre, rol, "");
+        }
+
+        public async Task LogoutAsync(int usuarioId)
+        {
+            await _notifs.CrearLogoutAsync(usuarioId);
         }
 
         public async Task<ProfileDTO?> GetProfileAsync(int idUsuario)
@@ -97,7 +93,6 @@ namespace ActivaPro.Application.Services.Implementations
             var user = await _usuarios.FindByIdAsync(dto.IdUsuario);
             if (user == null) return false;
 
-            // si correo cambia, validar unicidad
             if (!string.Equals(user.Correo, dto.Correo, StringComparison.OrdinalIgnoreCase))
             {
                 var exists = await _usuarios.FindByCorreoAsync(dto.Correo);
@@ -108,7 +103,6 @@ namespace ActivaPro.Application.Services.Implementations
 
             user.Nombre = dto.Nombre;
             user.NumeroSucursal = dto.NumeroSucursal;
-
             await _usuarios.UpdateAsync(user);
             return true;
         }
