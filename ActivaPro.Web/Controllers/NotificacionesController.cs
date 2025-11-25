@@ -36,6 +36,15 @@ namespace ActivaPro.Web.Controllers
             return Json(new { success = ok, unread = count });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> MarkAllRead()
+        {
+            var uid = GetUserId();
+            var changed = await _service.MarcarTodasLeidasAsync(uid);
+            var unread = await _service.NoLeidasAsync(uid);
+            return Json(new { success = true, changed, unread });
+        }
+
         [HttpGet]
         public IActionResult Historial()
         {

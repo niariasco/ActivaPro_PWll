@@ -94,6 +94,23 @@ namespace ActivaPro.Application.Services.Implementations
             return true;
         }
 
+        public async Task<int> MarcarTodasLeidasAsync(int usuarioId)
+        {
+            var afectados = await _repo.MarkAllUnreadAsync(usuarioId);
+            await _repo.SaveAsync();
+
+            // Notificar actualizaciones individuales (opcional, puedes omitir si son muchas)
+            // Podrías enviar un solo evento global, pero mantengo consistencia:
+            if (afectados > 0)
+            {
+                var recientes = await _repo.ListAsync(usuarioId, 0, afectados);
+                foreach (var n in recientes.Where(x => x.Leido))
+                    await _realtime.SendActualizadaAsync(usuarioId, n.IdNotificacion, true);
+            }
+
+            return afectados;
+        }
+
         public async Task CrearEventoTicketAsync(IEnumerable<int> usuariosDestino, int ticketId, string tipoEvento, string descripcion, string responsable)
         {
             var msg = $"Ticket #{ticketId}: {tipoEvento}. {descripcion}. Resp: {responsable}";

@@ -13,5 +13,6 @@ namespace ActivaPro.Application.Services.Interfaces
         Task<IEnumerable<NotificacionDTO>> ListarAsync(int usuarioId, int skip = 0, int take = 30);
         Task<int> NoLeidasAsync(int usuarioId);
         Task<bool> MarcarLeidaAsync(int idNotificacion, int usuarioActual);
+        Task<int> MarcarTodasLeidasAsync(int usuarioId); 
     }
 }

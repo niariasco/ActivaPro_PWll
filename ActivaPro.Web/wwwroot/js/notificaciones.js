@@ -1,7 +1,8 @@
 ﻿const Notifs = (() => {
-    let hub = null;
-    let initialized = false;
+    let hub = null, initialized = false;
     let loading = false;
+    let skip = 0;
+    const take = 25; // tamaño página
 
     function el(id) { return document.getElementById(id); }
 
@@ -23,13 +24,12 @@
     }
 
     function icono(accion) {
-        const azul = '#1E4E8C', gris = '#6c757d';
         switch (accion) {
-            case 'Login': return `<i class="bi bi-box-arrow-in-right" style="color:${gris};"></i>`;
-            case 'Logout': return `<i class="bi bi-box-arrow-left" style="color:${gris};"></i>`;
-            case 'TicketStateChange': return `<i class="bi bi-arrow-left-right" style="color:${azul};"></i>`;
-            case 'TicketEvent': return `<i class="bi bi-pencil-square" style="color:${azul};"></i>`;
-            default: return `<i class="bi bi-info-circle" style="color:${gris};"></i>`;
+            case 'Login': return '<i class="bi bi-box-arrow-in-right text-light"></i>';
+            case 'Logout': return '<i class="bi bi-box-arrow-left text-light"></i>';
+            case 'TicketStateChange': return '<i class="bi bi-arrow-left-right text-light"></i>';
+            case 'TicketEvent': return '<i class="bi bi-pencil-square text-light"></i>';
+            default: return '<i class="bi bi-info-circle text-light"></i>';
         }
     }
 
@@ -48,34 +48,41 @@
         return `
 <li id="notif-${n.id}" class="notif-item ${n.leido ? 'read' : 'unread'}">
   <div class="d-flex justify-content-between align-items-start">
-    <div class="fw-semibold d-flex flex-column" style="gap:2px;">
+    <div class="d-flex flex-column" style="gap:4px;">
       <span class="d-flex align-items-center" style="gap:6px;">
         ${icono(n.accion)} ${badgeTipo(n.accion)}
       </span>
       <span>${n.mensaje}</span>
     </div>
-    <small class="text-muted ms-2">${fmtFecha(n.fechaEnvio)}</small>
+    <small>${fmtFecha(n.fechaEnvio)}</small>
   </div>
   <div class="mt-2 d-flex justify-content-between align-items-center">
     ${
         n.ticketId && n.accion !== 'Eliminación'
-            ? `<a href="/Ticketes/Edit/${n.ticketId}" class="btn btn-sm btn-outline-primary notif-btn">Acceder Ticket</a>`
+            ? `<a href="/Ticketes/Edit/${n.ticketId}" class="btn btn-sm btn-outline-light notif-btn-ticket">Ticket</a>`
             : '<span></span>'
     }
     ${
         n.leido
-            ? '<button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-check2-circle"></i> Leída</button>'
-            : `<button class="btn btn-sm btn-outline-primary notif-btn" onclick="Notifs.markRead(${n.id})">
-                <i class="bi bi-eye"></i> Marcar como leída
+            ? '<span class="text-secondary" style="font-size:.7rem;"><i class="bi bi-check2-circle"></i> Leída</span>'
+            : `<button class="btn btn-sm btn-outline-light notif-btn-mark" onclick="Notifs.markRead(${n.id})">
+                <i class="bi bi-eye"></i> Marcar
                </button>`
     }
   </div>
 </li>`;
     }
 
-    function load(skip = 0, take = 15) {
+    function clearPanel() {
+        const list = el('notif-list');
+        list.innerHTML = '';
+    }
+
+    function load(reset = false) {
         if (loading) return;
         loading = true;
+        if (reset) { skip = 0; clearPanel(); }
+
         fetch(`/Notificaciones/Panel?skip=${skip}&take=${take}`)
             .then(r => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -83,30 +90,55 @@
             })
             .then(data => {
                 const list = el('notif-list');
-                list.innerHTML = '';
                 if (!Array.isArray(data) || data.length === 0) {
-                    el('notif-empty').style.display = 'block';
-                } else {
-                    el('notif-empty').style.display = 'none';
-                    data.forEach(d => list.insertAdjacentHTML('beforeend', renderItem(d)));
+                    if (skip === 0) el('notif-empty').style.display = 'block';
+                    return;
                 }
+                el('notif-empty').style.display = 'none';
+                data.forEach(row => list.insertAdjacentHTML('beforeend', renderItem(row)));
+                if (data.length === take) {
+                    // hay más
+                    ensureLoadMoreButton();
+                } else {
+                    removeLoadMoreButton();
+                }
+                skip += data.length;
             })
-            .catch(err => console.error('Error loading notifications:', err))
-            .finally(() => loading = false);
-        updateCount();
+            .catch(err => console.error('Error cargando notificaciones:', err))
+            .finally(() => {
+                loading = false;
+                updateCount();
+            });
+    }
+
+    function ensureLoadMoreButton() {
+        if (el('notif-load-more')) return;
+        const btn = document.createElement('button');
+        btn.id = 'notif-load-more';
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-light w-100 mt-1';
+        btn.textContent = 'Cargar más';
+        btn.onclick = () => load(false);
+        el('notif-dropdown').appendChild(btn);
+    }
+
+    function removeLoadMoreButton() {
+        const btn = el('notif-load-more');
+        if (btn) btn.remove();
     }
 
     function updateCount() {
         fetch('/Notificaciones/Unread')
             .then(r => r.json())
             .then(data => refreshCountFrom(data.count ?? data.Count ?? 0))
-            .catch(err => console.error('Error loading unread count:', err));
+            .catch(err => console.error('Error contador:', err));
     }
 
     function refreshCountFrom(count) {
         const c = el('notif-count');
         c.textContent = count;
-        c.style.display = count > 0 ? 'inline-block' : 'inline-block'; // siempre visible junto a la campana
+        c.style.display = 'inline-block';
+        c.classList.toggle('bg-secondary', count === 0);
     }
 
     function markRead(id) {
@@ -118,27 +150,23 @@
                     if (li) {
                         li.classList.remove('unread');
                         li.classList.add('read');
-                        const btn = li.querySelector('button.btn-outline-primary');
+                        const btn = li.querySelector('button.notif-btn-mark');
                         if (btn) {
-                            btn.classList.remove('btn-outline-primary');
-                            btn.classList.add('btn-outline-secondary');
-                            btn.innerHTML = '<i class="bi bi-check2-circle"></i> Leída';
-                            btn.disabled = true;
+                            btn.outerHTML = '<span class="text-secondary" style="font-size:.7rem;"><i class="bi bi-check2-circle"></i> Leída</span>';
                         }
                     }
-                    refreshCountFrom(res.unread ?? res.Unread ?? 0);
+                    refreshCountFrom(res.unread ?? 0);
                 }
             })
-            .catch(err => console.error('Error marking read:', err));
+            .catch(err => console.error('Error marcar leída:', err));
     }
 
     function connectHub() {
         if (typeof signalR === 'undefined') {
-            console.warn('SignalR client not found. Fallback to manual load.');
-            load();
+            console.warn('SignalR no disponible, modo sin tiempo real.');
+            load(true);
             return;
         }
-
         hub = new signalR.HubConnectionBuilder()
             .withUrl('/hubs/notificaciones')
             .withAutomaticReconnect()
@@ -147,6 +175,7 @@
         hub.on('notificaciones:nueva', dto => {
             const list = el('notif-list');
             list.insertAdjacentHTML('afterbegin', renderItem(dto));
+            el('notif-empty').style.display = 'none';
             updateCount();
         });
 
@@ -156,20 +185,17 @@
             if (item) {
                 item.classList.remove('unread');
                 item.classList.add('read');
-                const btn = item.querySelector('button.btn-outline-primary');
+                const btn = item.querySelector('button.notif-btn-mark');
                 if (btn) {
-                    btn.classList.remove('btn-outline-primary');
-                    btn.classList.add('btn-outline-secondary');
-                    btn.innerHTML = '<i class="bi bi-check2-circle"></i> Leída';
-                    btn.disabled = true;
+                    btn.outerHTML = '<span class="text-secondary" style="font-size:.7rem;"><i class="bi bi-check2-circle"></i> Leída</span>';
                 }
             }
             updateCount();
         });
 
         hub.start()
-            .then(() => { initialized = true; load(); })
-            .catch(err => { console.error('SignalR connect error:', err); load(); });
+            .then(() => { initialized = true; load(true); })
+            .catch(err => { console.error('Error SignalR:', err); load(true); });
     }
 
     function init() {
@@ -177,13 +203,7 @@
         connectHub();
     }
 
-    return {
-        init,
-        load,
-        markRead,
-        refreshCountFrom,
-        renderItem
-    };
+    return { init, load, markRead };
 })();
 
 document.addEventListener('DOMContentLoaded', () => {

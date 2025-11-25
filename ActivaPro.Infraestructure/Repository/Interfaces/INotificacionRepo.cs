@@ -11,6 +11,7 @@ namespace ActivaPro.Infraestructure.Repository.Interfaces
         Task<IEnumerable<Notificacion>> ListAsync(int userId, int skip = 0, int take = 30);
         Task<int> CountUnreadAsync(int userId);
         Task MarkReadAsync(Notificacion n);
+        Task<int> MarkAllUnreadAsync(int userId);
         Task SaveAsync();
     }
 }
