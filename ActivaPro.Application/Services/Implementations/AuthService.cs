@@ -6,6 +6,8 @@ using ActivaPro.Application.Services.Interfaces;
 using ActivaPro.Infraestructure.Models;
 using ActivaPro.Infraestructure.Repository.Interfaces;
 using ActivaPro.Application.Security;
+using ActivaPro.Infraestructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ActivaPro.Application.Services.Implementations
 {
@@ -13,11 +15,13 @@ namespace ActivaPro.Application.Services.Implementations
     {
         private readonly IRepoUsuarios _usuarios;
         private readonly INotificacionService _notifs;
+        private readonly ActivaProContext _context;
 
-        public AuthService(IRepoUsuarios usuarios, INotificacionService notifs)
+        public AuthService(IRepoUsuarios usuarios, INotificacionService notifs, ActivaProContext context)
         {
             _usuarios = usuarios;
             _notifs = notifs;
+            _context = context;
         }
 
         public async Task<int> RegisterAsync(RegisterDTO dto, string rol = "Cliente")
@@ -35,6 +39,10 @@ namespace ActivaPro.Application.Services.Implementations
             };
 
             await _usuarios.CreateAsync(usuario);
+
+            // ✅ ASIGNAR ROL AUTOMÁTICAMENTE AL REGISTRARSE
+            await AsignarRolAsync(usuario.IdUsuario, rol);
+
             return usuario.IdUsuario;
         }
 
@@ -62,7 +70,17 @@ namespace ActivaPro.Application.Services.Implementations
             user.UltimoInicioSesion = DateTime.Now;
             await _usuarios.UpdateAsync(user);
 
-            var rol = user.UsuarioRoles?.FirstOrDefault()?.Rol?.NombreRol ?? "Cliente";
+            // ✅ OBTENER EL ROL CORRECTAMENTE
+            var rol = "Cliente"; // Valor por defecto
+
+            if (user.UsuarioRoles != null && user.UsuarioRoles.Any())
+            {
+                var primerRol = user.UsuarioRoles.FirstOrDefault();
+                if (primerRol?.Rol != null)
+                {
+                    rol = primerRol.Rol.NombreRol ?? "Cliente";
+                }
+            }
 
             // Notificación de login
             await _notifs.CrearLoginAsync(user.IdUsuario);
@@ -118,6 +136,44 @@ namespace ActivaPro.Application.Services.Implementations
             user.Contrasena = PasswordHasher.Hash(dto.NuevaContrasena);
             await _usuarios.UpdateAsync(user);
             return true;
+        }
+
+        /// <summary>
+        /// Asigna un rol a un usuario
+        /// </summary>
+        private async Task AsignarRolAsync(int idUsuario, string nombreRol)
+        {
+            // Buscar el rol (case-insensitive)
+            var rol = await _context.Roles
+                .FirstOrDefaultAsync(r => r.NombreRol.ToLower() == nombreRol.ToLower());
+
+            if (rol == null)
+            {
+                // Si no existe el rol, crearlo
+                rol = new Roles
+                {
+                    NombreRol = nombreRol,
+                    Descripcion = $"Rol de {nombreRol}"
+                };
+                _context.Roles.Add(rol);
+                await _context.SaveChangesAsync();
+            }
+
+            // Verificar si ya tiene el rol asignado
+            var yaAsignado = await _context.UsuarioRoles
+                .AnyAsync(ur => ur.IdUsuario == idUsuario && ur.IdRol == rol.IdRol);
+
+            if (!yaAsignado)
+            {
+                // Asignar el rol
+                _context.UsuarioRoles.Add(new UsuarioRol
+                {
+                    IdUsuario = idUsuario,
+                    IdRol = rol.IdRol,
+                    FechaAsignacion = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

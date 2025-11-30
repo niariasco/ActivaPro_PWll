@@ -14,16 +14,28 @@ namespace ActivaPro.Web.Controllers
 
         public AccountController(IAuthService auth) => _auth = auth;
 
+       
         [HttpGet]
-        public IActionResult Login() => View(new LoginDTO());
+        public IActionResult Login()
+        {
+            // Si ya está autenticado, redirigir al Home
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
 
+            return View(new LoginDTO());
+        }
+
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginDTO dto)
         {
             if (!ModelState.IsValid)
             {
-                if (IsAjax()) return BadRequest(new { ok = false, error = "Revisa los campos del formulario." });
+                if (IsAjax())
+                    return BadRequest(new { ok = false, error = "Revisa los campos del formulario." });
                 return View(dto);
             }
 
@@ -32,11 +44,14 @@ namespace ActivaPro.Web.Controllers
 
             if (!result.ok)
             {
-                if (IsAjax()) return BadRequest(new { ok = false, error = result.error });
+                if (IsAjax())
+                    return BadRequest(new { ok = false, error = result.error });
+
                 ModelState.AddModelError(string.Empty, result.error);
                 return View(dto);
             }
 
+            // Crear claims para la sesión
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, result.userId.ToString()),
@@ -46,12 +61,72 @@ namespace ActivaPro.Web.Controllers
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = dto.Recordarme, // Si marcó "Recordarme"
+                ExpiresUtc = dto.Recordarme
+                    ? System.DateTimeOffset.UtcNow.AddDays(30)
+                    : System.DateTimeOffset.UtcNow.AddHours(2)
+            };
 
-            if (IsAjax()) return Json(new { ok = true, redirect = Url.Action("Index", "Home") });
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(identity),
+                authProperties);
+
+            if (IsAjax())
+                return Json(new { ok = true, redirect = Url.Action("Index", "Home") });
+
             return RedirectToAction("Index", "Home");
-        }   
+        }
 
+       
+        [HttpGet]
+        public IActionResult Register()
+        {
+            
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View(new RegisterDTO());
+        }
+
+      
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterDTO dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(dto);
+            }
+
+            try
+            {
+              
+                int userId = await _auth.RegisterAsync(dto, "Cliente");
+
+
+                TempData["Success"] = "✓ Cuenta creada exitosamente. Ahora puedes iniciar sesión.";
+                return RedirectToAction(nameof(Login));
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                // Usuario ya existe
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(dto);
+            }
+            catch (System.Exception ex)
+            {
+                // Error general
+                ModelState.AddModelError(string.Empty, $"Error al crear la cuenta: {ex.Message}");
+                return View(dto);
+            }
+        }
+
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> LogoutPost()
@@ -62,10 +137,25 @@ namespace ActivaPro.Web.Controllers
                 await _auth.LogoutAsync(usuarioId);
             }
 
-            await HttpContext.SignOutAsync();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login));
         }
 
+      
+        [HttpGet]
+        public async Task<IActionResult> Logout()
+        {
+            var id = User.FindFirstValue("id_usuario");
+            if (int.TryParse(id, out var usuarioId))
+            {
+                await _auth.LogoutAsync(usuarioId);
+            }
+
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction(nameof(Login));
+        }
+
+       
         private bool IsAjax()
         {
             var xrw = Request.Headers["X-Requested-With"].ToString();

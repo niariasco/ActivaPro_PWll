@@ -103,6 +103,7 @@ namespace ActivaPro.Application.Services.Implementations
                 }
             }
 
+            // CREAR EL TÉCNICO
             var entity = new Tecnicos
             {
                 IdUsuario = userId,
@@ -112,6 +113,9 @@ namespace ActivaPro.Application.Services.Implementations
 
             await _repository.CreateAsync(entity);
             await ReplaceTecnicoEspecialidades(entity.IdTecnico, dto.EspecialidadesIds);
+
+            // ✅ NUEVO: ASIGNAR ROL "TÉCNICO" AL USUARIO
+            await AsignarRolTecnicoAsync(userId);
         }
 
         public async Task UpdateAsync(TecnicosDTO dto)
@@ -119,10 +123,8 @@ namespace ActivaPro.Application.Services.Implementations
             var entity = await _repository.FindByIdAsync(dto.IdTecnico);
             if (entity == null) throw new KeyNotFoundException("Técnico no encontrado.");
 
-            // Actualiza datos básicos del técnico
             entity.Disponible = dto.Disponible;
 
-            // Actualiza datos del usuario asociado (nombre/correo)
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == entity.IdUsuario);
             if (user == null) throw new KeyNotFoundException("Usuario asociado no encontrado.");
 
@@ -131,11 +133,11 @@ namespace ActivaPro.Application.Services.Implementations
             if (!string.IsNullOrWhiteSpace(dto.CorreoUsuario))
                 user.Correo = dto.CorreoUsuario!;
 
-            // Guardar cambios del técnico (y usuario porque se usa el mismo DbContext)
             await _repository.UpdateAsync(entity);
-
-            // Reemplazar especialidades seleccionadas
             await ReplaceTecnicoEspecialidades(entity.IdTecnico, dto.EspecialidadesIds);
+
+            // ✅ ASEGURAR QUE TENGA EL ROL TÉCNICO
+            await AsignarRolTecnicoAsync(entity.IdUsuario);
         }
 
         public async Task<List<(int Id, string Nombre)>> GetEspecialidadesUCatalogAsync()
@@ -166,6 +168,44 @@ namespace ActivaPro.Application.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Asigna el rol "Técnico" al usuario si no lo tiene
+        /// </summary>
+        private async Task AsignarRolTecnicoAsync(int idUsuario)
+        {
+            // Buscar el rol "Técnico"
+            var rolTecnico = await _context.Roles
+                .FirstOrDefaultAsync(r => r.NombreRol == "Técnico" || r.NombreRol == "técnico");
+
+            if (rolTecnico == null)
+            {
+                // Si no existe el rol, créalo
+                rolTecnico = new Roles
+                {
+                    NombreRol = "Técnico",
+                    Descripcion = "Personal técnico de soporte"
+                };
+                _context.Roles.Add(rolTecnico);
+                await _context.SaveChangesAsync();
+            }
+
+            // Verificar si ya tiene el rol asignado
+            var yaAsignado = await _context.UsuarioRoles
+                .AnyAsync(ur => ur.IdUsuario == idUsuario && ur.IdRol == rolTecnico.IdRol);
+
+            if (!yaAsignado)
+            {
+                // Asignar el rol
+                _context.UsuarioRoles.Add(new UsuarioRol
+                {
+                    IdUsuario = idUsuario,
+                    IdRol = rolTecnico.IdRol,
+                    FechaAsignacion = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }
