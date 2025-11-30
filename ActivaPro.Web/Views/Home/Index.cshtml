@@ -2,6 +2,62 @@
     ViewData["Title"] = "Home Page";
 }
 
+<!-- Carrusel de Imágenes -->
+<div id="carouselActivaPro" class="carousel slide mb-4" data-bs-ride="carousel" style="max-height: 600px; overflow: hidden;">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="3" aria-label="Slide 4"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="4" aria-label="Slide 5"></button>
+    </div>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img src="~/Imagenes/s1.png" class="d-block w-100" alt="Barritas de Proteína ActivaPro" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+                <h5>Nutrición de Alta Calidad</h5>
+                <p>Barritas de proteína con ingredientes naturales</p>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <img src="~/Imagenes/s2.png" class="d-block w-100" alt="Proteínas Vegetales" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+                <h5>Proteínas Vegetales</h5>
+                <p>Perfectas para deportistas y personas activas</p>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <img src="~/Imagenes/s3.png" class="d-block w-100" alt="Vida Saludable" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+                <h5>Estilo de Vida Saludable</h5>
+                <p>Energía y nutrición para tu día a día</p>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <img src="~/Imagenes/s4.png" class="d-block w-100" alt="Variedad de Sabores" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+                <h5>Variedad de Sabores</h5>
+                <p>Encuentra tu favorita entre nuestras opciones</p>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <img src="~/Imagenes/s5.png" class="d-block w-100" alt="Soporte 24/7" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+                <h5>Atención Personalizada</h5>
+                <p>Estamos aquí para ayudarte en todo momento</p>
+            </div>
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselActivaPro" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Anterior</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselActivaPro" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Siguiente</span>
+    </button>
+</div>
+
 <div class="container my-4">
     <div class="card main-card">
         <div class="card-body">

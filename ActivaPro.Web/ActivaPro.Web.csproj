@@ -23,4 +23,12 @@
     <Folder Include="Views\Notificaciones\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\Imagenes\s1.png" />
+    <None Include="wwwroot\Imagenes\s2.png" />
+    <None Include="wwwroot\Imagenes\s3.png" />
+    <None Include="wwwroot\Imagenes\s4.png" />
+    <None Include="wwwroot\Imagenes\s5.png" />
+  </ItemGroup>
+
 </Project>
