@@ -2,6 +2,9 @@
 
 @{
     ViewData["Title"] = "Detalle del Ticket";
+    var idUsuario = ViewBag.IdUsuario;
+    var rolUsuario = ViewBag.RolUsuario ?? "Cliente";
+    var nombreUsuario = ViewBag.NombreUsuario ?? "Usuario";
 }
 
 <div class="container-fluid py-4">
@@ -32,23 +35,27 @@
         <div>
             @if (Model.Estado == "Pendiente")
             {
-                <span class="badge bg-warning text-dark fs-6 px-3 py-2"> Pendiente</span>
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2">⏳ Pendiente</span>
             }
             else if (Model.Estado == "En Proceso")
             {
-                <span class="badge bg-info fs-6 px-3 py-2"> En Proceso</span>
+                <span class="badge bg-info fs-6 px-3 py-2">⚙️ En Proceso</span>
+            }
+            else if (Model.Estado == "En Espera")
+            {
+                <span class="badge bg-secondary fs-6 px-3 py-2">⏸️ En Espera</span>
             }
             else if (Model.Estado == "Resuelto")
             {
-                <span class="badge bg-success fs-6 px-3 py-2"> Resuelto</span>
+                <span class="badge bg-success fs-6 px-3 py-2">✅ Resuelto</span>
             }
             else if (Model.Estado == "Cerrado")
             {
-                <span class="badge bg-success fs-6 px-3 py-2"> Cerrado</span>
+                <span class="badge bg-dark fs-6 px-3 py-2">🔒 Cerrado</span>
             }
             else if (Model.Estado == "Cancelado")
             {
-                <span class="badge bg-danger fs-6 px-3 py-2"> Cancelado</span>
+                <span class="badge bg-danger fs-6 px-3 py-2">❌ Cancelado</span>
             }
             else
             {
@@ -101,22 +108,22 @@
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4 text-muted"> Solicitante</dt>
+                        <dt class="col-sm-4 text-muted">👤 Solicitante</dt>
                         <dd class="col-sm-8">
-                            @Model.NombreSolicitante
-                            <small class="text-muted">(ID: @Model.IdUsuarioSolicitante)</small>
+                            <strong>@Model.NombreSolicitante</strong>
+                            <small class="text-muted d-block">(ID: @Model.IdUsuarioSolicitante)</small>
                         </dd>
 
-                        <dt class="col-sm-4 text-muted"> Asignado a</dt>
+                        <dt class="col-sm-4 text-muted">🔧 Asignado a</dt>
                         <dd class="col-sm-8">
                             @if (Model.IdUsuarioAsignado.HasValue)
                             {
-                                @Model.NombreAsignado
-                                <small class="text-muted">(ID: @Model.IdUsuarioAsignado)</small>
+                                <strong>@Model.NombreAsignado</strong>
+                                <small class="text-muted d-block">(ID: @Model.IdUsuarioAsignado)</small>
                             }
                             else
                             {
-                                <span class="text-warning">Sin asignar</span>
+                                <span class="badge bg-warning text-dark">⚠️ Sin asignar</span>
                             }
                         </dd>
                     </dl>
@@ -138,14 +145,15 @@
                             @foreach (var imagen in Model.Imagenes)
                             {
                                 <div class="col-md-4 col-sm-6">
-                                    <div class="card h-100">
+                                    <div class="card h-100 border">
                                         <a href="@imagen.RutaArchivo" target="_blank" data-bs-toggle="tooltip" title="Click para ver en tamaño completo">
                                             <img src="@imagen.RutaArchivo"
-                                                 class="card-img-top"
+                                                 class="card-img-top img-thumbnail"
                                                  alt="@imagen.NombreArchivo"
-                                                 style="height: 200px; object-fit: cover; cursor: pointer;">
+                                                 style="height: 200px; object-fit: cover; cursor: pointer;"
+                                                 onerror="this.src='/images/no-image.png'; this.onerror=null;">
                                         </a>
-                                        <div class="card-body p-2">
+                                        <div class="card-body p-2 bg-light">
                                             <small class="text-muted d-block text-truncate" title="@imagen.NombreArchivo">
                                                 <i class="bi bi-file-image me-1"></i>@imagen.NombreArchivo
                                             </small>
@@ -179,13 +187,42 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-items-center mb-1">
-                                                <i class="bi bi-person-circle me-2 text-primary"></i>
+                                                <i class="bi bi-person-circle me-2 text-primary fs-5"></i>
                                                 <strong>@item.NombreUsuario</strong>
                                             </div>
                                             <p class="mb-0 text-muted ms-4">@item.Accion</p>
+
+                                            @if (!string.IsNullOrEmpty(item.Comentario))
+                                            {
+                                                <div class="alert alert-light mt-2 ms-4 mb-0">
+                                                    <small><strong>Comentario:</strong> @item.Comentario</small>
+                                                </div>
+                                            }
+
+                                            @if (item.ImagenesEvidencia != null && item.ImagenesEvidencia.Any())
+                                            {
+                                                <div class="mt-2 ms-4">
+                                                    <small class="text-muted d-block mb-1">
+                                                        <i class="bi bi-paperclip me-1"></i>Evidencias adjuntas:
+                                                    </small>
+                                                    <div class="d-flex gap-2 flex-wrap">
+                                                        @foreach (var img in item.ImagenesEvidencia)
+                                                        {
+                                                            <a href="@img.RutaArchivo" target="_blank" class="d-block">
+                                                                <img src="@img.RutaArchivo"
+                                                                     alt="@img.NombreArchivo"
+                                                                     class="img-thumbnail"
+                                                                     style="width: 60px; height: 60px; object-fit: cover;"
+                                                                     title="@img.NombreArchivo">
+                                                            </a>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
                                         </div>
                                         <small class="text-muted text-nowrap ms-3">
-                                            <i class="bi bi-calendar3 me-1"></i>@item.FechaAccion.ToString("dd/MM/yyyy HH:mm")
+                                            <i class="bi bi-calendar3 me-1"></i>@item.FechaAccion.ToString("dd/MM/yyyy")<br>
+                                            <i class="bi bi-clock me-1"></i>@item.FechaAccion.ToString("HH:mm")
                                         </small>
                                     </div>
                                 </div>
@@ -210,18 +247,25 @@
                                 {
                                     if (i <= Model.Valoracion.Puntaje)
                                     {
-                                        <i class="bi bi-star-fill text-warning"></i>
+                                        <i class="bi bi-star-fill text-warning fs-5"></i>
                                     }
                                     else
                                     {
-                                        <i class="bi bi-star text-muted"></i>
+                                        <i class="bi bi-star text-muted fs-5"></i>
                                     }
                                 }
-                                <span class="ms-2 fw-bold">(@Model.Valoracion.Puntaje/5)</span>
+                                <span class="ms-2 fw-bold fs-5">(@Model.Valoracion.Puntaje/5)</span>
                             </dd>
 
-                            <dt class="col-sm-4 text-muted">Comentario</dt>
-                            <dd class="col-sm-8">@Model.Valoracion.Comentario</dd>
+                            @if (!string.IsNullOrEmpty(Model.Valoracion.Comentario))
+                            {
+                                <dt class="col-sm-4 text-muted">Comentario</dt>
+                                <dd class="col-sm-8">
+                                    <div class="alert alert-light mb-0">
+                                        @Model.Valoracion.Comentario
+                                    </div>
+                                </dd>
+                            }
 
                             <dt class="col-sm-4 text-muted">Fecha</dt>
                             <dd class="col-sm-8">
@@ -243,20 +287,20 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6 text-muted">Prioridad</dt>
-                        <dd class="col-sm-6">
+                        <dd class="col-sm-6 text-end">
                             @if (!string.IsNullOrEmpty(Model.SLA_Prioridad))
                             {
                                 if (Model.SLA_Prioridad.Contains("Alta"))
                                 {
-                                    <span class="badge bg-danger"> Alta</span>
+                                    <span class="badge bg-danger">🔴 Alta</span>
                                 }
                                 else if (Model.SLA_Prioridad.Contains("Media"))
                                 {
-                                    <span class="badge bg-warning text-dark"> Media</span>
+                                    <span class="badge bg-warning text-dark">🟡 Media</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary"> Baja</span>
+                                    <span class="badge bg-secondary">🟢 Baja</span>
                                 }
                             }
                             else
@@ -266,15 +310,23 @@
                         </dd>
 
                         <dt class="col-sm-6 text-muted">SLA</dt>
-                        <dd class="col-sm-6">
+                        <dd class="col-sm-6 text-end">
                             <small>@(Model.SLA_Descripcion ?? "Sin SLA")</small>
                         </dd>
 
                         @if (Model.SLA_TiempoRespuestaHoras.HasValue)
                         {
                             <dt class="col-sm-6 text-muted">Tiempo Respuesta</dt>
-                            <dd class="col-sm-6">
-                                <strong>@Model.SLA_TiempoRespuestaHoras h</strong>
+                            <dd class="col-sm-6 text-end">
+                                <span class="badge bg-info">@Model.SLA_TiempoRespuestaHoras h</span>
+                            </dd>
+                        }
+
+                        @if (Model.SLA_TiempoResolucionHoras.HasValue)
+                        {
+                            <dt class="col-sm-6 text-muted">Tiempo Resolución</dt>
+                            <dd class="col-sm-6 text-end">
+                                <span class="badge bg-info">@Model.SLA_TiempoResolucionHoras h</span>
                             </dd>
                         }
                     </dl>
@@ -289,21 +341,28 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6 text-muted">Creación</dt>
-                        <dd class="col-sm-6">
-                            <small>@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</small>
+                        <dd class="col-sm-6 text-end">
+                            <small>
+                                📅 @Model.FechaCreacion.ToString("dd/MM/yyyy")<br>
+                                🕒 @Model.FechaCreacion.ToString("HH:mm")
+                            </small>
                         </dd>
 
                         <dt class="col-sm-6 text-muted">Última Actualización</dt>
-                        <dd class="col-sm-6">
-                            <small>@Model.FechaActualizacion.ToString("dd/MM/yyyy HH:mm")</small>
+                        <dd class="col-sm-6 text-end">
+                            <small>
+                                📅 @Model.FechaActualizacion.ToString("dd/MM/yyyy")<br>
+                                🕒 @Model.FechaActualizacion.ToString("HH:mm")
+                            </small>
                         </dd>
 
                         @if (Model.FechaLimiteResolucion.HasValue)
                         {
                             <dt class="col-sm-6 text-muted">Límite Resolución</dt>
-                            <dd class="col-sm-6">
+                            <dd class="col-sm-6 text-end">
                                 <small class="text-danger fw-bold">
-                                    @Model.FechaLimiteResolucion.Value.ToString("dd/MM/yyyy HH:mm")
+                                    📅 @Model.FechaLimiteResolucion.Value.ToString("dd/MM/yyyy")<br>
+                                    🕒 @Model.FechaLimiteResolucion.Value.ToString("HH:mm")
                                 </small>
                             </dd>
                         }
@@ -320,7 +379,7 @@
                     <dl class="row mb-0">
                         <dt class="col-sm-8 text-muted">Días desde creación</dt>
                         <dd class="col-sm-4 text-end">
-                            <span class="badge bg-info">@Model.DiasDesdeCreacion días</span>
+                            <span class="badge bg-info">@Model.DiasDesdeCreacion</span>
                         </dd>
 
                         @if (Model.DiasParaResolucion.HasValue)
@@ -329,7 +388,7 @@
                             <dd class="col-sm-4 text-end">
                                 @if (Model.DiasParaResolucion.Value >= 0)
                                 {
-                                    <span class="badge bg-success">@Model.DiasParaResolucion días</span>
+                                    <span class="badge bg-success">@Model.DiasParaResolucion</span>
                                 }
                                 else
                                 {
@@ -371,21 +430,43 @@
     </div>
 
     <!-- Botones de Acción -->
-    <div class="d-flex gap-2 mt-4">
-        <a asp-action="Edit" asp-route-id="@Model.IdTicket" class="btn btn-warning">
-            <i class="bi bi-pencil me-2"></i>Editar
-        </a>
+    <div class="d-flex gap-2 mt-4 pb-4">
         <a asp-action="Index" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-2"></i>Volver al Listado
         </a>
-        <a asp-action="Delete" asp-route-id="@Model.IdTicket" class="btn btn-danger ms-auto">
-            <i class="bi bi-trash me-2"></i>Eliminar
-        </a>
+
+        @if ((rolUsuario == "Tecnico" || rolUsuario == "Técnico") && Model.IdUsuarioAsignado == idUsuario)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.IdTicket" class="btn btn-warning">
+                <i class="bi bi-pencil me-2"></i>Editar
+            </a>
+        }
+
+        @if ((rolUsuario == "Cliente" && Model.IdUsuarioSolicitante == idUsuario) || rolUsuario == "Administrador")
+        {
+            @if (Model.Estado != "Cerrado" && Model.Estado != "Cancelado")
+            {
+                <a asp-action="Close" asp-route-id="@Model.IdTicket" class="btn btn-danger ms-auto">
+                    <i class="bi bi-x-circle me-2"></i>Cerrar Ticket
+                </a>
+            }
+        }
+
+        @if (rolUsuario == "Administrador")
+        {
+            <a asp-action="Delete" asp-route-id="@Model.IdTicket"
+               class="btn btn-outline-danger @(Model.Estado != "Cerrado" ? "ms-auto" : "")"
+               onclick="return confirm('⚠️ ¿Está SEGURO de eliminar este ticket?\n\nEsta acción NO se puede deshacer.');">
+                <i class="bi bi-trash me-2"></i>Eliminar
+            </a>
+        }
     </div>
 </div>
 
 @section Scripts {
     <script>
+        console.log('📄 Vista de detalles cargada correctamente');
+
         // Activar tooltips de Bootstrap 5
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -400,6 +481,17 @@
                 bsAlert.close();
             });
         }, 5000);
+
+        // Animación suave al cargar
+        document.querySelectorAll('.card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.4s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 50);
+        });
     </script>
 }
 
@@ -408,11 +500,43 @@
         border-bottom: none !important;
     }
 
-    .card-img-top {
-        transition: transform 0.2s ease-in-out;
+    .card-img-top:hover {
+        transform: scale(1.05);
+        transition: transform 0.3s ease-in-out;
     }
 
-        .card-img-top:hover {
-            transform: scale(1.05);
+    .img-thumbnail:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transform: scale(1.05);
+        transition: all 0.3s ease;
+    }
+
+    .card {
+        border: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
         }
+
+    .badge {
+        font-size: 0.85em;
+        padding: 0.4em 0.6em;
+    }
+
+    .timeline {
+        position: relative;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 10px;
+    }
+
+    .alert-light {
+        background-color: #f8f9fa;
+        border-left: 3px solid #0d6efd;
+    }
 </style>

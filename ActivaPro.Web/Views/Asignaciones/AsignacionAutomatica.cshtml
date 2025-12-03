@@ -1,0 +1,359 @@
+﻿@model IEnumerable<ActivaPro.Application.DTOs.TicketPendienteAsignacionDTO>
+
+@{
+    ViewData["Title"] = "Asignación Automática - Autotriage";
+}
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .ticket-row {
+        transition: all 0.3s ease;
+    }
+
+        .ticket-row:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+
+    .urgencia-indicator {
+        width: 8px;
+        height: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 4px 0 0 4px;
+    }
+
+    .formula-card {
+        background: linear-gradient(to right, #f8f9fa, #ffffff);
+        border-left: 4px solid #667eea;
+    }
+
+    .stat-badge {
+        font-size: 1.5rem;
+        padding: 0.75rem 1.5rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- HERO SECTION -->
+    <div class="hero-section shadow">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="bi bi-robot"></i> Asignación Automática (Autotriage)
+                </h1>
+                <p class="mb-0 fs-5">
+                    Sistema inteligente de asignación basado en algoritmo de priorización
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="bg-white bg-opacity-25 rounded p-3">
+                    <div class="fs-6 mb-1">Tickets Pendientes</div>
+                    <div class="fs-1 fw-bold">@ViewBag.TotalTicketsPendientes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-action="Index"><i class="bi bi-house"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Asignación Automática</li>
+        </ol>
+    </nav>
+
+    <!-- MENSAJES -->
+    @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <strong>¡Éxito!</strong> @ViewBag.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <strong>Error:</strong> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <!-- ACCIONES MASIVAS -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-warning border-2">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h4 class="mb-2">
+                                    <i class="bi bi-lightning-charge-fill text-warning"></i>
+                                    Asignación Masiva Automática
+                                </h4>
+                                <p class="text-muted mb-0">
+                                    El sistema calculará automáticamente el técnico óptimo para cada ticket
+                                    aplicando el algoritmo de autotriage
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <form asp-action="AsignarTodosPendientes" method="post"
+                                      onsubmit="return confirm('¿Está seguro de asignar TODOS los tickets pendientes automáticamente?\n\nEsta acción procesará @Model.Count() tickets.');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-warning btn-lg shadow">
+                                        <i class="bi bi-lightning-fill"></i> Asignar Todos (@Model.Count())
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FÓRMULA DEL ALGORITMO -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card formula-card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3">
+                            <i class="bi bi-calculator-fill text-primary"></i> Algoritmo de Autotriage
+                        </h5>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="bg-white p-3 rounded border mb-3">
+                                    <strong>Fórmula de Puntaje:</strong>
+                                    <code class="d-block mt-2 fs-6">
+                                        Puntaje = (Prioridad × 1000) - Tiempo_SLA - (Carga × 50) + Especialidad
+                                    </code>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="small">
+                                    <strong>Criterios de Asignación:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li><strong>Prioridad:</strong> Crítica=4000, Alta=3000, Media=2000, Baja=1000 pts</li>
+                                        <li><strong>Tiempo SLA:</strong> Menor tiempo = Mayor urgencia (resta directa)</li>
+                                        <li><strong>Carga Trabajo:</strong> Menos tickets activos = Más disponible (-50 pts/ticket)</li>
+                                        <li><strong>Especialidad:</strong> Técnico con especialidad coincidente (+100 pts)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE TICKETS -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-check"></i> Tickets Pendientes de Asignación
+                            </h5>
+                            <span class="badge bg-white text-primary stat-badge">
+                                @Model.Count() tickets
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="80">ID</th>
+                                        <th>Título & Descripción</th>
+                                        <th width="150" class="text-center">Categoría</th>
+                                        <th width="120" class="text-center">Prioridad</th>
+                                        <th width="150" class="text-center">Tiempo Restante</th>
+                                        <th width="150">Fecha Creación</th>
+                                        <th width="150" class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ticket in Model.OrderBy(t => t.HorasRestantes ?? int.MaxValue))
+                                    {
+                                        var urgenciaColor = ticket.HorasRestantes.HasValue && ticket.HorasRestantes <= 6 ? "danger" :
+                                        ticket.HorasRestantes.HasValue && ticket.HorasRestantes <= 24 ? "warning" :
+                                        "success";
+
+                                        <tr class="ticket-row position-relative">
+                                            <div class="urgencia-indicator bg-@urgenciaColor"></div>
+
+                                            <td>
+                                                <strong class="text-primary">#@ticket.IdTicket</strong>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong>@ticket.Titulo</strong>
+                                                </div>
+                                                <small class="text-muted">
+                                                    @(ticket.Descripcion.Length > 80
+                                                                                                ? ticket.Descripcion.Substring(0, 80) + "..."
+                                                                                                : ticket.Descripcion)
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-tag"></i> @ticket.Categoria
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @{
+                                                    var prioridadClass = ticket.Prioridad switch
+                                                    {
+                                                        "Crítica" => "bg-danger",
+                                                        "Alta" => "bg-warning text-dark",
+                                                        "Media" => "bg-info",
+                                                        "Baja" => "bg-secondary",
+                                                        _ => "bg-secondary"
+                                                    };
+                                                }
+                                                <span class="badge @prioridadClass px-3 py-2">
+                                                    @ticket.Prioridad
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (ticket.HorasRestantes.HasValue)
+                                                {
+                                                    var urgenciaClass = ticket.HorasRestantes <= 6 ? "text-danger" :
+                                                    ticket.HorasRestantes <= 24 ? "text-warning" :
+                                                    "text-success";
+                                                    <div class="@urgenciaClass fw-bold">
+                                                        <i class="bi bi-clock-fill"></i>
+                                                        @ticket.HorasRestantes h
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        @ticket.FechaLimiteResolucion?.ToString("dd/MM HH:mm")
+                                                    </small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin SLA</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    <i class="bi bi-calendar3"></i>
+                                                    @ticket.FechaCreacion.ToString("dd/MM/yyyy")
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">
+                                                    @ticket.FechaCreacion.ToString("HH:mm")
+                                                </small>
+                                            </td>
+                                            <td class="text-center">
+                                                <form asp-action="AsignarTicketAutomaticamente" method="post" style="display:inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="idTicket" value="@ticket.IdTicket" />
+                                                    <button type="submit" class="btn btn-primary shadow-sm"
+                                                            title="Asignar Automáticamente"
+                                                            onclick="return confirm('¿Asignar automáticamente el Ticket #@ticket.IdTicket?');">
+                                                        <i class="bi bi-robot"></i> Asignar
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                Mostrando @Model.Count() tickets ordenados por urgencia
+                            </small>
+                            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- SIN TICKETS PENDIENTES -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-success border-2">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                        <h3 class="mt-4 mb-3">¡Excelente! No hay tickets pendientes de asignación</h3>
+                        <p class="text-muted fs-5">
+                            Todos los tickets han sido asignados correctamente a los técnicos disponibles.
+                        </p>
+                        <div class="mt-4">
+                            <a asp-action="Index" class="btn btn-primary btn-lg shadow me-2">
+                                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                            </a>
+                            <a asp-controller="Ticketes" asp-action="Index" class="btn btn-outline-primary btn-lg">
+                                <i class="bi bi-ticket-detailed"></i> Ver Todos los Tickets
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- LEYENDA DE COLORES -->
+    @if (Model.Any())
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-palette-fill text-info"></i> Leyenda de Urgencia
+                                </h6>
+                                <div class="d-flex gap-3">
+                                    <div>
+                                        <span class="badge bg-danger">Alta</span>
+                                        <small class="text-muted ms-1">≤ 6 horas</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-warning text-dark">Media</span>
+                                        <small class="text-muted ms-1">≤ 24 horas</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success">Baja</span>
+                                        <small class="text-muted ms-1">> 24 horas</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    El algoritmo selecciona automáticamente al técnico con mayor puntaje
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

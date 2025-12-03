@@ -88,6 +88,23 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                  .ToListAsync();
         }
 
+        public async Task<ICollection<Tickets>> ListByEstadoAsync(string estado)
+        {
+            return await _context.Ticketes
+                .Where(t => t.Estado == estado)
+                .Include(t => t.UsuarioSolicitante)
+                .Include(t => t.UsuarioAsignado)
+                .Include(t => t.Categoria)
+                    .ThenInclude(c => c.CategoriaEtiquetas)
+                        .ThenInclude(ce => ce.Etiqueta)
+                .Include(t => t.Categoria)
+                    .ThenInclude(c => c.CategoriaSLAs)
+                        .ThenInclude(cs => cs.SLA)
+                .Include(t => t.SLA)
+                .OrderByDescending(t => t.FechaCreacion)
+                .ToListAsync();
+        }
+
         // ========== CREACIÓN ==========
 
         public async Task CreateAsync(Tickets ticket)

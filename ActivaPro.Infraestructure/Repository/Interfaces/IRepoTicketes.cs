@@ -12,6 +12,12 @@ namespace ActivaPro.Infraestructure.Repository.Interfaces
         Task<ICollection<Tickets>> ListByUsuarioSolicitanteAsync(int idUsuario);
         Task<ICollection<Tickets>> ListByUsuarioAsignadoAsync(int idUsuario);
 
+        /// <summary>
+        /// Lista tickets filtrados por estado
+        /// </summary>
+        /// <param name="estado">Estado del ticket (Pendiente, Asignado, En Proceso, Cerrado)</param>
+        Task<ICollection<Tickets>> ListByEstadoAsync(string estado);
+
         // ========== CREACIÓN ==========
         Task CreateAsync(Tickets ticket);
         Task AddHistorialAsync(Historial_Tickets historial);

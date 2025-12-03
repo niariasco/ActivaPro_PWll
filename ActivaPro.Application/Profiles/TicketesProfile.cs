@@ -96,5 +96,6 @@ namespace ActivaPro.Application.Profiles
                         ? src.FechaActualizacion <= src.FechaLimiteResolucion.Value
                         : (bool?)null));
         }
-    }
+    
 }
+    }

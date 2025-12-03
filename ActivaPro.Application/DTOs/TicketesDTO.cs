@@ -38,8 +38,8 @@ namespace ActivaPro.Application.DTOs
         public string? NombreSolicitante { get; set; }
         public string? NombreAsignado { get; set; }
 
-        // Historial
-        public List<HistorialTicketDTO>? Historial { get; set; }
+        // Historial - ACTUALIZADO para soportar historial detallado
+        public List<HistorialTicketDetalladoDTO>? Historial { get; set; }
 
         // Valoración
         public ValoracionTicketDTO? Valoracion { get; set; }
@@ -63,7 +63,7 @@ namespace ActivaPro.Application.DTOs
     }
 
     /// <summary>
-    /// DTO para el historial de acciones del ticket
+    /// DTO SIMPLE para el historial (retrocompatibilidad)
     /// </summary>
     public record HistorialTicketDTO
     {
@@ -71,6 +71,21 @@ namespace ActivaPro.Application.DTOs
         public string NombreUsuario { get; set; }
         public string Accion { get; set; }
         public DateTime FechaAccion { get; set; }
+    }
+
+    /// <summary>
+    /// DTO EXTENDIDO para el historial con estado anterior, nuevo, comentario e imágenes
+    /// </summary>
+    public record HistorialTicketDetalladoDTO
+    {
+        public int IdHistorial { get; set; }
+        public string NombreUsuario { get; set; }
+        public string Accion { get; set; }
+        public string EstadoAnterior { get; set; }
+        public string EstadoNuevo { get; set; }
+        public string Comentario { get; set; }
+        public DateTime FechaAccion { get; set; }
+        public List<ImagenTicketDTO>? ImagenesEvidencia { get; set; }
     }
 
     /// <summary>
@@ -120,6 +135,10 @@ namespace ActivaPro.Application.DTOs
         public DateTime? FechaLimiteRespuesta { get; set; }
         public DateTime? FechaLimiteResolucion { get; set; }
     }
+
+    /// <summary>
+    /// DTO para editar un ticket existente
+    /// </summary>
     public class TicketEditDTO
     {
         public int IdTicket { get; set; }
@@ -183,5 +202,37 @@ namespace ActivaPro.Application.DTOs
 
         // Lista de técnicos disponibles para asignación
         public List<UsuarioDTO>? TecnicosDisponibles { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para cambio de estado del ticket con validaciones estrictas
+    /// Incluye: comentario obligatorio, imagen obligatoria, validación de flujo
+    /// </summary>
+    public class TicketStateTransitionDTO
+    {
+        public int IdTicket { get; set; }
+
+        [Required(ErrorMessage = "El nuevo estado es obligatorio")]
+        public string NuevoEstado { get; set; }
+
+        [Required(ErrorMessage = "Debe proporcionar un comentario obligatorio que justifique el cambio")]
+        [StringLength(500, MinimumLength = 10, ErrorMessage = "El comentario debe tener entre 10 y 500 caracteres")]
+        public string Comentario { get; set; }
+
+        [Required(ErrorMessage = "Debe adjuntar al menos una imagen como evidencia")]
+        [MinLength(1, ErrorMessage = "Debe adjuntar al menos una imagen como evidencia")]
+        public List<IFormFile>? ImagenesEvidencia { get; set; }
+
+        // ========== INFORMACIÓN DE CONTEXTO (solo lectura) ==========
+        public string EstadoActual { get; set; }
+        public string Titulo { get; set; }
+        public int IdUsuarioSolicitante { get; set; }
+        public string NombreSolicitante { get; set; }
+        public int? IdUsuarioAsignado { get; set; }
+        public string NombreUsuarioAsignado { get; set; }
+        public DateTime FechaCreacion { get; set; }
+
+        // Estados disponibles según flujo estricto
+        public List<string> EstadosDisponibles { get; set; } = new List<string>();
     }
 }

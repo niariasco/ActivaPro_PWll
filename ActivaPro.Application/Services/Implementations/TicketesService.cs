@@ -504,8 +504,8 @@ namespace ActivaPro.Application.Services.Implementations
             await _repository.AddHistorialAsync(historial);
         }
 
+         
         
-
         public async Task DeleteImagenAsync(int idImagen, string rutaFisica)
         {
             var imagen = await _repository.FindImagenByIdAsync(idImagen);

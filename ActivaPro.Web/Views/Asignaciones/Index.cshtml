@@ -2,6 +2,10 @@
 
 @{
     ViewData["Title"] = "Tablero de Asignaciones";
+    var totalTicketsPendientes = Model.Sum(t => t.TicketsPendientes);
+    var totalTicketsEnProceso = Model.Sum(t => t.TicketsEnProceso);
+    var totalTicketsCerrados = Model.Sum(t => t.TicketsCerrados);
+    var totalTickets = Model.Sum(t => t.TotalTicketsAsignados);
 }
 
 <style>
@@ -10,16 +14,30 @@
         cursor: pointer;
     }
 
-    .ticket-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+    .border-danger {
+        border-left: 4px solid #dc3545 !important;
     }
 
-    .border-danger { border-left: 4px solid #dc3545 !important; }
-    .border-warning { border-left: 4px solid #ffc107 !important; }
-    .border-info { border-left: 4px solid #0dcaf0 !important; }
-    .border-success { border-left: 4px solid #198754 !important; }
-    .border-secondary { border-left: 4px solid #6c757d !important; }
+    .border-warning {
+        border-left: 4px solid #ffc107 !important;
+    }
+
+    .border-info {
+        border-left: 4px solid #0dcaf0 !important;
+    }
+
+    .border-success {
+        border-left: 4px solid #198754 !important;
+    }
+
+    .border-secondary {
+        border-left: 4px solid #6c757d !important;
+    }
 
     .accordion-button:not(.collapsed) {
         background-color: #f8f9fa;
@@ -33,25 +51,198 @@
     .progress {
         background-color: #e9ecef;
     }
+
+    .action-card {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+        .action-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+    .stat-card {
+        border-left: 4px solid;
+    }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-kanban"></i> Tablero de Asignaciones</h2>
-        <div class="btn-group">
-            <button class="btn btn-outline-primary active" id="vistaTablero">
-                <i class="bi bi-kanban"></i> Tablero
-            </button>
-            <button class="btn btn-outline-primary" id="vistaCalendario">
-                <i class="bi bi-calendar3"></i> Calendario
-            </button>
+    <!-- HEADER CON ESTADÍSTICAS -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2><i class="bi bi-kanban"></i> Tablero de Asignaciones</h2>
+                    <p class="text-muted mb-0">Gestión y seguimiento de tickets asignados</p>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary active" id="vistaTablero">
+                        <i class="bi bi-kanban"></i> Tablero
+                    </button>
+                    <button class="btn btn-outline-primary" id="vistaCalendario">
+                        <i class="bi bi-calendar3"></i> Calendario
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- TARJETAS DE ESTADÍSTICAS -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-primary shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Total Tickets</p>
+                            <h3 class="mb-0">@totalTickets</h3>
+                        </div>
+                        <div class="text-primary">
+                            <i class="bi bi-ticket-detailed fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-warning shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Pendientes</p>
+                            <h3 class="mb-0 text-warning">@totalTicketsPendientes</h3>
+                        </div>
+                        <div class="text-warning">
+                            <i class="bi bi-hourglass-split fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-info shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">En Proceso</p>
+                            <h3 class="mb-0 text-info">@totalTicketsEnProceso</h3>
+                        </div>
+                        <div class="text-info">
+                            <i class="bi bi-gear-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-success shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Cerrados</p>
+                            <h3 class="mb-0 text-success">@totalTicketsCerrados</h3>
+                        </div>
+                        <div class="text-success">
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCIONES RÁPIDAS (SOLO PARA ADMINISTRADORES) -->
+    @if (User.IsInRole("Administrador"))
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="bi bi-lightning-fill text-warning"></i> Acciones Rápidas
+                        </h5>
+                        <div class="row">
+                            <!-- ASIGNACIÓN AUTOMÁTICA -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card action-card h-100">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bi bi-robot text-primary" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5 class="card-title">Asignación Automática</h5>
+                                        <p class="card-text text-muted">
+                                            Sistema inteligente de autotriage basado en prioridad, SLA y carga de trabajo
+                                        </p>
+                                        <a href="@Url.Action("AsignacionAutomatica", "Asignaciones")"
+                                           class="btn btn-primary btn-lg">
+                                            <i class="bi bi-robot"></i> Iniciar Autotriage
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ASIGNACIÓN MANUAL -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card action-card h-100">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bi bi-person-fill-gear text-success" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5 class="card-title">Asignación Manual</h5>
+                                        <p class="card-text text-muted">
+                                            Asigne tickets manualmente seleccionando el técnico más adecuado
+                                        </p>
+                                        <a href="@Url.Action("AsignacionManual", "Asignaciones")"
+                                           class="btn btn-success btn-lg">
+                                            <i class="bi bi-person-fill-gear"></i> Asignar Manualmente
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- MENSAJES -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- TABLERO DE TÉCNICOS -->
     @if (!Model.Any())
     {
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No hay asignaciones registradas.
+        <div class="alert alert-info text-center py-5">
+            <i class="bi bi-info-circle fs-1"></i>
+            <h4 class="mt-3">No hay asignaciones registradas</h4>
+            <p class="text-muted">Comience asignando tickets a los técnicos disponibles</p>
+            @if (User.IsInRole("Administrador"))
+            {
+                <div class="mt-3">
+                    <a href="@Url.Action("AsignacionAutomatica", "Asignaciones")" class="btn btn-primary me-2">
+                        <i class="bi bi-robot"></i> Asignación Automática
+                    </a>
+                    <a href="@Url.Action("AsignacionManual", "Asignaciones")" class="btn btn-success">
+                        <i class="bi bi-person-fill-gear"></i> Asignación Manual
+                    </a>
+                </div>
+            }
         </div>
     }
     else
@@ -100,22 +291,22 @@
                                     var collapseId = $"collapse-{tecnico.IdTecnico}-{semana.NumeroSemana}";
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
-                                            <button class="accordion-button @(semana == tecnico.AsignacionesPorSemana.First() ? "" : "collapsed")" 
-                                                    type="button" 
-                                                    data-bs-toggle="collapse" 
+                                            <button class="accordion-button @(semana == tecnico.AsignacionesPorSemana.First() ? "" : "collapsed")"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
                                                     data-bs-target="#@collapseId">
                                                 <i class="bi bi-calendar-week me-2"></i>
                                                 Semana @semana.NumeroSemana - @semana.RangoFechas
                                                 <span class="badge bg-secondary ms-2">@semana.Tickets.Count</span>
                                             </button>
                                         </h2>
-                                        <div id="@collapseId" 
-                                             class="accordion-collapse collapse @(semana == tecnico.AsignacionesPorSemana.First() ? "show" : "")" 
+                                        <div id="@collapseId"
+                                             class="accordion-collapse collapse @(semana == tecnico.AsignacionesPorSemana.First() ? "show" : "")"
                                              data-bs-parent="#accordion-@tecnico.IdTecnico">
                                             <div class="accordion-body p-2">
                                                 @foreach (var ticket in semana.Tickets.Take(5))
                                                 {
-                                                    <div class="card mb-2 ticket-card border-@ticket.ColorUrgencia" 
+                                                    <div class="card mb-2 ticket-card border-@ticket.ColorUrgencia"
                                                          data-ticket-id="@ticket.IdTicket">
                                                         <div class="card-body p-2">
                                                             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -127,13 +318,13 @@
                                                                     @ticket.Estado
                                                                 </span>
                                                             </div>
-                                                            
+
                                                             <p class="small mb-2 text-truncate">@ticket.Titulo</p>
-                                                            
+
                                                             <div class="small text-muted mb-2">
                                                                 <i class="bi bi-tag"></i> @ticket.Categoria
                                                             </div>
-                                                            
+
                                                             @if (ticket.HorasRestantes.HasValue)
                                                             {
                                                                 <div class="small mb-2">
@@ -141,25 +332,19 @@
                                                                     <strong>@ticket.HorasRestantes h restantes</strong>
                                                                 </div>
                                                             }
-                                                            
+
                                                             <!-- Barra de progreso -->
                                                             <div class="progress mb-2" style="height: 5px;">
-                                                                <div class="progress-bar bg-@ticket.ColorUrgencia" 
+                                                                <div class="progress-bar bg-@ticket.ColorUrgencia"
                                                                      style="width: @ticket.PorcentajeProgreso%"></div>
                                                             </div>
-                                                            
+
                                                             <!-- Acciones -->
                                                             <div class="d-flex gap-1">
-                                                                <a href="@Url.Action("DetalleTicket", "Asignaciones", new { id = ticket.IdTicket })" 
+                                                                <a href="@Url.Action("DetalleTicket", "Asignaciones", new { id = ticket.IdTicket })"
                                                                    class="btn btn-sm btn-outline-primary flex-fill">
                                                                     <i class="bi bi-eye"></i> Ver
                                                                 </a>
-                                                                <button class="btn btn-sm btn-outline-secondary" disabled>
-                                                                    <i class="bi bi-pencil"></i>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-outline-secondary" disabled>
-                                                                    <i class="bi bi-chat"></i>
-                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -167,7 +352,7 @@
                                                 @if (semana.Tickets.Count > 5)
                                                 {
                                                     <div class="text-center">
-                                                        <a href="@Url.Action("MisAsignaciones", new { id = tecnico.IdTecnico })" 
+                                                        <a href="@Url.Action("MisAsignaciones", new { id = tecnico.IdTecnico })"
                                                            class="btn btn-sm btn-link">
                                                             Ver todos (@semana.Tickets.Count)
                                                         </a>
@@ -182,7 +367,7 @@
                             @if (tecnico.AsignacionesPorSemana.Count > 3)
                             {
                                 <div class="text-center mt-3">
-                                    <a href="@Url.Action("MisAsignaciones", new { id = tecnico.IdTecnico })" 
+                                    <a href="@Url.Action("MisAsignaciones", new { id = tecnico.IdTecnico })"
                                        class="btn btn-sm btn-primary">
                                         Ver todas las semanas
                                     </a>
@@ -207,6 +392,18 @@
             this.classList.add('active');
             document.getElementById('vistaTablero')?.classList.remove('active');
             alert('Vista de calendario - Próximamente');
+        });
+
+        // Animación de tarjetas al cargar
+        const cards = document.querySelectorAll('.ticket-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 50);
         });
     });
 </script>

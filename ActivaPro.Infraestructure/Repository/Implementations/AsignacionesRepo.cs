@@ -72,6 +72,8 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                     .ThenInclude(t => t.Categoria)
                 .Include(a => a.IdTicketNavigation)
                     .ThenInclude(t => t.SLA)
+                .Include(a => a.IdTicketNavigation)
+                    .ThenInclude(t => t.UsuarioSolicitante)
                 .Include(a => a.IdUsuarioAsignadoNavigation)
                 .Include(a => a.IdUsuarioAsignadorNavigation)
                 .FirstOrDefaultAsync(a => a.IdAsignacion == id);
@@ -88,6 +90,63 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 .Where(a => a.IdTicket == idTicket)
                 .OrderByDescending(a => a.FechaAsignacion)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<AsignacionesTickets> AddAsync(AsignacionesTickets asignacion)
+        {
+            await _context.AsignacionesTickets.AddAsync(asignacion);
+            await _context.SaveChangesAsync();
+            return asignacion;
+        }
+
+        public async Task<AsignacionesTickets> UpdateAsync(AsignacionesTickets asignacion)
+        {
+            _context.AsignacionesTickets.Update(asignacion);
+            await _context.SaveChangesAsync();
+            return asignacion;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var asignacion = await FindByIdAsync(id);
+            if (asignacion == null) return false;
+
+            _context.AsignacionesTickets.Remove(asignacion);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ExisteAsignacionActivaAsync(int idTicket)
+        {
+            return await _context.AsignacionesTickets
+                .AnyAsync(a => a.IdTicket == idTicket
+                    && (a.IdTicketNavigation.Estado == "Asignado"
+                        || a.IdTicketNavigation.Estado == "En Proceso"));
+        }
+
+        public async Task<int> CountTicketsActivosByTecnicoAsync(int idTecnico)
+        {
+            return await _context.AsignacionesTickets
+                .Where(a => a.IdUsuarioAsignado == idTecnico
+                    && (a.IdTicketNavigation.Estado == "Asignado"
+                        || a.IdTicketNavigation.Estado == "En Proceso"))
+                .CountAsync();
+        }
+
+        public async Task<int> CountTicketsPendientesByTecnicoAsync(int idTecnico)
+        {
+            return await _context.AsignacionesTickets
+                .Where(a => a.IdUsuarioAsignado == idTecnico
+                    && a.IdTicketNavigation.Estado == "Asignado")
+                .CountAsync();
+        }
+
+        public async Task<int> CountTicketsEnProcesoByTecnicoAsync(int idTecnico)
+        {
+            return await _context.AsignacionesTickets
+                .Where(a => a.IdUsuarioAsignado == idTecnico
+                    && a.IdTicketNavigation.Estado == "En Proceso")
+                .CountAsync();
         }
     }
 }

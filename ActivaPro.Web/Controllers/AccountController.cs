@@ -14,7 +14,7 @@ namespace ActivaPro.Web.Controllers
 
         public AccountController(IAuthService auth) => _auth = auth;
 
-       
+
         [HttpGet]
         public IActionResult Login()
         {
@@ -27,7 +27,7 @@ namespace ActivaPro.Web.Controllers
             return View(new LoginDTO());
         }
 
-       
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginDTO dto)
@@ -51,12 +51,13 @@ namespace ActivaPro.Web.Controllers
                 return View(dto);
             }
 
-            // Crear claims para la sesión
+            // Crear claims para la sesión - CORREGIDO
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, result.userId.ToString()),
                 new Claim(ClaimTypes.Name, result.nombre),
-                new Claim("rol", result.rol),
+                new Claim(ClaimTypes.Role, result.rol), // ✅ IMPORTANTE: Usar ClaimTypes.Role
+                new Claim("rol", result.rol),            // ✅ Mantener también el claim personalizado
                 new Claim("id_usuario", result.userId.ToString())
             };
 
@@ -80,11 +81,11 @@ namespace ActivaPro.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-       
+
         [HttpGet]
         public IActionResult Register()
         {
-            
+
             if (User.Identity?.IsAuthenticated == true)
             {
                 return RedirectToAction("Index", "Home");
@@ -93,7 +94,7 @@ namespace ActivaPro.Web.Controllers
             return View(new RegisterDTO());
         }
 
-      
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterDTO dto)
@@ -105,7 +106,7 @@ namespace ActivaPro.Web.Controllers
 
             try
             {
-              
+
                 int userId = await _auth.RegisterAsync(dto, "Cliente");
 
 
@@ -126,7 +127,7 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-       
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> LogoutPost()
@@ -141,7 +142,7 @@ namespace ActivaPro.Web.Controllers
             return RedirectToAction(nameof(Login));
         }
 
-      
+
         [HttpGet]
         public async Task<IActionResult> Logout()
         {
@@ -155,7 +156,7 @@ namespace ActivaPro.Web.Controllers
             return RedirectToAction(nameof(Login));
         }
 
-       
+
         private bool IsAjax()
         {
             var xrw = Request.Headers["X-Requested-With"].ToString();
