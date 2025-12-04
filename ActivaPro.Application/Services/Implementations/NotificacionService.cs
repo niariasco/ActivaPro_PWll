@@ -121,8 +121,8 @@ namespace ActivaPro.Application.Services.Implementations
                 await _repo.AddAsync(new Notificacion
                 {
                     IdUsuario = u,
-                    IdTicket = ticketId,
-                    Accion = "TicketEvent",   // Accion diferenciada para eventos CRUD
+                    IdTicket = (ticketId > 0) ? ticketId : (int?)null, 
+                    Accion = "TicketEvent",
                     Mensaje = msg,
                     Leido = false,
                     FechaEnvio = fecha

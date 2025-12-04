@@ -113,8 +113,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Redirección a Login si no autenticado (excepto endpoints públicos)
-app.Use(async (ctx, next) =>
+ app.Use(async (ctx, next) =>
 {
     if (!ctx.User.Identity?.IsAuthenticated ?? true)
     {
@@ -122,6 +121,7 @@ app.Use(async (ctx, next) =>
         if (!path!.StartsWith("/account/login") &&
             !path.StartsWith("/account/register") &&
             !path.StartsWith("/account/accessdenied") &&
+            !path.StartsWith("/account/forgotpassword") &&  
             !path.StartsWith("/css") &&
             !path.StartsWith("/js") &&
             !path.StartsWith("/lib") &&
