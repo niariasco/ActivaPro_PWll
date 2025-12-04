@@ -161,16 +161,14 @@
                         </small>
                     </td>
                     <td>
-                        <div class="btn-group" role="group" style="position: relative; z-index: 1;">
-                            <!-- Ver Detalles - TODOS pueden ver -->
-                            <button type="button"
-                                    class="btn btn-info btn-sm btn-ver-detalle"
-                                    data-ticket-id="@item.IdTicket"
-                                    onclick="window.location.href='/Ticketes/Details/@item.IdTicket'; console.log('🚀 Navegando a ticket #@item.IdTicket');"
-                                    title="Ver detalles"
-                                    style="cursor: pointer; pointer-events: auto;">
+                        <div class="btn-group" role="group">
+                            <!-- ✅ Ver Detalles - TODOS pueden ver (CORREGIDO) -->
+                            <a asp-action="Details"
+                               asp-route-id="@item.IdTicket"
+                               class="btn btn-info btn-sm"
+                               title="Ver detalles">
                                 <i class="bi bi-eye"></i>
-                            </button>
+                            </a>
 
                             <!-- Asignar Técnico - Solo Admin/Coordinador -->
                             @if (rolUsuario == "Administrador" || rolUsuario == "Coordinador")
@@ -233,7 +231,7 @@ else
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Script de tickets cargado correctamente');
+            console.log('✅ Script de tickets cargado correctamente');
 
             // ========== FILTROS ==========
             const searchInput = document.getElementById('searchInput');
@@ -250,6 +248,8 @@ else
                     const selectedEstado = filterEstado.value.toLowerCase();
                     const selectedAsignacion = filterAsignacion.value;
 
+                    let visibleCount = 0;
+
                     rows.forEach(row => {
                         const id = row.cells[0].textContent.toLowerCase();
                         const titulo = row.cells[1].textContent.toLowerCase();
@@ -262,10 +262,13 @@ else
 
                         if (matchesSearch && matchesEstado && matchesAsignacion) {
                             row.style.display = '';
+                            visibleCount++;
                         } else {
                             row.style.display = 'none';
                         }
                     });
+
+                    console.log(`🔍 Tickets visibles después del filtro: ${visibleCount}`);
                 }
 
                 searchInput.addEventListener('input', filterTable);
@@ -277,48 +280,30 @@ else
                     filterEstado.value = '';
                     filterAsignacion.value = '';
                     filterTable();
+                    console.log('🗑️ Filtros limpiados');
                 });
             }
 
-            // ========== DEBUGGING BOTÓN VER DETALLES ==========
-            const botonesDetalle = document.querySelectorAll('.btn-ver-detalle');
-            console.log(`👁️ Se encontraron ${botonesDetalle.length} botones de ver detalles`);
-
-            botonesDetalle.forEach(function(boton) {
-                const ticketId = boton.getAttribute('data-ticket-id');
-                const href = boton.getAttribute('href');
-
-                console.log(`✅ Botón para ticket #${ticketId} - URL: ${href}`);
-
-                // Agregar evento de click para debugging CON ALTA PRIORIDAD
-                boton.addEventListener('click', function(e) {
-                    console.log(`🖱️ Click en ver detalles del ticket #${ticketId}`);
-                    console.log(`📍 Navegando a: ${href}`);
-
-                    // FORZAR NAVEGACIÓN - detener cualquier otro evento
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    console.log('🚀 Forzando navegación...');
-                    window.location.href = href;
-                }, true); // true = captura en fase de captura (alta prioridad)
-            });
-
-            // Verificar si hay algún event listener que esté bloqueando
-            document.addEventListener('click', function(e) {
-                const detalleBtn = e.target.closest('.btn-ver-detalle');
-                if (detalleBtn) {
-                    console.log('🔍 Detectado click en botón de ver detalles (document level)');
-                    console.log('🎯 Elemento clickeado:', e.target);
-                    console.log('🔗 Elemento del enlace:', detalleBtn);
-                    console.log('🧪 Computed style del botón:', window.getComputedStyle(detalleBtn).pointerEvents);
-                }
-            }, true);
-
-            // Detectar TODOS los clicks en la página para ver si llegan
-            document.addEventListener('click', function(e) {
-                console.log('📍 Click detectado en:', e.target);
-            }, true);
+            console.log('✅ Sistema de filtros inicializado correctamente');
         });
     </script>
 }
+
+<style>
+    /* Asegurar que los botones sean clickeables */
+    .btn-group .btn {
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+        /* Hover effect para los botones */
+        .btn-group .btn:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        /* Asegurar que los iconos no interfieran con el click */
+        .btn-group .btn i {
+            pointer-events: none;
+        }
+</style>

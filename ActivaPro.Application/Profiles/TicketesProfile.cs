@@ -25,19 +25,16 @@ namespace ActivaPro.Application.Profiles
                 .ForMember(dest => dest.IdSLA, opt => opt.MapFrom(src => src.IdSla))
                 .ForMember(dest => dest.FechaLimiteResolucion, opt => opt.MapFrom(src => src.FechaLimiteResolucion))
 
+                // Usuarios
                 .ForMember(dest => dest.NombreSolicitante, opt => opt.MapFrom(src =>
                     src.UsuarioSolicitante != null ? src.UsuarioSolicitante.Nombre : string.Empty))
                 .ForMember(dest => dest.NombreAsignado, opt => opt.MapFrom(src =>
                     src.UsuarioAsignado != null ? src.UsuarioAsignado.Nombre : "Sin asignar"))
 
+                // Categoría y Etiquetas
                 .ForMember(dest => dest.CategoriaNombre, opt => opt.MapFrom(src =>
                     src.Categoria != null ? src.Categoria.nombre_categoria : "Sin categoría"))
-                         // .ForMember(dest => dest.Etiquetas, opt => opt.MapFrom(src =>
-                         //     src.Categoria != null && src.Categoria.CategoriaEtiquetas != null
-                         //        ? src.Categoria.CategoriaEtiquetas.Select(e => e.nombre_etiqueta).ToList()
-                         //        : new List<string>()))
-
-                         .ForMember(dest => dest.Etiquetas, opt => opt.MapFrom(src =>
+                .ForMember(dest => dest.Etiquetas, opt => opt.MapFrom(src =>
                     src.Categoria != null && src.Categoria.CategoriaEtiquetas != null
                         ? src.Categoria.CategoriaEtiquetas
                             .Where(ce => ce.Etiqueta != null)
@@ -46,12 +43,17 @@ namespace ActivaPro.Application.Profiles
                             .ToList()
                         : new List<string>()))
 
+                // SLA
                 .ForMember(dest => dest.SLA_Descripcion, opt => opt.MapFrom(src =>
                     src.SLA != null ? src.SLA.descripcion : "Sin SLA"))
                 .ForMember(dest => dest.SLA_Prioridad, opt => opt.MapFrom(src =>
                     src.SLA != null ? src.SLA.prioridad : "Sin prioridad"))
+                .ForMember(dest => dest.SLA_TiempoRespuestaHoras, opt => opt.MapFrom(src =>
+                    src.SLA != null ? src.SLA.tiempo_resolucion_horas : (int?)null))
+                .ForMember(dest => dest.SLA_TiempoResolucionHoras, opt => opt.MapFrom(src =>
+                    src.SLA != null ? src.SLA.tiempo_resolucion_horas : (int?)null))
 
-                // Mapear imágenes
+                // Imágenes
                 .ForMember(dest => dest.Imagenes, opt => opt.MapFrom(src =>
                     src.Imagenes != null ? src.Imagenes.Select(i => new ImagenTicketDTO
                     {
@@ -61,17 +63,22 @@ namespace ActivaPro.Application.Profiles
                         FechaSubida = i.FechaSubida
                     }).ToList() : new List<ImagenTicketDTO>()))
 
-                // Mapear historial
+                // ========== HISTORIAL SIMPLE (SIN CAMPOS EXTENDIDOS) ==========
+                // Mapea a HistorialTicketDetalladoDTO pero con valores vacíos en campos que no existen
                 .ForMember(dest => dest.Historial, opt => opt.MapFrom(src =>
-                    src.Historial != null ? src.Historial.OrderByDescending(h => h.FechaAccion).Select(h => new HistorialTicketDTO
+                    src.Historial != null ? src.Historial.OrderByDescending(h => h.FechaAccion).Select(h => new HistorialTicketDetalladoDTO
                     {
                         IdHistorial = h.IdHistorial,
                         NombreUsuario = h.Usuario != null ? h.Usuario.Nombre : "Usuario desconocido",
-                        Accion = h.Accion,
-                        FechaAccion = h.FechaAccion
-                    }).ToList() : new List<HistorialTicketDTO>()))
+                        Accion = h.Accion ?? string.Empty,
+                        EstadoAnterior = string.Empty,  // Valor por defecto si no existe
+                        EstadoNuevo = string.Empty,     // Valor por defecto si no existe
+                        Comentario = string.Empty,      // Valor por defecto si no existe
+                        FechaAccion = h.FechaAccion,
+                        ImagenesEvidencia = new List<ImagenTicketDTO>() // Lista vacía
+                    }).ToList() : new List<HistorialTicketDetalladoDTO>()))
 
-                // Mapear valoración
+                // Valoración
                 .ForMember(dest => dest.Valoracion, opt => opt.MapFrom(src =>
                     src.Valoraciones != null && src.Valoraciones.Any()
                         ? new ValoracionTicketDTO
@@ -96,6 +103,5 @@ namespace ActivaPro.Application.Profiles
                         ? src.FechaActualizacion <= src.FechaLimiteResolucion.Value
                         : (bool?)null));
         }
-    
-}
     }
+}
