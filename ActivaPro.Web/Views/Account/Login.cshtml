@@ -28,8 +28,13 @@
             <label class="form-check-label" asp-for="Recordarme">Recordarme</label>
         </div>
 
-        <button id="login-submit" type="submit" class="btn btn-primary w-100">Ingresar</button>
-        <a asp-action="Register" class="btn btn-outline-primary w-100 mt-2">Registrate</a>
+        <div class="d-grid gap-2">
+            <button id="login-submit" type="submit" class="btn btn-primary">Ingresar</button>
+            <div class="d-flex justify-content-between">
+                <a asp-action="Register" class="btn btn-outline-primary">Registrate</a>
+                <a asp-action="ForgotPassword" class="btn btn-outline-secondary">¿Olvidaste tu contraseña?</a>
+            </div>
+        </div>
     </form>
 </div>
 
@@ -54,7 +59,6 @@
                 e.preventDefault();
                 clearError();
 
-                // Validación cliente con jQuery Validate (unobtrusive)
                 if (typeof $ !== 'undefined' && typeof $.fn !== 'undefined' && typeof $(form).valid === 'function') {
                     if (!$(form).valid()) return;
                 }
@@ -70,22 +74,21 @@
                     },
                     body: formData
                 })
-                    .then(async r => {
-                        const isJson = r.headers.get('content-type')?.includes('application/json');
-                        const payload = isJson ? await r.json() : {};
-                        if (!r.ok) {
-                            showError(payload.error || 'Credenciales inválidas');
-                            return;
-                        }
-                        if (payload.ok && payload.redirect) {
-                            window.location.href = payload.redirect;
-                        } else {
-                            // fallback por si no viene JSON
-                            window.location.href = '/';
-                        }
-                    })
-                    .catch(() => showError('No se pudo procesar la solicitud.'))
-                    .finally(() => btn.disabled = false);
+                .then(async r => {
+                    const isJson = r.headers.get('content-type')?.includes('application/json');
+                    const payload = isJson ? await r.json() : {};
+                    if (!r.ok) {
+                        showError(payload.error || 'Credenciales inválidas');
+                        return;
+                    }
+                    if (payload.ok && payload.redirect) {
+                        window.location.href = payload.redirect;
+                    } else {
+                        window.location.href = '/';
+                    }
+                })
+                .catch(() => showError('No se pudo procesar la solicitud.'))
+                .finally(() => btn.disabled = false);
             });
         })();
     </script>

@@ -29,10 +29,13 @@ namespace ActivaPro.Application.Services.Implementations
             var existing = await _usuarios.FindByCorreoAsync(dto.Correo);
             if (existing != null) throw new InvalidOperationException("El correo ya está registrado.");
 
+            var maxSucursal = await _usuarios.GetMaxNumeroSucursalAsync();
+            var nuevoSucursal = maxSucursal + 1;
+
             var usuario = new Usuarios
             {
                 Nombre = dto.Nombre,
-                NumeroSucursal = dto.NumeroSucursal,
+                NumeroSucursal = nuevoSucursal,
                 Correo = dto.Correo,
                 Contrasena = PasswordHasher.Hash(dto.Contrasena),
                 FechaCreacion = DateTime.Now
@@ -40,8 +43,12 @@ namespace ActivaPro.Application.Services.Implementations
 
             await _usuarios.CreateAsync(usuario);
 
-            // ✅ ASIGNAR ROL AUTOMÁTICAMENTE AL REGISTRARSE
-            await AsignarRolAsync(usuario.IdUsuario, rol);
+            await _notifs.CrearEventoTicketAsync(
+                new[] { usuario.IdUsuario },
+                0,
+                "Registro",
+                $"Usuario registrado: {usuario.Nombre}",
+                "Sistema");
 
             return usuario.IdUsuario;
         }
@@ -174,6 +181,54 @@ namespace ActivaPro.Application.Services.Implementations
                 });
                 await _context.SaveChangesAsync();
             }
+        }
+
+
+        public async Task<UsuarioDTO> GetUsuarioInfoAsync(int idUsuario)
+        {
+            var user = await _usuarios.FindByIdAsync(idUsuario);
+            if (user == null)
+                throw new KeyNotFoundException($"Usuario con ID {idUsuario} no encontrado");
+
+            // Rol por defecto
+            var rol = "Cliente";
+            var ur = user.UsuarioRoles?.FirstOrDefault();
+            if (ur?.Rol != null && !string.IsNullOrWhiteSpace(ur.Rol.NombreRol))
+                rol = ur.Rol.NombreRol;
+
+            return new UsuarioDTO
+            {
+                IdUsuario = user.IdUsuario,
+                Nombre = user.Nombre,
+                Correo = user.Correo,
+                Rol = rol
+            };
+        }
+
+        public async Task<UsuarioDTO?> GetUsuarioInfoAsync(string correo)
+        {
+            var user = await _usuarios.FindByCorreoAsync(correo);
+            if (user == null) return null;
+            return new UsuarioDTO { IdUsuario = user.IdUsuario, Nombre = user.Nombre, Correo = user.Correo, Rol = "Cliente" };
+        }
+
+        public async Task<bool> ChangePasswordByEmailAsync(string correo, string ultimaContrasena, string nuevaContrasena)
+        {
+            var user = await _usuarios.FindByCorreoAsync(correo);
+            if (user == null) throw new InvalidOperationException("El correo no está registrado.");
+
+            // Validar última contraseña (hash PBKDF2 o legado)
+            bool ok;
+            if (user.Contrasena.StartsWith("PBKDF2$"))
+                ok = PasswordHasher.Verify(ultimaContrasena, user.Contrasena);
+            else
+                ok = string.Equals(ultimaContrasena, user.Contrasena, StringComparison.Ordinal);
+
+            if (!ok) throw new InvalidOperationException("La última contraseña no es correcta.");
+
+            user.Contrasena = PasswordHasher.Hash(nuevaContrasena);
+            await _usuarios.UpdateAsync(user);
+            return true;
         }
     }
 }
