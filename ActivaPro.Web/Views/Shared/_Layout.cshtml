@@ -1,19 +1,16 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - ActivaPro.Web</title>
-
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ActivaPro.Web.styles.css" asp-append-version="true" />
-
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
-
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -77,55 +74,70 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-dark navbar-custom">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">ActivaPro</a>
+                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">ActivaPro</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <!-- Menú principal -->
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">@L["NavHome"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Privacy">@L["NavPrivacy"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Categoria" asp-action="Index">Categorías</a>
+                            <a class="nav-link" asp-controller="Categoria" asp-action="Index">@L["NavCategories"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Tecnico" asp-action="Index">Técnicos</a>
+                            <a class="nav-link" asp-controller="Tecnico" asp-action="Index">@L["NavTechnicians"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Ticketes" asp-action="Index">Tickets</a>
+                            <a class="nav-link" asp-controller="Ticketes" asp-action="Index">@L["NavTickets"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Asignaciones" asp-action="Index">Asignaciones</a>
+                            <a class="nav-link" asp-controller="Asignaciones" asp-action="Index">@L["NavAssignments"]</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Asignaciones" asp-action="MisAsignaciones">
-                                <i class="bi bi-person-lines-fill"></i> Mis Asignaciones
+                                <i class="bi bi-person-lines-fill"></i> @L["NavMyAssignments"]
                             </a>
                         </li>
-                       
                     </ul>
 
-                    <!-- Estado de usuario + Notificaciones + Logout -->
                     <div class="d-flex align-items-center gap-3">
                         <partial name="_AuthStatus" />
                         <partial name="_NotificacionesPanel" />
+
+                        <!-- Selector de idioma con cookie (persiste) -->
+                        <form asp-controller="Language" asp-action="Set" method="post" class="d-inline">
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-translate"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><button type="submit" name="culture" value="es" class="dropdown-item">Español</button></li>
+                                    <li><button type="submit" name="culture" value="en" class="dropdown-item">English</button></li>
+                                </ul>
+                            </div>
+                        </form>
+
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
+                            <a class="btn btn-link text-white p-0" asp-controller="Account" asp-action="Profile" title="Mi Perfil">
+                                <i class="bi bi-person-circle fs-5"></i>
+                            </a>
                             <form asp-controller="Account" asp-action="LogoutPost" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
+                                <button type="submit" class="btn btn-sm btn-outline-light">@L["NavLogout"]</button>
                             </form>
                         }
                         else
                         {
-                            <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">@L["NavLogin"]</a>
                         }
                     </div>
                 </div>
@@ -142,7 +154,7 @@
     </div>
 
     <footer class="footer-custom">
-        &copy; 2025 - ActivaPro.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        &copy; 2025 - ActivaPro.Web - <a asp-controller="Home" asp-action="Privacy">@L["NavPrivacy"]</a>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
