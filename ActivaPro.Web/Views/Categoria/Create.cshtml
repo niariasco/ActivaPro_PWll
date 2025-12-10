@@ -1,13 +1,14 @@
 ﻿@model ActivaPro.Application.DTOs.CategoriasDTO
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
 
 @{
-    ViewData["Title"] = "Crear Categoría";
-    // SLAs (serializado en el controlador si agregas soporte de tiempos / descripción)
+    ViewData["Title"] = L["CreateCategory"];
     var slasDic = ViewBag.SLAsDescripciones as Dictionary<int, string>;
     var slaIds = ViewBag.SLAs as List<int>;
 }
 
-<h2 class="mb-4">Crear Categoría</h2>
+<h2 class="mb-4">@L["CreateCategory"]</h2>
 
 @if (TempData["Error"] != null)
 {
@@ -21,15 +22,16 @@
 <form asp-action="Create" method="post">
     @Html.AntiForgeryToken()
 
+    <!-- Nombre -->
     <div class="mb-3">
-        <label asp-for="nombre_categoria" class="form-label">Nombre *</label>
+        <label asp-for="nombre_categoria" class="form-label">@L["Name"] *</label>
         <input asp-for="nombre_categoria" class="form-control" />
         <span asp-validation-for="nombre_categoria" class="text-danger"></span>
     </div>
 
     <!-- Etiquetas -->
     <div class="mb-3">
-        <label class="form-label">Etiquetas (múltiple)</label>
+        <label class="form-label">@L["TagsMultiple"]</label>
         <select asp-for="Etiquetas" class="form-select" multiple size="6">
             @if (ViewBag.Etiquetas != null)
             {
@@ -39,13 +41,13 @@
                 }
             }
         </select>
-        <small class="text-muted">Usa Ctrl / Cmd para seleccionar varias.</small>
+        <small class="text-muted">@L["MultipleSelectionHelp"]</small>
         <span asp-validation-for="Etiquetas" class="text-danger"></span>
     </div>
 
     <!-- Especialidades -->
     <div class="mb-3">
-        <label class="form-label">Especialidades (múltiple)</label>
+        <label class="form-label">@L["SpecialtiesMultiple"]</label>
         <select asp-for="Especialidades" class="form-select" multiple size="6">
             @if (ViewBag.Especialidades != null)
             {
@@ -55,7 +57,7 @@
                 }
             }
         </select>
-        <small class="text-muted">Usa Ctrl / Cmd para seleccionar varias.</small>
+        <small class="text-muted">@L["MultipleSelectionHelp"]</small>
         <span asp-validation-for="Especialidades" class="text-danger"></span>
     </div>
 
@@ -63,43 +65,43 @@
     <div class="mb-3">
         <label class="form-label">SLA</label>
         <select asp-for="id_sla" id="slaSelect" class="form-select">
-            <option value="">-- Seleccione un SLA --</option>
+            <option value="">-- @L["SelectSLA"] --</option>
             @if (slaIds != null && slaIds.Any())
             {
                 foreach (var id in slaIds)
                 {
                     var desc = (slasDic != null && slasDic.ContainsKey(id))
-                        ? slasDic[id]
-                        : $"SLA {id}";
+                    ? slasDic[id]
+                    : $"SLA {id}";
                     <option value="@id">@desc</option>
                 }
             }
-            <option value="-1">✏️ SLA personalizado...</option>
+            <option value="-1"> @L["CustomSLA"]</option>
         </select>
         <span asp-validation-for="id_sla" class="text-danger"></span>
     </div>
 
-    <!-- Info SLA existente -->
+    <!-- Info SLA -->
     <div id="slaInfo" class="alert alert-info d-none"></div>
 
-    <!-- SLA Personalizado -->
+    <!-- SLA personalizado -->
     <div id="slaCustomFields" class="border rounded p-3 mb-3 d-none">
-        <h6 class="fw-bold mb-3">Definir SLA Personalizado</h6>
+        <h6 class="fw-bold mb-3">@L["CustomSLATitle"]</h6>
         <div class="mb-3">
-            <label asp-for="SLA" class="form-label">Descripción</label>
-            <input asp-for="SLA" class="form-control" placeholder="Ej: Atención estándar" />
+            <label asp-for="SLA" class="form-label">@L["Description"]</label>
+            <input asp-for="SLA" class="form-control" placeholder="@L["SLAPlaceholder"]" />
             <span asp-validation-for="SLA" class="text-danger"></span>
         </div>
-      
     </div>
 
     <div class="mt-4">
         <button type="submit" class="btn btn-primary">
-            <i class="bi bi-save"></i> Guardar
+            <i class="bi bi-save"></i> @L["Save"]
         </button>
-        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        <a asp-action="Index" class="btn btn-secondary">@L["Cancel"]</a>
     </div>
 </form>
+
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -117,40 +117,76 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
+  <data name="TitleCategories" xml:space="preserve">
+    <value>Categorias</value>
   </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
+  <data name="BtnCreateCategory" xml:space="preserve">
+    <value>Crear Categoria</value>
   </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
+  <data name="TblID" xml:space="preserve">
+    <value>Identificador</value>
   </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
+  <data name="TblName" xml:space="preserve">
+    <value>Nombre</value>
   </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
+  <data name="TblTags" xml:space="preserve">
+    <value>Etiquetas</value>
   </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
+  <data name="TblSpecialties" xml:space="preserve">
+    <value>Especialidades</value>
   </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
+  <data name="TblSLA" xml:space="preserve">
+    <value>SLA</value>
   </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
+  <data name="TblActions" xml:space="preserve">
+    <value>Aciones</value>
   </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
+  <data name="NoTags" xml:space="preserve">
+    <value>Sin Etiquetas</value>
   </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
+  <data name="NoSpecialties" xml:space="preserve">
+    <value>Sin specialties</value>
   </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
+  <data name="NoSLA" xml:space="preserve">
+    <value>Sin SLA</value>
   </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
+  <data name="ViewDetails" xml:space="preserve">
+    <value>Ver detalles</value>
   </data>
+  <data name="EditCategory" xml:space="preserve">
+    <value>Editar Categoria</value>
+  </data>
+  <data name="CategoryDetails" xml:space="preserve">
+    <value>Detalle de Categoria</value>
+  </data>
+
+	<data name="CategoryDetails" xml:space="preserve">
+    <value>Detalle de Categoría</value>
+  </data>
+	<data name="ID" xml:space="preserve">
+    <value>ID</value>
+  </data>
+	<data name="Tags" xml:space="preserve">
+    <value>Etiquetas</value>
+  </data>
+	<data name="NoTags" xml:space="preserve">
+    <value>Sin etiquetas</value>
+  </data>
+	<data name="Specialties" xml:space="preserve">
+    <value>Especialidades</value>
+  </data>
+	<data name="NoSpecialties" xml:space="preserve">
+    <value>Sin especialidades</value>
+  </data>
+	<data name="NoSLA" xml:space="preserve">
+    <value>Sin SLA</value>
+  </data>
+	<data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+	<data name="BackToList" xml:space="preserve">
+    <value>Volver a la Lista</value>
+  </data>
+
+
 </root>

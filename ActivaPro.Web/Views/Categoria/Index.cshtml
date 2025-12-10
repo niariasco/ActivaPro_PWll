@@ -1,10 +1,13 @@
 ﻿@model IEnumerable<ActivaPro.Application.DTOs.CategoriasDTO>
 
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
+
 @{
-    ViewData["Title"] = "Categorías";
+    ViewData["Title"] = L["TitleCategories"];
 }
 
-<h1 class="mb-4">Categorías</h1>
+<h1 class="mb-4">@L["TitleCategories"]</h1>
 
 @if (ViewBag.SuccessMessage != null)
 {
@@ -16,19 +19,19 @@
 
 <p>
     <a class="btn btn-primary mb-3" asp-action="Create">
-        <i class="bi bi-plus-circle"></i> Crear Nueva Categoría
+        <i class="bi bi-plus-circle"></i> @L["BtnCreateCategory"]
     </a>
 </p>
 
 <table class="table table-striped table-bordered">
     <thead class="table-primary">
         <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Etiquetas</th>
-            <th>Especialidades</th>
-            <th>SLA</th>
-            <th>Acciones</th>
+            <th>@L["TblID"]</th>
+            <th>@L["TblName"]</th>
+            <th>@L["TblTags"]</th>
+            <th>@L["TblSpecialties"]</th>
+            <th>@L["TblSLA"]</th>
+            <th>@L["TblActions"]</th>
         </tr>
     </thead>
     <tbody>
@@ -37,6 +40,8 @@
             <tr>
                 <td>@item.id_categoria</td>
                 <td><strong>@item.nombre_categoria</strong></td>
+
+                <!-- Etiquetas -->
                 <td>
                     @if (item.Etiquetas != null && item.Etiquetas.Any())
                     {
@@ -44,9 +49,11 @@
                     }
                     else
                     {
-                        <span class="text-muted">Sin etiquetas</span>
+                        <span class="text-muted">@L["NoTags"]</span>
                     }
                 </td>
+
+                <!-- Especialidades -->
                 <td>
                     @if (item.Especialidades != null && item.Especialidades.Any())
                     {
@@ -54,16 +61,29 @@
                     }
                     else
                     {
-                        <span class="text-muted">Sin especialidades</span>
+                        <span class="text-muted">@L["NoSpecialties"]</span>
                     }
                 </td>
-                <td>@(string.IsNullOrEmpty(item.SLA) ? "Sin SLA" : item.SLA)</td>
+
+                <!-- SLA -->
                 <td>
-                    <a asp-action="Details" asp-route-id="@item.id_categoria" class="btn btn-primary btn-sm">
-                        <i class="bi bi-eye"></i> 
+                    @(string.IsNullOrEmpty(item.SLA) ? L["NoSLA"] : item.SLA)
+                </td>
+
+                <!-- Acciones -->
+                <td>
+                    <a asp-action="Details"
+                       asp-route-id="@item.id_categoria"
+                       class="btn btn-primary btn-sm"
+                       title="@L["ViewDetails"]">
+                        <i class="bi bi-eye"></i>
                     </a>
-                    <a asp-action="Edit" asp-route-id="@item.id_categoria" class="btn btn-primary btn-sm">
-                        <i class="bi bi-pencil-square"></i> 
+
+                    <a asp-action="Edit"
+                       asp-route-id="@item.id_categoria"
+                       class="btn btn-primary btn-sm"
+                       title="@L["EditCategory"]">
+                        <i class="bi bi-pencil-square"></i>
                     </a>
                 </td>
             </tr>

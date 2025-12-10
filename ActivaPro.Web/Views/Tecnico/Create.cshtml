@@ -1,10 +1,12 @@
 ﻿@model ActivaPro.Application.DTOs.TecnicosDTO
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Crear Técnico";
+    ViewData["Title"] = Localizer["TituloCrearTecnico"];
     var catalogo = ViewBag.EspecialidadesCatalogo as IEnumerable<dynamic>;
 }
 
-<h2>Crear Técnico</h2>
+<h2>@Localizer["TituloCrearTecnico"]</h2>
 
 @if (TempData["Error"] != null)
 {
@@ -15,20 +17,23 @@
     @Html.AntiForgeryToken()
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
+    <!-- Nombre -->
     <div class="mb-3">
-        <label asp-for="NombreUsuario" class="form-label">Nombre de Usuario *</label>
+        <label asp-for="NombreUsuario" class="form-label">@Localizer["NombreUsuario"] *</label>
         <input asp-for="NombreUsuario" class="form-control" />
         <span asp-validation-for="NombreUsuario" class="text-danger"></span>
     </div>
 
+    <!-- Correo -->
     <div class="mb-3">
-        <label asp-for="CorreoUsuario" class="form-label">Correo *</label>
+        <label asp-for="CorreoUsuario" class="form-label">@Localizer["Correo"] *</label>
         <input asp-for="CorreoUsuario" class="form-control" />
         <span asp-validation-for="CorreoUsuario" class="text-danger"></span>
     </div>
 
+    <!-- Especialidades -->
     <div class="mb-3">
-        <label class="form-label">Especialidades (múltiple)</label>
+        <label class="form-label">@Localizer["EspecialidadesMultiple"]</label>
         <select asp-for="EspecialidadesIds" multiple class="form-select" size="7">
             @if (catalogo != null)
             {
@@ -38,30 +43,36 @@
                 }
             }
         </select>
-        <small class="text-muted">Ctrl/Cmd para seleccionar varias.</small>
+        <small class="text-muted">@Localizer["HintSeleccionMultiple"]</small>
         <span asp-validation-for="EspecialidadesIds" class="text-danger"></span>
     </div>
 
+    <!-- Disponible (Radio Buttons) -->
     <div class="mb-3">
-        <label asp-for="Disponible" class="form-label">Disponible</label>
+        <label asp-for="Disponible" class="form-label">@Localizer["Disponible"]</label>
+
         <div class="form-check">
             <input class="form-check-input" type="radio" asp-for="Disponible" id="DisponibleTrue" value="true" />
-            <label class="form-check-label" for="DisponibleTrue">Sí</label>
+            <label class="form-check-label" for="DisponibleTrue">@Localizer["Si"]</label>
         </div>
+
         <div class="form-check">
             <input class="form-check-input" type="radio" asp-for="Disponible" id="DisponibleFalse" value="false" />
-            <label class="form-check-label" for="DisponibleFalse">No</label>
+            <label class="form-check-label" for="DisponibleFalse">@Localizer["No"]</label>
         </div>
+
         <span asp-validation-for="Disponible" class="text-danger"></span>
     </div>
 
+    <!-- Carga de trabajo -->
     <div class="mb-3">
-        <label class="form-label">Carga de Trabajo (solo lectura)</label>
+        <label class="form-label">@Localizer["CargaTrabajo"]</label>
         <input asp-for="CargaTrabajo" class="form-control" readonly />
     </div>
 
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    <!-- Botones -->
+    <button type="submit" class="btn btn-primary">@Localizer["Guardar"]</button>
+    <a asp-action="Index" class="btn btn-secondary">@Localizer["Cancelar"]</a>
 </form>
 
 @section Scripts {

@@ -1,10 +1,12 @@
 ﻿@model IEnumerable<ActivaPro.Application.DTOs.TecnicosDTO>
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
 
 @{
-    ViewData["Title"] = "Técnicos";
+    ViewData["Title"] = L["Technicians"];
 }
 
-<h1 class="mb-4">Técnicos</h1>
+<h1 class="mb-4">@L["Technicians"]</h1>
 
 @if (ViewBag.SuccessMessage != null)
 {
@@ -17,51 +19,57 @@
 
 <p>
     <a class="btn btn-primary mb-3" asp-action="Create">
-        <i class="bi bi-plus-circle"></i>Crear Nuevo Técnico
+        <i class="bi bi-plus-circle"></i> @L["CreateNewTechnician"]
     </a>
 </p>
 
 <table class="table table-striped table-bordered">
     <thead>
         <tr>
-            <th>ID Técnico</th>
-            <th>Usuario</th>
-            <th>Carga Trabajo</th>
-            <th>Disponible</th>
-            <th>Especialidades</th>
-            <th>Acciones</th>
+            <th>@L["TechnicianID"]</th>
+            <th>@L["User"]</th>
+            <th>@L["Workload"]</th>
+            <th>@L["Available"]</th>
+            <th>@L["Specialties"]</th>
+            <th>@L["Actions"]</th>
         </tr>
     </thead>
     <tbody>
-    @foreach (var item in Model)
-    {
-        <tr>
-            <td>@item.IdTecnico</td>
-            <td>
-                <strong>@(item.NombreUsuario ?? "N/D")</strong><br />
-                <small class="text-muted">@item.CorreoUsuario</small>
-            </td>
-            <td>@item.CargaTrabajo</td>
-            <td>
-                @if (item.Disponible)
-                {
-                    <span class="text-success fw-bold">Sí</span>
-                }
-                else
-                {
-                    <span class="text-danger fw-bold">No</span>
-                }
-            </td>
-            <td>
-                @if (item.EspecialidadesNombres != null && item.EspecialidadesNombres.Any())
-                {
-                    @string.Join(", ", item.EspecialidadesNombres)
-                }
-                else
-                {
-                    <span class="text-muted">Sin especialidades</span>
-                }
-            </td>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.IdTecnico</td>
+
+                <td>
+                    <strong>@(string.IsNullOrEmpty(item.NombreUsuario) ? L["NotAvailable"].Value : item.NombreUsuario)</strong><br />
+
+                    <small class="text-muted">@item.CorreoUsuario</small>
+                </td>
+
+                <td>@item.CargaTrabajo</td>
+
+                <td>
+                    @if (item.Disponible)
+                    {
+                        <span class="text-success fw-bold">@L["Yes"]</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger fw-bold">@L["No"]</span>
+                    }
+                </td>
+
+                <td>
+                    @if (item.EspecialidadesNombres != null && item.EspecialidadesNombres.Any())
+                    {
+                        @string.Join(", ", item.EspecialidadesNombres)
+                    }
+                    else
+                    {
+                        <span class="text-muted">@L["NoSpecialties"]</span>
+                    }
+                </td>
+
                 <td>
                     <a asp-action="Details" asp-route-id="@item.IdTecnico" class="btn btn-primary btn-sm">
                         <i class="bi bi-eye"></i>
@@ -70,7 +78,7 @@
                         <i class="bi bi-pencil-square"></i>
                     </a>
                 </td>
-        </tr>
-    }
+            </tr>
+        }
     </tbody>
 </table>

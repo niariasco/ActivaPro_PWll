@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NavHome" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="NavPrivacy" xml:space="preserve">
+    <value>Privacidad</value>
+  </data>
+  <data name="NavCategories" xml:space="preserve">
+    <value>Categorías</value>
+  </data>
+  <data name="NavTechnicians" xml:space="preserve">
+    <value>Técnicos</value>
+  </data>
+  <data name="NavTickets" xml:space="preserve">
+    <value>Tickets</value>
+  </data>
+  <data name="NavAssignments" xml:space="preserve">
+    <value>Asignaciones</value>
+  </data>
+  <data name="NavMyAssignments" xml:space="preserve">
+    <value>Mis Asignaciones</value>
+  </data>
+  <data name="NavProfile" xml:space="preserve">
+    <value>Mi Perfil</value>
+  </data>
+  <data name="NavLogout" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="NavLogin" xml:space="preserve">
+    <value>Entrar</value>
+  </data>
+  <data name="HomePageTitle" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="MainHeading" xml:space="preserve">
+    <value>Sistema de Tiquetes ActivaPro</value>
+  </data>
+  <data name="LoginTitle" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="LoginHeading" xml:space="preserve">
+    <value>Iniciar Sesión</value>
+  </data>
+  <data name="EmailLabel" xml:space="preserve">
+    <value>Correo</value>
+  </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Contraseña</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>Recordarme</value>
+  </data>
+  <data name="LoginSubmit" xml:space="preserve">
+    <value>Ingresar</value>
+  </data>
+  <data name="RegisterLink" xml:space="preserve">
+    <value>Registrate</value>
+  </data>
+  <data name="ForgotPasswordLink" xml:space="preserve">
+    <value>¿Olvidaste tu contraseña?</value>
+  </data>
+  <data name="RegisterTitle" xml:space="preserve">
+    <value>Registro</value>
+  </data>
+  <data name="RegisterHeading" xml:space="preserve">
+    <value>Crear Cuenta</value>
+  </data>
+  <data name="NameLabel" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="RegisterSubmit" xml:space="preserve">
+    <value>Registrarme</value>
+  </data>
+  <data name="BackToLogin" xml:space="preserve">
+    <value>Volver a Login</value>
+  </data>
+  <data name="ChangePasswordTitle" xml:space="preserve">
+    <value>Cambiar Contraseña</value>
+  </data>
+  <data name="ChangePasswordHeading" xml:space="preserve">
+    <value>Cambiar Contraseña</value>
+  </data>
+  <data name="CurrentPasswordLabel" xml:space="preserve">
+    <value>Contraseña actual</value>
+  </data>
+  <data name="NewPasswordLabel" xml:space="preserve">
+    <value>Nueva contraseña</value>
+  </data>
+  <data name="UpdateButton" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="LoginErrorDefault" xml:space="preserve">
+    <value>Error de autenticación.</value>
+  </data>
+  <data name="LoginInvalid" xml:space="preserve">
+    <value>Credenciales inválidas.</value>
+  </data>
+  <data name="LoginRequestFailed" xml:space="preserve">
+    <value>No se pudo procesar la solicitud.</value>
+  </data>
+  <data name="ForgotPassword_Title" xml:space="preserve">
+    <value>Olvidaste tu contraseña</value>
+  </data>
+  <data name="RecoverAccess" xml:space="preserve">
+    <value>Recuperar acceso</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Correo</value>
+  </data>
+  <data name="LastPassword" xml:space="preserve">
+    <value>Última contraseña</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nueva contraseña</value>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>Confirmar nueva contraseña</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="Profile_Title" xml:space="preserve">
+    <value>Perfil</value>
+  </data>
+  <data name="MyProfile" xml:space="preserve">
+    <value>Mi Perfil</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="BranchNumber" xml:space="preserve">
+    <value>Número Sucursal</value>
+  </data>
+  <data name="ChangePassword" xml:space="preserve">
+    <value>Cambiar contraseña</value>
+  </data>
+  <data name="Register_Title" xml:space="preserve">
+    <value>Registro</value>
+  </data>
+  <data name="CreateAccount" xml:space="preserve">
+    <value>Crear Cuenta</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Contraseña</value>
+  </data>
+  <data name="RegisterButton" xml:space="preserve">
+    <value>Registrarme</value>
+  </data>
+  <data name="CreateCategory_Title" xml:space="preserve">
+    <value>Crear Categoría</value>
+  </data>
+  <data name="CategoryName" xml:space="preserve">
+    <value>Nombre de la Categoría</value>
+  </data>
+  <data name="TagsMultiple" xml:space="preserve">
+    <value>Etiquetas (múltiple)</value>
+  </data>
+  <data name="SpecialtiesMultiple" xml:space="preserve">
+    <value>Especialidades (múltiple)</value>
+  </data>
+  <data name="MultiSelectNote" xml:space="preserve">
+    <value>Usa Ctrl / Cmd para seleccionar varias.</value>
+  </data>
+  <data name="SelectSLA" xml:space="preserve">
+    <value>Seleccione un SLA</value>
+  </data>
+  <data name="CustomSLA" xml:space="preserve">
+    <value>Establecer SLA personalizado</value>
+  </data>
+  <data name="DefineCustomSLA" xml:space="preserve">
+    <value>Definir SLA Personalizado</value>
+  </data>
+  <data name="SLADescription" xml:space="preserve">
+    <value>Descripción</value>
+  </data>
+  <data name="SLADescriptionPlaceholder" xml:space="preserve">
+    <value>Ej: Atención estándar</value>
+  </data>
+  <data name="SaveButton" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="CategoryDetailTitle" xml:space="preserve">
+    <value>Detalle de Categoría</value>
+  </data>
+  <data name="ID" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="Tags" xml:space="preserve">
+    <value>Etiquetas</value>
+  </data>
+  <data name="Specialties" xml:space="preserve">
+    <value>Especialidades</value>
+  </data>
+  <data name="SLA" xml:space="preserve">
+    <value>SLA</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="NoSLA" xml:space="preserve">
+    <value>Sin SLA</value>
+  </data>
+  <data name="EditButton" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="BackToList" xml:space="preserve">
+    <value>Volver a la Lista</value>
+  </data>
+  <data name="EditCategoryTitle" xml:space="preserve">
+    <value>Editar Categoría</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="ValidationErrors" xml:space="preserve">
+    <value>Errores de validación</value>
+  </data>
+  <data name="CategoryNamePlaceholder" xml:space="preserve">
+    <value>Ingrese el nombre de la categoría</value>
+  </data>
+  <data name="MultiSelectHint" xml:space="preserve">
+    <value>Ctrl/Cmd para seleccionar varias.</value>
+  </data>
+  <data name="SaveChanges" xml:space="preserve">
+    <value>Guardar Cambios</value>
+  </data>
+  <data name="CategoriesTitle" xml:space="preserve">
+    <value>Categorías</value>
+  </data>
+  <data name="CreateNewCategory" xml:space="preserve">
+    <value>Crear Nueva Categoría</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Acciones</value>
+  </data>
+  <data name="NoTags" xml:space="preserve">
+    <value>Sin etiquetas</value>
+  </data>
+  <data name="NoSpecialties" xml:space="preserve">
+    <value>Sin especialidades</value>
+  </data>
+  <data name="ViewDetails" xml:space="preserve">
+    <value>Ver detalles</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="CreateTechnicianTitle" xml:space="preserve">
+    <value>Crear Técnico</value>
+  </data>
+  <data name="UsernameLabel" xml:space="preserve">
+    <value>Nombre de Usuario</value>
+  </data>
+  <data name="SpecialtiesLabel" xml:space="preserve">
+    <value>Especialidades (múltiple)</value>
+  </data>
+  <data name="AvailableLabel" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Sí</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="WorkloadLabel" xml:space="preserve">
+    <value>Carga de Trabajo (solo lectura)</value>
+  </data>
+  <data name="TechnicianDetailTitle" xml:space="preserve">
+    <value>Detalle Técnico</value>
+  </data>
+  <data name="TechnicianDetailHeader" xml:space="preserve">
+    <value>Detalle del Técnico</value>
+  </data>
+  <data name="TechnicianId" xml:space="preserve">
+    <value>ID Técnico</value>
+  </data>
+  <data name="TechnicianUser" xml:space="preserve">
+    <value>Nombre de Usuario</value>
+  </data>
+  <data name="TechnicianAvailable" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="Workload" xml:space="preserve">
+    <value>Carga Trabajo</value>
+  </data>
+  <data name="TechnicianSpecialties" xml:space="preserve">
+    <value>Especialidades</value>
+  </data>
+  <data name="BackButton" xml:space="preserve">
+    <value>Volver</value>
+  </data>
+  <data name="NoData" xml:space="preserve">
+    <value>No data</value>
+  </data>
+  <data name="EditTechnicianTitle" xml:space="preserve">
+    <value>Editar Técnico</value>
+  </data>
+  <data name="EditTechnicianHeader" xml:space="preserve">
+    <value>Editar Técnico</value>
+  </data>
+  <data name="Multiple" xml:space="preserve">
+    <value>múltiple</value>
+  </data>
+  <data name="MultiSelectHelp" xml:space="preserve">
+    <value>Ctrl/Cmd para seleccionar varias.</value>
+  </data>
+  <data name="WorkloadReadOnly" xml:space="preserve">
+    <value>Carga de Trabajo (solo lectura)</value>
+  </data>
+  <data name="SaveChangesButton" xml:space="preserve">
+    <value>Guardar Cambios</value>
+  </data>
+  <data name="TecnicosTitle" xml:space="preserve">
+    <value>Technicians</value>
+  </data>
+  <data name="IdTecnico" xml:space="preserve">
+    <value>Technician ID</value>
+  </data>
+  <data name="Usuario" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="CargaTrabajo" xml:space="preserve">
+    <value>Workload</value>
+  </data>
+  <data name="Acciones" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Si" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="SinEspecialidades" xml:space="preserve">
+    <value>No specialties</value>
+  </data>
+  <data name="CrearNuevoTecnico" xml:space="preserve">
+    <value>Create New Technician</value>
+  </data>
+  <data name="Disponible" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Especialidades" xml:space="preserve">
+    <value>Specialties</value>
+  </data>
+  <data name="NoDisponible" xml:space="preserve">
+    <value>Not available</value>
+  </data>
+  <data name="TitleCategories" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+</root>

@@ -1,7 +1,8 @@
 ﻿@model ActivaPro.Application.DTOs.CategoriasDTO
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Editar Categoría";
+    ViewData["Title"] = Localizer["TituloEditarCategoria"];
 }
 
 <style>
@@ -10,29 +11,54 @@
         --azul-hover: #0b5ed7;
         --gris: #6c757d;
     }
-    h2 { color: var(--azul-principal); font-weight: 600; }
-    .btn-main { background-color: var(--azul-principal); color: white; border: none; }
-    .btn-main:hover { background-color: var(--azul-hover); }
-    .btn-secondary { background-color: var(--gris); color: white; border: none; }
-    .card { background-color: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; }
-    .form-label { font-weight: 500; }
+
+    h2 {
+        color: var(--azul-principal);
+        font-weight: 600;
+    }
+
+    .btn-main {
+        background-color: var(--azul-principal);
+        color: white;
+        border: none;
+    }
+
+        .btn-main:hover {
+            background-color: var(--azul-hover);
+        }
+
+    .btn-secondary {
+        background-color: var(--gris);
+        color: white;
+        border: none;
+    }
+
+    .card {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
 </style>
 
-<h2 class="mb-4">Editar Categoría</h2>
+<h2 class="mb-4">@Localizer["TituloEditarCategoria"]</h2>
 
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Error:</strong> @TempData["Error"]
+        <strong>@Localizer["Error"]:</strong> @TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-<!-- Mostrar TODOS los errores de validación -->
 @if (!ViewData.ModelState.IsValid)
 {
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>Errores de validación:</strong>
+        <strong>@Localizer["ErroresValidacion"]:</strong>
         <ul>
             @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
             {
@@ -49,87 +75,74 @@
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="id_categoria" />
 
-            <!-- Nombre de la categoría -->
+            <!-- Nombre Categoría -->
             <div class="mb-3">
-                <label asp-for="nombre_categoria" class="form-label">Nombre de la Categoría *</label>
-                <input asp-for="nombre_categoria" class="form-control" placeholder="Ingrese el nombre de la categoría" />
+                <label asp-for="nombre_categoria" class="form-label">@Localizer["NombreCategoria"] *</label>
+                <input asp-for="nombre_categoria" class="form-control" placeholder="@Localizer["PlaceholderNombreCategoria"]" />
                 <span asp-validation-for="nombre_categoria" class="text-danger"></span>
             </div>
 
-            <!-- Etiquetas (MÚLTIPLES) -->
+            <!-- Etiquetas -->
             <div class="mb-3">
-                <label class="form-label">Etiquetas</label>
+                <label class="form-label">@Localizer["Etiquetas"]</label>
                 <select asp-for="Etiquetas" class="form-select" multiple size="5">
                     @if (ViewBag.Etiquetas != null)
                     {
-                        @foreach (var e in ViewBag.Etiquetas as List<string>)
+                        foreach (var e in ViewBag.Etiquetas as List<string>)
                         {
                             <option value="@e" selected="@(Model.Etiquetas?.Contains(e) ?? false)">@e</option>
                         }
                     }
                 </select>
-                <small class="form-text text-muted">Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples opciones</small>
+                <small class="form-text text-muted">@Localizer["HintSeleccionMultiple"]</small>
                 <span asp-validation-for="Etiquetas" class="text-danger"></span>
             </div>
 
-            <!-- Especialidades (MÚLTIPLES) -->
+            <!-- Especialidades -->
             <div class="mb-3">
-                <label class="form-label">Especialidades</label>
+                <label class="form-label">@Localizer["Especialidades"]</label>
                 <select asp-for="Especialidades" class="form-select" multiple size="5">
                     @if (ViewBag.Especialidades != null)
                     {
-                        @foreach (var esp in ViewBag.Especialidades as List<string>)
+                        foreach (var esp in ViewBag.Especialidades as List<string>)
                         {
                             <option value="@esp" selected="@(Model.Especialidades?.Contains(esp) ?? false)">@esp</option>
                         }
                     }
                 </select>
-                <small class="form-text text-muted">Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples opciones</small>
+                <small class="form-text text-muted">@Localizer["HintSeleccionMultiple"]</small>
                 <span asp-validation-for="Especialidades" class="text-danger"></span>
             </div>
 
-            <!-- SLA (ÚNICO) -->
+            <!-- SLA -->
             <div class="mb-3">
-                <label class="form-label">SLA</label>
+                <label class="form-label">@Localizer["SLA"]</label>
                 <select asp-for="id_sla" id="slaSelect" class="form-select">
-                    <option value="">-- Seleccione un SLA --</option>
+                    <option value="">-- @Localizer["SeleccioneSLA"] --</option>
+
                     @if (ViewBag.SLAs != null && ViewBag.SLAsDescripciones != null)
                     {
-                        @foreach (var slaId in ViewBag.SLAs as List<int>)
+                        foreach (var slaId in ViewBag.SLAs as List<int>)
                         {
-                            var descripciones = ViewBag.SLAsDescripciones as Dictionary<int, string>;
-                            var descripcion = descripciones != null && descripciones.ContainsKey(slaId) ? descripciones[slaId] : $"SLA {slaId}";
-                            <option value="@slaId" selected="@(Model.id_sla == slaId)">@descripcion</option>
+                            var descs = ViewBag.SLAsDescripciones as Dictionary<int, string>;
+                            var d = descs != null && descs.ContainsKey(slaId) ? descs[slaId] : $"SLA {slaId}";
+                            <option value="@slaId" selected="@(Model.id_sla == slaId)">@d</option>
                         }
                     }
-                    <option value="-1">✏️ Establecer SLA personalizado</option>
+
+                    <option value="-1">✏️ @Localizer["SlaPersonalizado"]</option>
                 </select>
             </div>
 
-            <!-- Campos SLA Personalizado (ocultos por defecto)
-            <div id="customSlaFields" style="display: none;">
-                <div class="mb-3">
-                    <label asp-for="tiempo_respuesta_minutos" class="form-label"></label>
-                    <input asp-for="tiempo_respuesta_minutos" type="number" class="form-control" min="1" />
-                    <span asp-validation-for="tiempo_respuesta_minutos" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="tiempo_resolucion_minutos" class="form-label"></label>
-                    <input asp-for="tiempo_resolucion_minutos" type="number" class="form-control" min="1" />
-                    <span asp-validation-for="tiempo_resolucion_minutos" class="text-danger"></span>
-                </div>
-            </div>
-             -->
-
             <div class="mt-4">
                 <button type="submit" class="btn btn-main">
-                    <i class="bi bi-save"></i> Guardar Cambios
+                    <i class="bi bi-save"></i> @Localizer["GuardarCambios"]
                 </button>
                 <a asp-action="Index" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Cancelar
+                    <i class="bi bi-x-circle"></i> @Localizer["Cancelar"]
                 </a>
             </div>
+
         </form>
     </div>
 </div>
