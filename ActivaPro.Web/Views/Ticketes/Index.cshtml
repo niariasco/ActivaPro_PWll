@@ -33,24 +33,25 @@
             </div>
             <div class="col-md-3">
                 <select id="filterEstado" class="form-select">
-                    <option value="">📋 Todos los estados</option>
-                    <option value="Pendiente">⏳ Pendiente</option>
-                    <option value="En Proceso">⚙️ En Proceso</option>
-                    <option value="En Espera">⏸️ En Espera</option>
-                    <option value="Resuelto">✅ Resuelto</option>
-                    <option value="Cerrado">🔒 Cerrado</option>
-                    <option value="Cancelado">❌ Cancelado</option>
+                    <option value=""> Todos los estados</option>
+                    <option value="Pendiente"> Pendiente</option>
+                    <option value="Asignado"> Asignado</option>
+                    <option value="En Proceso"> En Proceso</option>
+                    <option value="En Espera"> En Espera</option>
+                    <option value="Resuelto"> Resuelto</option>
+                    <option value="Cerrado"> Cerrado</option>
+                    <option value="Cancelado"> Cancelado</option>
                 </select>
             </div>
             <div class="col-md-3">
                 <select id="filterAsignacion" class="form-select">
-                    <option value="">👥 Todas las asignaciones</option>
-                    <option value="sin-asignar">🔴 Sin asignar</option>
-                    <option value="asignado">✅ Asignados</option>
+                    <option value=""> Todas las asignaciones</option>
+                    <option value="sin-asignar"> Sin asignar</option>
+                    <option value="asignado"> Asignados</option>
                 </select>
             </div>
             <div class="col-md-2">
-                <button id="clearFilters" class="btn btn-outline-secondary w-100">🗑️ Limpiar</button>
+                <button id="clearFilters" class="btn btn-outline-secondary w-100"> Limpiar</button>
             </div>
         </div>
     </div>
@@ -61,11 +62,11 @@
     var sinAsignar = Model.Count(t => t.IdUsuarioAsignado == null || string.IsNullOrEmpty(t.NombreAsignado) || t.NombreAsignado == "Sin asignar");
 
     <div class="alert alert-success">
-        <strong>📊 Total de tickets visibles:</strong> @Model.Count()
+        <strong> Total de tickets visibles:</strong> @Model.Count()
         @if (sinAsignar > 0)
         {
             <span class="ms-3">
-                <span class="badge bg-danger">⚠️ @sinAsignar sin asignar</span>
+                <span class="badge bg-danger"> @sinAsignar sin asignar</span>
             </span>
         }
     </div>
@@ -92,14 +93,14 @@
                             <strong>@item.Titulo</strong>
                             <br />
                             <small class="text-muted">
-                                👤 Solicitante: @(item.NombreSolicitante ?? "Desconocido")
+                                 Solicitante: @(item.NombreSolicitante ?? "Desconocido")
                                 @if (!string.IsNullOrEmpty(item.NombreAsignado) && item.NombreAsignado != "Sin asignar")
                                 {
-                                    <span> | 🔧 Asignado: @item.NombreAsignado</span>
+                                    <span> |  Asignado: @item.NombreAsignado</span>
                                 }
                                 else
                                 {
-                                    <span class="text-danger fw-bold"> | ⚠️ SIN ASIGNAR</span>
+                                    <span class="text-danger fw-bold"> |  SIN ASIGNAR</span>
                                 }
                             </small>
                         </div>
@@ -107,27 +108,31 @@
                     <td>
                         @if (item.Estado == "Pendiente")
                         {
-                            <span class="badge bg-warning text-dark">⏳ Pendiente</span>
+                            <span class="badge bg-warning text-dark"> Pendiente</span>
+                        }
+                        else if (item.Estado == "Asignado")
+                        {
+                            <span class="badge bg-info"> Asignado</span>
                         }
                         else if (item.Estado == "En Proceso")
                         {
-                            <span class="badge bg-info">⚙️ En Proceso</span>
+                            <span class="badge bg-primary"> En Proceso</span>
                         }
                         else if (item.Estado == "En Espera")
                         {
-                            <span class="badge bg-secondary">⏸️ En Espera</span>
+                            <span class="badge bg-secondary"> En Espera</span>
                         }
                         else if (item.Estado == "Resuelto")
                         {
-                            <span class="badge bg-success">✅ Resuelto</span>
+                            <span class="badge bg-success"> Resuelto</span>
                         }
                         else if (item.Estado == "Cerrado")
                         {
-                            <span class="badge bg-dark">🔒 Cerrado</span>
+                            <span class="badge bg-dark"> Cerrado</span>
                         }
                         else if (item.Estado == "Cancelado")
                         {
-                            <span class="badge bg-danger">❌ Cancelado</span>
+                            <span class="badge bg-danger"> Cancelado</span>
                         }
                         else
                         {
@@ -142,15 +147,15 @@
                         {
                             @if (item.SLA_Prioridad.Contains("Alta"))
                             {
-                                <span class="badge bg-danger ms-1">🔴 Alta</span>
+                                <span class="badge bg-danger ms-1"> Alta</span>
                             }
                             else if (item.SLA_Prioridad.Contains("Media"))
                             {
-                                <span class="badge bg-warning text-dark ms-1">🟡 Media</span>
+                                <span class="badge bg-warning text-dark ms-1"> Media</span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary ms-1">🟢 Baja</span>
+                                <span class="badge bg-secondary ms-1"> Baja</span>
                             }
                         }
                     </td>
@@ -162,7 +167,7 @@
                     </td>
                     <td>
                         <div class="btn-group" role="group">
-                            <!-- ✅ Ver Detalles - TODOS pueden ver (CORREGIDO) -->
+
                             <a asp-action="Details"
                                asp-route-id="@item.IdTicket"
                                class="btn btn-info btn-sm"
@@ -231,7 +236,7 @@ else
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ Script de tickets cargado correctamente');
+            console.log(' Script de tickets cargado correctamente');
 
             // ========== FILTROS ==========
             const searchInput = document.getElementById('searchInput');
@@ -268,7 +273,7 @@ else
                         }
                     });
 
-                    console.log(`🔍 Tickets visibles después del filtro: ${visibleCount}`);
+                    console.log(` Tickets visibles después del filtro: ${visibleCount}`);
                 }
 
                 searchInput.addEventListener('input', filterTable);
@@ -280,11 +285,11 @@ else
                     filterEstado.value = '';
                     filterAsignacion.value = '';
                     filterTable();
-                    console.log('🗑️ Filtros limpiados');
+                    console.log(' Filtros limpiados');
                 });
             }
 
-            console.log('✅ Sistema de filtros inicializado correctamente');
+            console.log(' Sistema de filtros inicializado correctamente');
         });
     </script>
 }

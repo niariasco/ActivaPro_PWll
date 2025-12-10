@@ -32,8 +32,6 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                         .ThenInclude(cs => cs.SLA)
                 .Include(t => t.SLA)
                 .Include(t => t.Imagenes)
-                .Include(t => t.Historial)
-                    .ThenInclude(h => h.Usuario)
                 .Include(t => t.Valoraciones)
                 .FirstOrDefaultAsync(t => t.IdTicket == id);
         }
@@ -125,31 +123,79 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
             await _context.SaveChangesAsync();
         }
 
-        // ========== ACTUALIZACIÓN ==========
+        // ========== ACTUALIZACIÓN - ⭐ CORREGIDO ==========
 
         /// <summary>
-        /// Actualiza un ticket existente (incluye cambio de estado a "Cerrado")
+        /// Actualiza un ticket existente
+        /// CORREGIDO: Evita conflictos de tracking y problemas con navegaciones
         /// </summary>
         public async Task UpdateAsync(Tickets ticket)
         {
-            _context.Ticketes.Update(ticket);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // ⭐ SOLUCIÓN: Obtener el ticket sin tracking y actualizar solo los campos necesarios
+                var ticketExistente = await _context.Ticketes
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.IdTicket == ticket.IdTicket);
+
+                if (ticketExistente == null)
+                {
+                    throw new KeyNotFoundException($"Ticket con ID {ticket.IdTicket} no encontrado");
+                }
+
+                // ⭐ IMPORTANTE: Detach cualquier instancia tracked
+                var trackedEntity = _context.ChangeTracker.Entries<Tickets>()
+                    .FirstOrDefault(e => e.Entity.IdTicket == ticket.IdTicket);
+
+                if (trackedEntity != null)
+                {
+                    trackedEntity.State = EntityState.Detached;
+                }
+
+                // ⭐ IMPORTANTE: Limpiar las navegaciones para evitar conflictos
+                ticket.UsuarioSolicitante = null;
+                ticket.UsuarioAsignado = null;
+                ticket.Categoria = null;
+                ticket.SLA = null;
+                ticket.Imagenes = null;
+                ticket.Historial = null;
+                ticket.Valoraciones = null;
+
+                // Marcar solo los campos que queremos actualizar
+                _context.Ticketes.Attach(ticket);
+                _context.Entry(ticket).Property(t => t.Estado).IsModified = true;
+                _context.Entry(ticket).Property(t => t.FechaActualizacion).IsModified = true;
+                _context.Entry(ticket).Property(t => t.Titulo).IsModified = true;
+                _context.Entry(ticket).Property(t => t.Descripcion).IsModified = true;
+                _context.Entry(ticket).Property(t => t.IdUsuarioAsignado).IsModified = true;
+
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ DbUpdateException en UpdateAsync:");
+                System.Diagnostics.Debug.WriteLine($"   Message: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"   InnerException: {ex.InnerException?.Message}");
+                System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+                throw new InvalidOperationException($"Error al actualizar el ticket: {ex.InnerException?.Message ?? ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Exception en UpdateAsync:");
+                System.Diagnostics.Debug.WriteLine($"   Message: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"   InnerException: {ex.InnerException?.Message}");
+                throw new InvalidOperationException($"Error inesperado al actualizar el ticket: {ex.Message}", ex);
+            }
         }
 
         // ========== GESTIÓN DE IMÁGENES ==========
 
-        /// <summary>
-        /// Busca una imagen específica por ID
-        /// </summary>
         public async Task<Imagenes_Tickets> FindImagenByIdAsync(int idImagen)
         {
             return await _context.Imagenes_Tickets
                 .FirstOrDefaultAsync(i => i.IdImagen == idImagen);
         }
 
-        /// <summary>
-        /// Elimina una imagen específica
-        /// </summary>
         public async Task DeleteImagenAsync(int idImagen)
         {
             var imagen = await _context.Imagenes_Tickets
@@ -160,6 +206,17 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 _context.Imagenes_Tickets.Remove(imagen);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        // ========== HISTORIAL ==========
+
+        public async Task<ICollection<Historial_Tickets>> GetHistorialByTicketIdAsync(int idTicket)
+        {
+            return await _context.Historial_Tickets
+                .Where(h => h.IdTicket == idTicket)
+                .Include(h => h.IdUsuarioNavigation)
+                .OrderByDescending(h => h.FechaAccion)
+                .ToListAsync();
         }
     }
 }

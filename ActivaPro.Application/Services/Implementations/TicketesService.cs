@@ -6,7 +6,6 @@ using AutoMapper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ActivaPro.Application.Services.Implementations
@@ -26,27 +25,43 @@ namespace ActivaPro.Application.Services.Implementations
             IRepoEtiquetas etiquetaRepository,
             IRepoCategorias categoriaRepository,
             IMapper mapper,
-             INotificacionService notificacionService)
+            INotificacionService notificacionService)
         {
             _repository = repository;
             _usuarioRepository = usuarioRepository;
             _etiquetaRepository = etiquetaRepository;
             _categoriaRepository = categoriaRepository;
             _mapper = mapper;
-                _notificacionService = notificacionService;
+            _notificacionService = notificacionService;
         }
 
         // ========== CONSULTAS ==========
 
         public async Task<TicketesDTO?> FindByIdAsync(int id)
         {
+            //  Obtener el ticket
             var ticket = await _repository.FindByIdAsync(id);
             if (ticket == null)
                 return null;
 
-            return _mapper.Map<TicketesDTO>(ticket);
-        }
+            // Mapear el ticket (sin historial)
+            var ticketDTO = _mapper.Map<TicketesDTO>(ticket);
 
+            // Obtener el historial directamente de la base de datos
+            var historialEntidades = await _repository.GetHistorialByTicketIdAsync(id);
+
+            //  Mapear el historial
+            if (historialEntidades != null && historialEntidades.Any())
+            {
+                ticketDTO.Historial = _mapper.Map<List<HistorialTicketDetalladoDTO>>(historialEntidades);
+            }
+            else
+            {
+                ticketDTO.Historial = new List<HistorialTicketDetalladoDTO>();
+            }
+
+            return ticketDTO;
+        }
         public async Task<IEnumerable<TicketesDTO>> ListAsync()
         {
             var tickets = await _repository.ListAsync();
@@ -60,6 +75,7 @@ namespace ActivaPro.Application.Services.Implementations
             switch (rol.ToLower())
             {
                 case "administrador":
+                case "coordinador":
                     tickets = await _repository.ListAsync();
                     break;
                 case "técnico":
@@ -149,6 +165,7 @@ namespace ActivaPro.Application.Services.Implementations
             };
         }
 
+        // ========== CREACIÓN ==========
 
         public async Task<int> CreateTicketAsync(TicketCreateDTO dto)
         {
@@ -157,24 +174,20 @@ namespace ActivaPro.Application.Services.Implementations
 
         public async Task<int> CreateTicketAsync(TicketCreateDTO dto, string rutaImagenes)
         {
-            // Validar etiqueta
             var etiqueta = await _etiquetaRepository.FindByIdAsync(dto.IdEtiqueta);
             if (etiqueta == null)
                 throw new KeyNotFoundException("La etiqueta seleccionada no existe");
 
-            // Obtener categoría asociada
             var categoria = await _categoriaRepository.FindCategoriaByEtiquetaAsync(dto.IdEtiqueta);
             if (categoria == null)
                 throw new InvalidOperationException($"No se encontró una categoría asociada a la etiqueta '{etiqueta.nombre_etiqueta}'");
 
-            // Obtener SLA
             var categoriaSLA = categoria.CategoriaSLAs?.FirstOrDefault();
             if (categoriaSLA == null || categoriaSLA.SLA == null)
                 throw new InvalidOperationException($"La categoría '{categoria.nombre_categoria}' no tiene un SLA configurado");
 
             var sla = categoriaSLA.SLA;
 
-            // Calcular fechas
             DateTime fechaCreacion = DateTime.Now;
             DateTime? fechaLimiteResolucion = null;
 
@@ -183,7 +196,6 @@ namespace ActivaPro.Application.Services.Implementations
                 fechaLimiteResolucion = fechaCreacion.AddHours(sla.tiempo_resolucion_horas.Value);
             }
 
-            // Crear ticket
             var ticket = new Tickets
             {
                 Titulo = dto.Titulo,
@@ -199,8 +211,6 @@ namespace ActivaPro.Application.Services.Implementations
 
             await _repository.CreateAsync(ticket);
 
-
-            // Notify creator 
             var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante };
             if (ticket.IdUsuarioAsignado.HasValue)
                 usuariosDestino.Add(ticket.IdUsuarioAsignado.Value);
@@ -213,7 +223,6 @@ namespace ActivaPro.Application.Services.Implementations
                 dto.NombreSolicitante ?? "Sistema",
                 "Creación del ticket");
 
-            // Procesar imágenes
             int cantidadImagenes = 0;
             if (dto.ImagenesAdjuntas != null && dto.ImagenesAdjuntas.Any() && !string.IsNullOrEmpty(rutaImagenes))
             {
@@ -244,13 +253,13 @@ namespace ActivaPro.Application.Services.Implementations
                 }
             }
 
-            // Registrar historial
             string accionHistorial = $"Ticket creado - Categoría: '{categoria.nombre_categoria}' | Prioridad: '{sla.prioridad ?? "Media"}' | Etiqueta: '{etiqueta.nombre_etiqueta}'";
             if (cantidadImagenes > 0)
             {
                 accionHistorial += $" | {cantidadImagenes} imagen(es) adjuntada(s)";
             }
 
+            // ⭐ CORREGIDO: Usar HistorialTickets (sin guion bajo)
             var historial = new Historial_Tickets
             {
                 IdTicket = ticket.IdTicket,
@@ -264,8 +273,195 @@ namespace ActivaPro.Application.Services.Implementations
             return ticket.IdTicket;
         }
 
+        // ========== ⭐ CAMBIO RÁPIDO DE ESTADO CON COMENTARIO OBLIGATORIO ==========
 
-        public async Task<TicketEditDTO> PrepareEditDTOAsync(int idTicket)
+        /// <summary>
+        /// Cambia el estado del ticket de forma rápida siguiendo el flujo secuencial
+        /// INCLUYE COMENTARIO OBLIGATORIO del técnico
+        /// FLUJO COMPLETO: Pendiente → Asignado → En Proceso → Resuelto → Cerrado
+        /// </summary>
+        public async Task CambiarEstadoRapidoAsync(int idTicket, string nuevoEstado, int idUsuarioActual, string comentario)
+        {
+            // ⭐ VALIDACIÓN DEL COMENTARIO
+            if (string.IsNullOrWhiteSpace(comentario))
+            {
+                throw new ArgumentException("El comentario es obligatorio para registrar el cambio de estado.");
+            }
+
+            if (comentario.Length < 10)
+            {
+                throw new ArgumentException("El comentario debe tener al menos 10 caracteres.");
+            }
+
+            if (comentario.Length > 500)
+            {
+                throw new ArgumentException("El comentario no puede exceder 500 caracteres.");
+            }
+
+            // Cargar ticket con navegaciones para validaciones
+            var ticketCompleto = await _repository.FindByIdAsync(idTicket);
+            if (ticketCompleto == null)
+                throw new KeyNotFoundException($"Ticket con ID {idTicket} no encontrado");
+
+            // VALIDACIÓN 1: No cambiar si está cerrado o cancelado
+            if (ticketCompleto.Estado == "Cerrado" || ticketCompleto.Estado == "Cancelado")
+            {
+                throw new InvalidOperationException($"No se puede cambiar el estado de un ticket '{ticketCompleto.Estado}'.");
+            }
+
+            // VALIDACIÓN 2: Verificar si ya está en ese estado
+            if (ticketCompleto.Estado == nuevoEstado)
+            {
+                throw new InvalidOperationException($"El ticket ya está en estado '{nuevoEstado}'.");
+            }
+
+            // VALIDACIÓN 3: ⭐ VALIDAR FLUJO SECUENCIAL COMPLETO
+            var estadoPermitido = TicketEditDTO.ObtenerSiguienteEstadoPermitido(ticketCompleto.Estado);
+
+            if (estadoPermitido == null)
+            {
+                if (ticketCompleto.Estado == "Resuelto")
+                {
+                    throw new InvalidOperationException(
+                        "El ticket está en estado 'Resuelto'. Solo un administrador o el cliente pueden cerrarlo.");
+                }
+                throw new InvalidOperationException(
+                    $"El ticket en estado '{ticketCompleto.Estado}' no puede avanzar más.");
+            }
+
+            if (nuevoEstado != estadoPermitido)
+            {
+                throw new InvalidOperationException(
+                    $"Flujo inválido. Desde '{ticketCompleto.Estado}' solo puedes cambiar a '{estadoPermitido}'.");
+            }
+
+            // VALIDACIÓN 4: Para "Asignado", verificar que el técnico esté asignado
+            if (nuevoEstado == "Asignado")
+            {
+                if (!ticketCompleto.IdUsuarioAsignado.HasValue)
+                {
+                    // Asignar automáticamente al técnico actual
+                    ticketCompleto.IdUsuarioAsignado = idUsuarioActual;
+                }
+                else if (ticketCompleto.IdUsuarioAsignado.Value != idUsuarioActual)
+                {
+                    throw new InvalidOperationException(
+                        $"Este ticket ya está asignado a otro técnico (ID: {ticketCompleto.IdUsuarioAsignado.Value}).");
+                }
+            }
+
+            // VALIDACIÓN 5: Para estados después de "Asignado", verificar asignación
+            if (nuevoEstado != "Asignado")
+            {
+                if (!ticketCompleto.IdUsuarioAsignado.HasValue)
+                {
+                    throw new InvalidOperationException("El ticket debe estar asignado antes de cambiar a este estado.");
+                }
+
+                if (ticketCompleto.IdUsuarioAsignado.Value != idUsuarioActual)
+                {
+                    throw new InvalidOperationException("Solo puedes cambiar el estado de tickets asignados a ti.");
+                }
+            }
+
+            var estadoAnterior = ticketCompleto.Estado;
+
+            // ⭐ CREAR UN NUEVO OBJETO TICKET SIN NAVEGACIONES
+            var ticketParaActualizar = new Tickets
+            {
+                IdTicket = ticketCompleto.IdTicket,
+                Titulo = ticketCompleto.Titulo,
+                Descripcion = ticketCompleto.Descripcion,
+                IdUsuarioSolicitante = ticketCompleto.IdUsuarioSolicitante,
+                IdUsuarioAsignado = ticketCompleto.IdUsuarioAsignado ?? idUsuarioActual,
+                Estado = nuevoEstado,
+                IdValoracion = ticketCompleto.IdValoracion,
+                IdCategoria = ticketCompleto.IdCategoria,
+                FechaCreacion = ticketCompleto.FechaCreacion,
+                FechaActualizacion = DateTime.Now,
+                IdSla = ticketCompleto.IdSla,
+                FechaLimiteResolucion = ticketCompleto.FechaLimiteResolucion
+            };
+
+            // ⭐ GUARDAR EL TICKET
+            try
+            {
+                await _repository.UpdateAsync(ticketParaActualizar);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error al actualizar el ticket: {ex.InnerException?.Message ?? ex.Message}", ex);
+            }
+
+            // ⭐ REGISTRAR EN HISTORIAL CON EL COMENTARIO DEL TÉCNICO
+            try
+            {
+                string emoji = nuevoEstado switch
+                {
+                    "Asignado" => "👤",
+                    "En Proceso" => "⚙️",
+                    "Resuelto" => "✅",
+                    "Cerrado" => "🔒",
+                    _ => "📝"
+                };
+
+                // Acción descriptiva
+                string accionDescripcion = $"{emoji} Cambio de estado: '{estadoAnterior}' → '{nuevoEstado}'";
+                if (accionDescripcion.Length > 255)
+                {
+                    accionDescripcion = accionDescripcion.Substring(0, 252) + "...";
+                }
+
+                // Validar longitudes según BD
+                string estadoAnt = estadoAnterior?.Length > 50 ? estadoAnterior.Substring(0, 50) : estadoAnterior;
+                string estadoNvo = nuevoEstado?.Length > 50 ? nuevoEstado.Substring(0, 50) : nuevoEstado;
+
+                // ⭐ USAR EL COMENTARIO DEL TÉCNICO (ya viene validado)
+                string comentarioFinal = comentario.Length > 500 ? comentario.Substring(0, 500) : comentario;
+
+                var historial = new Historial_Tickets
+                {
+                    IdTicket = ticketCompleto.IdTicket,
+                    IdUsuario = idUsuarioActual,
+                    Accion = accionDescripcion,
+                    EstadoAnterior = estadoAnt,
+                    EstadoNuevo = estadoNvo,
+                    Comentario = comentarioFinal,  // ⭐ COMENTARIO DEL TÉCNICO
+                    FechaAccion = DateTime.Now
+                };
+
+                await _repository.AddHistorialAsync(historial);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ Error al registrar historial: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"⚠️ InnerException: {ex.InnerException?.Message}");
+                // No lanzar excepción - el cambio de estado ya se guardó
+            }
+
+            // ⭐ NOTIFICAR CAMBIO DE ESTADO
+            try
+            {
+                var usuariosDestino = new List<int> { ticketCompleto.IdUsuarioSolicitante };
+                if (ticketCompleto.IdUsuarioAsignado.HasValue)
+                    usuariosDestino.Add(ticketCompleto.IdUsuarioAsignado.Value);
+
+                await _notificacionService.CrearCambioEstadoTicketAsync(
+                    usuariosDestino,
+                    ticketCompleto.IdTicket,
+                    estadoAnterior,
+                    nuevoEstado,
+                    idUsuarioActual.ToString(),
+                    comentario);  // ⭐ PASAR EL COMENTARIO EN LA NOTIFICACIÓN
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ Error al enviar notificación: {ex.Message}");
+            }
+        }
+        // ========== PREPARAR EDICIÓN ==========
+
+        public async Task<TicketEditDTO> PrepareEditDTOAsync(int idTicket, string rolUsuario)
         {
             var ticket = await _repository.FindByIdAsync(idTicket);
             if (ticket == null)
@@ -296,22 +492,37 @@ namespace ActivaPro.Application.Services.Implementations
                     NombreArchivo = i.NombreArchivo,
                     RutaArchivo = i.RutaArchivo,
                     FechaSubida = i.FechaSubida
-                }).ToList() ?? new List<ImagenTicketDTO>()
+                }).ToList() ?? new List<ImagenTicketDTO>(),
+
+                EstadosDisponibles = TicketEditDTO.ObtenerEstadosSegunRol(rolUsuario, ticket.Estado)
             };
 
             return dto;
         }
 
-        public async Task UpdateTicketAsync(TicketEditDTO dto, string rutaImagenes, int idUsuarioActual)
+        public async Task<TicketEditDTO> PrepareEditDTOAsync(int idTicket)
+        {
+            return await PrepareEditDTOAsync(idTicket, "técnico");
+        }
+
+        // ========== ACTUALIZACIÓN ==========
+
+        public async Task UpdateTicketAsync(TicketEditDTO dto, string rutaImagenes, int idUsuarioActual, string rolUsuario)
         {
             var ticket = await _repository.FindByIdAsync(dto.IdTicket);
             if (ticket == null)
                 throw new KeyNotFoundException($"Ticket con ID {dto.IdTicket} no encontrado");
 
-            // Construir registro de cambios para el historial
+            var estadosPermitidos = TicketEditDTO.ObtenerEstadosSegunRol(rolUsuario, ticket.Estado);
+            if (!estadosPermitidos.Contains(dto.Estado))
+            {
+                throw new InvalidOperationException(
+                    $"El estado '{dto.Estado}' no está permitido para el rol '{rolUsuario}'. " +
+                    $"Estados permitidos: {string.Join(", ", estadosPermitidos)}");
+            }
+
             var cambios = new List<string>();
 
-            // Detectar cambios
             if (ticket.Titulo != dto.Titulo)
                 cambios.Add($"Título: '{ticket.Titulo}' → '{dto.Titulo}'");
 
@@ -328,13 +539,9 @@ namespace ActivaPro.Application.Services.Implementations
                 cambios.Add($"Asignado: '{nombreAnterior}' → '{nombreNuevo}'");
             }
 
-            if (ticket == null)
-                throw new KeyNotFoundException($"Ticket con ID {dto.IdTicket} no encontrado");
-
             var estadoAnterior = ticket.Estado;
             var asignadoAnterior = ticket.IdUsuarioAsignado;
 
-            // Aplicar cambios
             ticket.Titulo = dto.Titulo;
             ticket.Descripcion = dto.Descripcion;
             ticket.Estado = dto.Estado;
@@ -343,7 +550,6 @@ namespace ActivaPro.Application.Services.Implementations
 
             await _repository.UpdateAsync(ticket);
 
-            // Notify when state changes
             if (estadoAnterior != ticket.Estado)
             {
                 var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante };
@@ -359,7 +565,6 @@ namespace ActivaPro.Application.Services.Implementations
                     "Actualización de estado");
             }
 
-            // Optionally notify assignment change
             if (asignadoAnterior != ticket.IdUsuarioAsignado && ticket.IdUsuarioAsignado.HasValue)
             {
                 await _notificacionService.CrearCambioEstadoTicketAsync(
@@ -371,8 +576,6 @@ namespace ActivaPro.Application.Services.Implementations
                     "Nuevo técnico asignado");
             }
 
-
-            // Eliminar imágenes marcadas
             if (dto.ImagenesAEliminar != null && dto.ImagenesAEliminar.Any())
             {
                 foreach (var idImagen in dto.ImagenesAEliminar)
@@ -380,7 +583,6 @@ namespace ActivaPro.Application.Services.Implementations
                     var imagen = await _repository.FindImagenByIdAsync(idImagen);
                     if (imagen != null)
                     {
-                        // Eliminar archivo físico
                         if (!string.IsNullOrEmpty(rutaImagenes))
                         {
                             var nombreArchivo = System.IO.Path.GetFileName(imagen.RutaArchivo);
@@ -392,14 +594,12 @@ namespace ActivaPro.Application.Services.Implementations
                             }
                         }
 
-                        // Eliminar de BD
                         await _repository.DeleteImagenAsync(idImagen);
                         cambios.Add($"Imagen eliminada: '{imagen.NombreArchivo}'");
                     }
                 }
             }
 
-            // Agregar nuevas imágenes
             int imagenesAgregadas = 0;
             if (dto.NuevasImagenes != null && dto.NuevasImagenes.Any() && !string.IsNullOrEmpty(rutaImagenes))
             {
@@ -433,9 +633,9 @@ namespace ActivaPro.Application.Services.Implementations
                     cambios.Add($"{imagenesAgregadas} imagen(es) agregada(s)");
             }
 
-            // Registrar en historial
             if (cambios.Any())
             {
+                // ⭐ CORREGIDO: Usar HistorialTickets (sin guion bajo)
                 var historial = new Historial_Tickets
                 {
                     IdTicket = ticket.IdTicket,
@@ -448,21 +648,16 @@ namespace ActivaPro.Application.Services.Implementations
             }
         }
 
-        
+        public async Task UpdateTicketAsync(TicketEditDTO dto, string rutaImagenes, int idUsuarioActual)
+        {
+            await UpdateTicketAsync(dto, rutaImagenes, idUsuarioActual, "técnico");
+        }
 
-        /// <summary>
-        /// Cierra un ticket cambiando su estado a "Cerrado"
-        /// </summary>
+        // ========== CIERRE ==========
+
         public async Task CloseTicketAsync(int idTicket, int idUsuarioActual)
         {
             var ticket = await _repository.FindByIdAsync(idTicket);
-            if (ticket == null)
-                throw new KeyNotFoundException($"Ticket con ID {idTicket} no encontrado");
-
-            // Validar que no esté ya cerrado
-            if (ticket.Estado.ToLower() == "cerrado")
-                throw new InvalidOperationException($"El ticket #{idTicket} ya está cerrado");
-
             if (ticket == null)
                 throw new KeyNotFoundException($"Ticket con ID {idTicket} no encontrado");
 
@@ -473,13 +668,8 @@ namespace ActivaPro.Application.Services.Implementations
             ticket.Estado = "Cerrado";
             ticket.FechaActualizacion = DateTime.Now;
 
-            // Cambiar estado a Cerrado
-            ticket.Estado = "Cerrado";
-            ticket.FechaActualizacion = DateTime.Now;
-
             await _repository.UpdateAsync(ticket);
 
-            // Notify participants
             var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante };
             if (ticket.IdUsuarioAsignado.HasValue)
                 usuariosDestino.Add(ticket.IdUsuarioAsignado.Value);
@@ -492,33 +682,31 @@ namespace ActivaPro.Application.Services.Implementations
                 idUsuarioActual.ToString(),
                 "Cierre del ticket");
 
-            // Registrar en historial
+            // ⭐ CORREGIDO: Usar HistorialTickets (sin guion bajo)
             var historial = new Historial_Tickets
             {
                 IdTicket = ticket.IdTicket,
                 IdUsuario = idUsuarioActual,
-                Accion = $"Ticket cerrado - Título: '{ticket.Titulo}'",
+                Accion = $" Ticket cerrado - Título: '{ticket.Titulo}'",
                 FechaAccion = DateTime.Now
             };
 
             await _repository.AddHistorialAsync(historial);
         }
 
-         
-        
+        // ========== GESTIÓN DE IMÁGENES ==========
+
         public async Task DeleteImagenAsync(int idImagen, string rutaFisica)
         {
             var imagen = await _repository.FindImagenByIdAsync(idImagen);
             if (imagen == null)
                 throw new KeyNotFoundException($"Imagen con ID {idImagen} no encontrada");
 
-            // Eliminar archivo físico
             if (System.IO.File.Exists(rutaFisica))
             {
                 System.IO.File.Delete(rutaFisica);
             }
 
-            // Eliminar de BD
             await _repository.DeleteImagenAsync(idImagen);
         }
     }

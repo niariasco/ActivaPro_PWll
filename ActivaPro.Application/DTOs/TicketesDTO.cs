@@ -88,6 +88,7 @@ namespace ActivaPro.Application.DTOs
         public List<ImagenTicketDTO>? ImagenesEvidencia { get; set; }
     }
 
+
     /// <summary>
     /// DTO para la valoración del ticket
     /// </summary>
@@ -138,6 +139,7 @@ namespace ActivaPro.Application.DTOs
 
     /// <summary>
     /// DTO para editar un ticket existente
+    /// INCLUYE VALIDACIÓN DE ESTADOS SEGÚN EL ROL DEL USUARIO
     /// </summary>
     public class TicketEditDTO
     {
@@ -189,50 +191,140 @@ namespace ActivaPro.Application.DTOs
         public string? SLA_Prioridad { get; set; }
         public DateTime? FechaLimiteResolucion { get; set; }
 
-        // Lista de estados disponibles
-        public List<string> EstadosDisponibles { get; set; } = new List<string>
-        {
-            "Pendiente",
-            "En Proceso",
-            "En Espera",
-            "Resuelto",
-            "Cerrado",
-            "Cancelado"
-        };
+        // ========== ESTADOS DISPONIBLES SEGÚN ROL ==========
+        /// <summary>
+        /// Lista de estados disponibles según el rol del usuario
+        /// Se asigna dinámicamente usando el método ObtenerEstadosSegunRol
+        /// </summary>
+        public List<string> EstadosDisponibles { get; set; } = new List<string>();
 
         // Lista de técnicos disponibles para asignación
         public List<UsuarioDTO>? TecnicosDisponibles { get; set; }
-    }
 
-    /// <summary>
-    /// DTO para cambio de estado del ticket con validaciones estrictas
-    /// Incluye: comentario obligatorio, imagen obligatoria, validación de flujo
-    /// </summary>
-    public class TicketStateTransitionDTO
-    {
-        public int IdTicket { get; set; }
+        /// <summary>
+        /// ⭐ MÉTODO CLAVE: Obtiene los estados disponibles según el rol del usuario
+        /// FLUJO SECUENCIAL ESTRICTO: Pendiente → Asignado → En Proceso → Resuelto → Cerrado
+        /// </summary>
+        public static List<string> ObtenerEstadosSegunRol(string rol, string estadoActual)
+        {
+            var estados = new List<string>();
 
-        [Required(ErrorMessage = "El nuevo estado es obligatorio")]
-        public string NuevoEstado { get; set; }
+            switch (rol.ToLower())
+            {
+                case "técnico":
+                case "tecnico":
+                    // ✅ TÉCNICOS: SOLO pueden avanzar al SIGUIENTE estado en el flujo
+                    switch (estadoActual)
+                    {
+                        case "Pendiente":
+                            // Desde Pendiente → solo puede ir a "Asignado"
+                            estados.Add("Asignado");
+                            break;
 
-        [Required(ErrorMessage = "Debe proporcionar un comentario obligatorio que justifique el cambio")]
-        [StringLength(500, MinimumLength = 10, ErrorMessage = "El comentario debe tener entre 10 y 500 caracteres")]
-        public string Comentario { get; set; }
+                        case "Asignado":
+                            // Desde Asignado → solo puede ir a "En Proceso"
+                            estados.Add("En Proceso");
+                            break;
 
-        [Required(ErrorMessage = "Debe adjuntar al menos una imagen como evidencia")]
-        [MinLength(1, ErrorMessage = "Debe adjuntar al menos una imagen como evidencia")]
-        public List<IFormFile>? ImagenesEvidencia { get; set; }
+                        case "En Proceso":
+                            // Desde En Proceso → solo puede ir a "Resuelto"
+                            estados.Add("Resuelto");
+                            break;
 
-        // ========== INFORMACIÓN DE CONTEXTO (solo lectura) ==========
-        public string EstadoActual { get; set; }
-        public string Titulo { get; set; }
-        public int IdUsuarioSolicitante { get; set; }
-        public string NombreSolicitante { get; set; }
-        public int? IdUsuarioAsignado { get; set; }
-        public string NombreUsuarioAsignado { get; set; }
-        public DateTime FechaCreacion { get; set; }
+                        case "Resuelto":
+                            // Desde Resuelto → NO puede cambiar (solo Admin/Cliente pueden cerrar)
+                            estados.Add(estadoActual);
+                            break;
 
-        // Estados disponibles según flujo estricto
-        public List<string> EstadosDisponibles { get; set; } = new List<string>();
+                        case "Cerrado":
+                        case "Cancelado":
+                            // Estados finales → no se puede cambiar
+                            estados.Add(estadoActual);
+                            break;
+
+                        default:
+                            // Por seguridad, mantener el estado actual
+                            estados.Add(estadoActual);
+                            break;
+                    }
+                    break;
+
+                case "administrador":
+                case "coordinador":
+                    // ⚠️ ADMIN/COORDINADOR: Pueden ver todos los estados
+                    estados.AddRange(new[] { "Pendiente", "Asignado", "En Proceso", "Resuelto", "Cerrado" });
+                    break;
+
+                case "cliente":
+                    // ❌ CLIENTES: NO pueden editar estados
+                    // Solo pueden ver el estado actual (sin cambios)
+                    estados.Add(estadoActual);
+                    break;
+
+                default:
+                    // Por defecto, solo el estado actual
+                    estados.Add(estadoActual);
+                    break;
+            }
+
+            return estados;
+        }
+
+        /// <summary>
+        /// Valida si un estado es permitido para un rol específico
+        /// </summary>
+        public static bool EsEstadoPermitido(string rol, string estadoActual, string estadoNuevo)
+        {
+            var estadosPermitidos = ObtenerEstadosSegunRol(rol, estadoActual);
+            return estadosPermitidos.Contains(estadoNuevo);
+        }
+        /// <summary>
+        /// ⭐ CORREGIDO: Obtiene el siguiente estado permitido en el flujo
+        /// FLUJO COMPLETO: Pendiente → Asignado → En Proceso → Resuelto → Cerrado
+        /// </summary>
+        public static string? ObtenerSiguienteEstadoPermitido(string estadoActual)
+        {
+            return estadoActual switch
+            {
+                "Pendiente" => "Asignado",      
+                "Asignado" => "En Proceso",     
+                "En Proceso" => "Resuelto",     
+                "Resuelto" => "Cerrado",        
+                "Cancelado" => null,            
+                _ => null
+            };
+        }
+
+        /// <summary>
+        /// DTO para cambio de estado del ticket con validaciones estrictas
+        /// Incluye: comentario obligatorio, imagen obligatoria, validación de flujo
+        /// </summary>
+        public class TicketStateTransitionDTO
+        {
+            public int IdTicket { get; set; }
+
+            [Required(ErrorMessage = "El nuevo estado es obligatorio")]
+            public string NuevoEstado { get; set; }
+
+            [Required(ErrorMessage = "Debe proporcionar un comentario obligatorio que justifique el cambio")]
+            [StringLength(500, MinimumLength = 10, ErrorMessage = "El comentario debe tener entre 10 y 500 caracteres")]
+            public string Comentario { get; set; }
+
+            [Required(ErrorMessage = "Debe adjuntar al menos una imagen como evidencia")]
+            [MinLength(1, ErrorMessage = "Debe adjuntar al menos una imagen como evidencia")]
+            public List<IFormFile>? ImagenesEvidencia { get; set; }
+
+            // ========== INFORMACIÓN DE CONTEXTO (solo lectura) ==========
+            public string EstadoActual { get; set; }
+            public string Titulo { get; set; }
+            public int IdUsuarioSolicitante { get; set; }
+            public string NombreSolicitante { get; set; }
+            public int? IdUsuarioAsignado { get; set; }
+            public string NombreUsuarioAsignado { get; set; }
+            public DateTime FechaCreacion { get; set; }
+
+            // Estados disponibles según flujo estricto
+            public List<string> EstadosDisponibles { get; set; } = new List<string>();
+        }
     }
 }

@@ -68,6 +68,16 @@
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-bottom: 2px solid #dee2e6;
     }
+
+    /* Estilos para los botones de acción */
+    .btn-cambiar-estado {
+        transition: all 0.3s ease;
+    }
+
+        .btn-cambiar-estado:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
 </style>
 
 <div class="container-fluid py-4">
@@ -276,11 +286,11 @@
                                                         <i class="bi bi-eye"></i> Ver Detalle
                                                     </a>
                                                     <div class="btn-group">
-                                                        <button class="btn btn-outline-secondary btn-sm"
-                                                                disabled
-                                                                title="Próximamente">
+                                                        <a href="@Url.Action("Edit", "Ticketes", new { id = ticket.IdTicket })"
+                                                           class="btn btn-warning btn-sm btn-cambiar-estado"
+                                                           title="Cambiar estado del ticket">
                                                             <i class="bi bi-arrow-repeat"></i> Cambiar Estado
-                                                        </button>
+                                                        </a>
                                                         <button class="btn btn-outline-secondary btn-sm"
                                                                 disabled
                                                                 title="Próximamente">
@@ -410,6 +420,18 @@
                     card.style.transform = 'translateY(0)';
                 }, 50);
             }, index * 50);
+        });
+
+        // Efecto visual al hacer clic en "Cambiar Estado"
+        document.querySelectorAll('.btn-cambiar-estado').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Opcional: Mostrar un mensaje de carga
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cargando...';
+
+                // El navegador seguirá el enlace normalmente
+                // pero el usuario verá el feedback visual
+            });
         });
     });
 </script>

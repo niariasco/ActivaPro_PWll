@@ -15,11 +15,14 @@
 
     .ticket-row {
         transition: all 0.3s ease;
+        position: relative;
+        padding-left: 12px;
     }
 
         .ticket-row:hover {
             background-color: #f8f9fa;
             transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
     .urgencia-indicator {
@@ -39,6 +42,55 @@
     .stat-badge {
         font-size: 1.5rem;
         padding: 0.75rem 1.5rem;
+    }
+
+    .puntaje-badge {
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .puntaje-detalle {
+        background: #f8f9fa;
+        border-left: 3px solid #667eea;
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        border-radius: 4px;
+    }
+
+    .criterio-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+    }
+
+    .puntaje-alto {
+        background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+        color: white;
+    }
+
+    .puntaje-medio {
+        background: linear-gradient(135deg, #ff9800 0%, #ffa726 100%);
+        color: white;
+    }
+
+    .puntaje-bajo {
+        background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);
+        color: white;
+    }
+
+    .tooltip-custom {
+        position: relative;
+        cursor: help;
+    }
+
+    .ticket-score-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
     }
 </style>
 
@@ -136,37 +188,52 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="bg-white p-3 rounded border mb-3">
-                                    <strong>Fórmula de Puntaje:</strong>
+                                    <strong>Fórmula de Puntaje Base:</strong>
                                     <code class="d-block mt-2 fs-6">
-                                        Puntaje = (Prioridad × 1000) - Tiempo_SLA - (Carga × 50) + Especialidad
+                                        Puntaje = (Prioridad × 1000) - Tiempo_SLA_Restante
                                     </code>
+                                    <small class="text-muted mt-2 d-block">
+                                        <strong>Mayor puntaje = Mayor urgencia</strong>
+                                    </small>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="small">
-                                    <strong>Criterios de Asignación:</strong>
-                                    <ul class="mb-0 mt-2">
-                                        <li><strong>Prioridad:</strong> Crítica=4000, Alta=3000, Media=2000, Baja=1000 pts</li>
-                                        <li><strong>Tiempo SLA:</strong> Menor tiempo = Mayor urgencia (resta directa)</li>
-                                        <li><strong>Carga Trabajo:</strong> Menos tickets activos = Más disponible (-50 pts/ticket)</li>
-                                        <li><strong>Especialidad:</strong> Técnico con especialidad coincidente (+100 pts)</li>
+                                    <strong>Valores de Prioridad:</strong>
+                                    <ul class="mb-2 mt-2">
+                                        <li><span class="badge bg-danger">Crítica</span> = 4000 puntos</li>
+                                        <li><span class="badge bg-warning text-dark">Alta</span> = 3000 puntos</li>
+                                        <li><span class="badge bg-info">Media</span> = 2000 puntos</li>
+                                        <li><span class="badge bg-secondary">Baja</span> = 1000 puntos</li>
                                     </ul>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i> El tiempo SLA se resta para priorizar tickets con menos tiempo restante
+                                    </small>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 mb-0">
+                            <strong><i class="bi bi-lightbulb-fill"></i> Criterios adicionales para selección de técnico:</strong>
+                            <ul class="mb-0 mt-2 small">
+                                <li><strong>Carga de trabajo:</strong> Se prefiere técnicos con menos tickets activos (-50 pts por cada ticket)</li>
+                                <li><strong>Especialidad:</strong> Técnicos especializados en la categoría reciben +100 pts</li>
+                                <li><strong>Disponibilidad:</strong> Solo técnicos activos y disponibles</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- LISTA DE TICKETS -->
+        <!-- LISTA DE TICKETS CON PUNTAJES -->
         <div class="row">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
-                                <i class="bi bi-list-check"></i> Tickets Pendientes de Asignación
+                                <i class="bi bi-list-check"></i> Tickets Pendientes de Asignación (Ordenados por Urgencia)
                             </h5>
                             <span class="badge bg-white text-primary stat-badge">
                                 @Model.Count() tickets
@@ -182,19 +249,33 @@
                                         <th>Título & Descripción</th>
                                         <th width="150" class="text-center">Categoría</th>
                                         <th width="120" class="text-center">Prioridad</th>
-                                        <th width="150" class="text-center">Tiempo Restante</th>
-                                        <th width="150">Fecha Creación</th>
-                                        <th width="150" class="text-center">Acciones</th>
+                                        <th width="150" class="text-center">Tiempo SLA</th>
+                                        <th width="180" class="text-center">Puntaje Urgencia</th>
+                                        <th width="180" class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var ticket in Model.OrderBy(t => t.HorasRestantes ?? int.MaxValue))
+                                    @foreach (var ticket in Model.OrderByDescending(t => CalcularPuntajeUrgencia(t)))
                                     {
+                                        var puntajeUrgencia = CalcularPuntajeUrgencia(ticket);
                                         var urgenciaColor = ticket.HorasRestantes.HasValue && ticket.HorasRestantes <= 6 ? "danger" :
-                                        ticket.HorasRestantes.HasValue && ticket.HorasRestantes <= 24 ? "warning" :
-                                        "success";
+                                                            ticket.HorasRestantes.HasValue && ticket.HorasRestantes <= 24 ? "warning" :
+                                                            "success";
+                                        
+                                        var puntajeClass = puntajeUrgencia >= 3500 ? "puntaje-alto" :
+                                                          puntajeUrgencia >= 2000 ? "puntaje-medio" :
+                                                          "puntaje-bajo";
 
-                                        <tr class="ticket-row position-relative">
+                                        var prioridadValor = ticket.Prioridad switch
+                                        {
+                                            "Crítica" => 4000,
+                                            "Alta" => 3000,
+                                            "Media" => 2000,
+                                            "Baja" => 1000,
+                                            _ => 1000
+                                        };
+
+                                        <tr class="ticket-row">
                                             <div class="urgencia-indicator bg-@urgenciaColor"></div>
 
                                             <td>
@@ -205,18 +286,18 @@
                                                     <strong>@ticket.Titulo</strong>
                                                 </div>
                                                 <small class="text-muted">
-                                                    @(ticket.Descripcion.Length > 80
-                                                                                                ? ticket.Descripcion.Substring(0, 80) + "..."
-                                                                                                : ticket.Descripcion)
-                                        </small>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-secondary">
-                                            <i class="bi bi-tag"></i> @ticket.Categoria
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        @{
+                                                    @(ticket.Descripcion.Length > 60
+                                                        ? ticket.Descripcion.Substring(0, 60) + "..."
+                                                        : ticket.Descripcion)
+                                                </small>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-tag"></i> @ticket.Categoria
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                @{
                                                     var prioridadClass = ticket.Prioridad switch
                                                     {
                                                         "Crítica" => "bg-danger",
@@ -229,13 +310,16 @@
                                                 <span class="badge @prioridadClass px-3 py-2">
                                                     @ticket.Prioridad
                                                 </span>
+                                                <div class="small text-muted mt-1">
+                                                    @prioridadValor pts
+                                                </div>
                                             </td>
                                             <td class="text-center">
                                                 @if (ticket.HorasRestantes.HasValue)
                                                 {
                                                     var urgenciaClass = ticket.HorasRestantes <= 6 ? "text-danger" :
-                                                    ticket.HorasRestantes <= 24 ? "text-warning" :
-                                                    "text-success";
+                                                                       ticket.HorasRestantes <= 24 ? "text-warning" :
+                                                                       "text-success";
                                                     <div class="@urgenciaClass fw-bold">
                                                         <i class="bi bi-clock-fill"></i>
                                                         @ticket.HorasRestantes h
@@ -249,15 +333,79 @@
                                                     <span class="text-muted">Sin SLA</span>
                                                 }
                                             </td>
-                                            <td>
-                                                <small>
-                                                    <i class="bi bi-calendar3"></i>
-                                                    @ticket.FechaCreacion.ToString("dd/MM/yyyy")
-                                                </small>
-                                                <br>
-                                                <small class="text-muted">
-                                                    @ticket.FechaCreacion.ToString("HH:mm")
-                                                </small>
+                                            <td class="text-center">
+                                                <div class="puntaje-badge @puntajeClass">
+                                                    <i class="bi bi-star-fill"></i>
+                                                    @puntajeUrgencia.ToString("N0")
+                                                </div>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary mt-2"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#detalleModal@(ticket.IdTicket)">
+                                                    <i class="bi bi-info-circle"></i> Ver Cálculo
+                                                </button>
+
+                                                <!-- Modal de Detalle -->
+                                                <div class="modal fade" id="detalleModal@(ticket.IdTicket)" tabindex="-1">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-primary text-white">
+                                                                <h5 class="modal-title">
+                                                                    <i class="bi bi-calculator"></i> Detalle de Cálculo - Ticket #@ticket.IdTicket
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <h6 class="fw-bold mb-3">Fórmula Aplicada:</h6>
+                                                                <div class="alert alert-light">
+                                                                    <code>Puntaje = (Prioridad × 1000) - Tiempo_SLA_Restante</code>
+                                                                </div>
+
+                                                                <h6 class="fw-bold mb-2">Desglose del Cálculo:</h6>
+                                                                <div class="puntaje-detalle mb-3">
+                                                                    <div class="criterio-item">
+                                                                        <span><i class="bi bi-flag-fill text-danger"></i> Prioridad (@ticket.Prioridad):</span>
+                                                                        <strong>+@prioridadValor puntos</strong>
+                                                                    </div>
+                                                                    <div class="criterio-item">
+                                                                        <span><i class="bi bi-clock-fill text-warning"></i> Tiempo SLA restante:</span>
+                                                                        <strong>-@(ticket.HorasRestantes ?? 0) puntos</strong>
+                                                                    </div>
+                                                                    <hr class="my-2">
+                                                                    <div class="criterio-item">
+                                                                        <span class="fw-bold"><i class="bi bi-calculator-fill text-primary"></i> Puntaje Total:</span>
+                                                                        <strong class="text-primary fs-5">@puntajeUrgencia.ToString("N0") puntos</strong>
+                                                                    </div>
+                                                                </div>
+
+                                                                <h6 class="fw-bold mb-2">Criterios Adicionales de Asignación:</h6>
+                                                                <ul class="small mb-0">
+                                                                    <li><strong>Carga de trabajo:</strong> Se preferirá técnicos con menos tickets activos</li>
+                                                                    <li><strong>Especialidad:</strong> Técnicos especializados en "@ticket.Categoria" recibirán +100 pts</li>
+                                                                    <li><strong>Disponibilidad:</strong> Solo técnicos activos podrán recibir asignaciones</li>
+                                                                </ul>
+
+                                                                @if (puntajeUrgencia >= 3500)
+                                                                {
+                                                                    <div class="alert alert-danger mt-3 mb-0">
+                                                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                                                        <strong>Urgencia CRÍTICA:</strong> Este ticket requiere asignación inmediata
+                                                                    </div>
+                                                                }
+                                                                else if (puntajeUrgencia >= 2000)
+                                                                {
+                                                                    <div class="alert alert-warning mt-3 mb-0">
+                                                                        <i class="bi bi-exclamation-circle-fill"></i>
+                                                                        <strong>Urgencia ALTA:</strong> Este ticket debe asignarse pronto
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td class="text-center">
                                                 <form asp-action="AsignarTicketAutomaticamente" method="post" style="display:inline;">
@@ -265,7 +413,7 @@
                                                     <input type="hidden" name="idTicket" value="@ticket.IdTicket" />
                                                     <button type="submit" class="btn btn-primary shadow-sm"
                                                             title="Asignar Automáticamente"
-                                                            onclick="return confirm('¿Asignar automáticamente el Ticket #@ticket.IdTicket?');">
+                                                            onclick="return confirm('¿Asignar automáticamente el Ticket #@ticket.IdTicket?\n\nPuntaje de urgencia: @puntajeUrgencia');">
                                                         <i class="bi bi-robot"></i> Asignar
                                                     </button>
                                                 </form>
@@ -280,11 +428,48 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 <i class="bi bi-info-circle"></i>
-                                Mostrando @Model.Count() tickets ordenados por urgencia
+                                Tickets ordenados por puntaje de urgencia (mayor a menor)
                             </small>
                             <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Volver al Dashboard
                             </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEYENDA DE PUNTAJES -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-palette-fill text-info"></i> Leyenda de Puntajes
+                                </h6>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div>
+                                        <span class="puntaje-badge puntaje-alto" style="font-size: 0.9rem; padding: 0.25rem 0.75rem;">≥ 3500</span>
+                                        <small class="text-muted ms-1">Crítico</small>
+                                    </div>
+                                    <div>
+                                        <span class="puntaje-badge puntaje-medio" style="font-size: 0.9rem; padding: 0.25rem 0.75rem;">2000-3499</span>
+                                        <small class="text-muted ms-1">Alto</small>
+                                    </div>
+                                    <div>
+                                        <span class="puntaje-badge puntaje-bajo" style="font-size: 0.9rem; padding: 0.25rem 0.75rem;">&lt; 2000</span>
+                                        <small class="text-muted ms-1">Normal</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <i class="bi bi-lightbulb"></i>
+                                    El algoritmo asigna al técnico con mayor puntaje considerando carga y especialidad
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -316,44 +501,23 @@
             </div>
         </div>
     }
-
-    <!-- LEYENDA DE COLORES -->
-    @if (Model.Any())
-    {
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card bg-light border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <h6 class="fw-bold mb-3">
-                                    <i class="bi bi-palette-fill text-info"></i> Leyenda de Urgencia
-                                </h6>
-                                <div class="d-flex gap-3">
-                                    <div>
-                                        <span class="badge bg-danger">Alta</span>
-                                        <small class="text-muted ms-1">≤ 6 horas</small>
-                                    </div>
-                                    <div>
-                                        <span class="badge bg-warning text-dark">Media</span>
-                                        <small class="text-muted ms-1">≤ 24 horas</small>
-                                    </div>
-                                    <div>
-                                        <span class="badge bg-success">Baja</span>
-                                        <small class="text-muted ms-1">> 24 horas</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i>
-                                    El algoritmo selecciona automáticamente al técnico con mayor puntaje
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 </div>
+
+@functions {
+    private int CalcularPuntajeUrgencia(ActivaPro.Application.DTOs.TicketPendienteAsignacionDTO ticket)
+    {
+        int prioridad = ticket.Prioridad switch
+        {
+            "Crítica" => 4000,
+            "Alta" => 3000,
+            "Media" => 2000,
+            "Baja" => 1000,
+            _ => 2000  // Por defecto Media
+        };
+
+        int tiempoRestanteHoras = ticket.HorasRestantes ?? 999;
+        
+        // Fórmula: Mayor puntaje = Mayor urgencia
+        return prioridad - tiempoRestanteHoras;
+    }
+}

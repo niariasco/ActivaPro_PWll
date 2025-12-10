@@ -27,31 +27,7 @@ public class Imagenes_Tickets
     public virtual Tickets Ticket { get; set; }
 }
 
-[Table("Historial_Tickets")]
-public class Historial_Tickets
-{
-    [Key]
-    [Column("id_historial")]
-    public int IdHistorial { get; set; }
-    
-    [Column("id_ticket")]
-    public int IdTicket { get; set; }
-    
-    [Column("id_usuario")]
-    public int IdUsuario { get; set; }
-    
-    [Column("accion")]
-    public string Accion { get; set; }
-    
-    [Column("fecha_accion")]
-    public DateTime FechaAccion { get; set; }
-    
-    [ForeignKey("IdTicket")]
-    public virtual Tickets Ticket { get; set; }
-    
-    [ForeignKey("IdUsuario")]
-    public virtual Usuarios Usuario { get; set; }
-}
+
 
 [Table("Valoracion_Tickets")]
 public class Valoracion_Tickets

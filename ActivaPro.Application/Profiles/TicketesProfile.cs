@@ -63,20 +63,8 @@ namespace ActivaPro.Application.Profiles
                         FechaSubida = i.FechaSubida
                     }).ToList() : new List<ImagenTicketDTO>()))
 
-                // ========== HISTORIAL SIMPLE (SIN CAMPOS EXTENDIDOS) ==========
-                // Mapea a HistorialTicketDetalladoDTO pero con valores vacíos en campos que no existen
-                .ForMember(dest => dest.Historial, opt => opt.MapFrom(src =>
-                    src.Historial != null ? src.Historial.OrderByDescending(h => h.FechaAccion).Select(h => new HistorialTicketDetalladoDTO
-                    {
-                        IdHistorial = h.IdHistorial,
-                        NombreUsuario = h.Usuario != null ? h.Usuario.Nombre : "Usuario desconocido",
-                        Accion = h.Accion ?? string.Empty,
-                        EstadoAnterior = string.Empty,  // Valor por defecto si no existe
-                        EstadoNuevo = string.Empty,     // Valor por defecto si no existe
-                        Comentario = string.Empty,      // Valor por defecto si no existe
-                        FechaAccion = h.FechaAccion,
-                        ImagenesEvidencia = new List<ImagenTicketDTO>() // Lista vacía
-                    }).ToList() : new List<HistorialTicketDetalladoDTO>()))
+                // ⭐ HISTORIAL - Se ignora porque se carga manualmente en el servicio
+                .ForMember(dest => dest.Historial, opt => opt.Ignore())
 
                 // Valoración
                 .ForMember(dest => dest.Valoracion, opt => opt.MapFrom(src =>
@@ -102,6 +90,50 @@ namespace ActivaPro.Application.Profiles
                     src.Estado == "Cerrado" && src.FechaLimiteResolucion.HasValue
                         ? src.FechaActualizacion <= src.FechaLimiteResolucion.Value
                         : (bool?)null));
+
+            // ⭐ MAPEO CORREGIDO: Sin ImagenesEvidencia si no existe la tabla
+            CreateMap<Historial_Tickets, HistorialTicketDetalladoDTO>()
+                .ForMember(dest => dest.IdHistorial,
+                    opt => opt.MapFrom(src => src.IdHistorial))
+                .ForMember(dest => dest.NombreUsuario,
+                    opt => opt.MapFrom(src =>
+                        src.IdUsuarioNavigation != null
+                            ? src.IdUsuarioNavigation.Nombre
+                            : "Usuario desconocido"))
+                .ForMember(dest => dest.Accion,
+                    opt => opt.MapFrom(src => src.Accion ?? "Sin descripción"))
+                .ForMember(dest => dest.EstadoAnterior,
+                    opt => opt.MapFrom(src => src.EstadoAnterior ?? string.Empty))
+                .ForMember(dest => dest.EstadoNuevo,
+                    opt => opt.MapFrom(src => src.EstadoNuevo ?? string.Empty))
+                .ForMember(dest => dest.Comentario,
+                    opt => opt.MapFrom(src => src.Comentario ?? string.Empty))
+                .ForMember(dest => dest.FechaAccion,
+                    opt => opt.MapFrom(src => src.FechaAccion ?? DateTime.Now))
+                // ⭐ CORREGIDO: Ignorar ImagenesEvidencia si no existe la tabla
+                .ForMember(dest => dest.ImagenesEvidencia,
+                    opt => opt.Ignore());
+            
+
+            CreateMap<Imagenes_Tickets, ImagenTicketDTO>()
+                .ForMember(dest => dest.IdImagen,
+                    opt => opt.MapFrom(src => src.IdImagen))
+                .ForMember(dest => dest.NombreArchivo,
+                    opt => opt.MapFrom(src => src.NombreArchivo))
+                .ForMember(dest => dest.RutaArchivo,
+                    opt => opt.MapFrom(src => src.RutaArchivo))
+                .ForMember(dest => dest.FechaSubida,
+                    opt => opt.MapFrom(src => src.FechaSubida));
+
+            CreateMap<Valoracion_Tickets, ValoracionTicketDTO>()
+                .ForMember(dest => dest.IdValoracion,
+                    opt => opt.MapFrom(src => src.IdValoracion))
+                .ForMember(dest => dest.Puntaje,
+                    opt => opt.MapFrom(src => src.Puntaje))
+                .ForMember(dest => dest.Comentario,
+                    opt => opt.MapFrom(src => src.Comentario))
+                .ForMember(dest => dest.FechaValoracion,
+                    opt => opt.MapFrom(src => src.FechaValoracion));
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ActivaPro.Application.DTOs;
 using ActivaPro.Application.Services.Interfaces;
+using ActivaPro.Infraestructure.Data;
 using ActivaPro.Infraestructure.Models;
 using ActivaPro.Infraestructure.Repository.Interfaces;
 using AutoMapper;
@@ -8,199 +9,127 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ActivaPro.Application.Services.Implementations
 {
     public class AsignacionesService : IAsignacionesService
     {
-        private readonly IRepoAsignaciones _repository;
-        private readonly IRepoTicketes _ticketRepository;
-        private readonly IRepoUsuarios _usuarioRepository;
-        private readonly IRepoSLA_Tickets _slaRepository;
-        private readonly INotificacionService _notificacionService;
+        private readonly IRepoAsignaciones _repoAsignaciones;
+        private readonly IRepoTicketes _repoTicketes;
+        private readonly IRepoUsuarios _repoUsuarios;
+        private readonly ActivaProContext _context;
         private readonly IMapper _mapper;
 
+        // Constantes para el algoritmo de autotriage
+        private const int PESO_PRIORIDAD = 1000;
+        private const int PESO_CARGA_TRABAJO = 50;
+        private const int BONUS_ESPECIALIDAD = 100;
+        private const int LIMITE_CARGA_TECNICO = 10; // Máximo de tickets activos
+
         public AsignacionesService(
-            IRepoAsignaciones repository,
-            IRepoTicketes ticketRepository,
-            IRepoUsuarios usuarioRepository,
-            IRepoSLA_Tickets slaRepository,
-            INotificacionService notificacionService,
+            IRepoAsignaciones repoAsignaciones,
+            IRepoTicketes repoTicketes,
+            IRepoUsuarios repoUsuarios,
+            ActivaProContext context,
             IMapper mapper)
         {
-            _repository = repository;
-            _ticketRepository = ticketRepository;
-            _usuarioRepository = usuarioRepository;
-            _slaRepository = slaRepository;
-            _notificacionService = notificacionService;
+            _repoAsignaciones = repoAsignaciones;
+            _repoTicketes = repoTicketes;
+            _repoUsuarios = repoUsuarios;
+            _context = context;
             _mapper = mapper;
         }
 
-        #region Métodos Existentes
+        // ========== ASIGNACIÓN AUTOMÁTICA (AUTOTRIAGE) ==========
 
-        public async Task<IEnumerable<TecnicoAsignacionesDTO>> GetAsignacionesPorTecnicoAsync()
-        {
-            var asignaciones = await _repository.ListAsync();
-
-            var tecnicos = asignaciones
-                .GroupBy(a => a.IdUsuarioAsignado)
-                .Select(g => new TecnicoAsignacionesDTO
-                {
-                    IdTecnico = g.Key,
-                    NombreTecnico = g.First().IdUsuarioAsignadoNavigation?.Nombre ?? "Sin nombre",
-                    CorreoTecnico = g.First().IdUsuarioAsignadoNavigation?.Correo ?? "",
-                    TotalTicketsAsignados = g.Select(a => a.IdTicket).Distinct().Count(),
-                    TicketsPendientes = g.Count(a => a.IdTicketNavigation?.Estado == "Asignado"),
-                    TicketsEnProceso = g.Count(a => a.IdTicketNavigation?.Estado == "En Proceso"),
-                    TicketsCerrados = g.Count(a => a.IdTicketNavigation?.Estado == "Cerrado"),
-                    AsignacionesPorSemana = OrganizarPorSemana(g.ToList())
-                })
-                .ToList();
-
-            return tecnicos;
-        }
-
-        public async Task<TecnicoAsignacionesDTO> GetAsignacionesByTecnicoIdAsync(int idTecnico)
-        {
-            var asignaciones = await _repository.ListByTecnicoAsync(idTecnico);
-
-            if (!asignaciones.Any())
-                return null;
-
-            return new TecnicoAsignacionesDTO
-            {
-                IdTecnico = idTecnico,
-                NombreTecnico = asignaciones.First().IdUsuarioAsignadoNavigation?.Nombre ?? "Sin nombre",
-                CorreoTecnico = asignaciones.First().IdUsuarioAsignadoNavigation?.Correo ?? "",
-                TotalTicketsAsignados = asignaciones.Select(a => a.IdTicket).Distinct().Count(),
-                TicketsPendientes = asignaciones.Count(a => a.IdTicketNavigation?.Estado == "Asignado"),
-                TicketsEnProceso = asignaciones.Count(a => a.IdTicketNavigation?.Estado == "En Proceso"),
-                TicketsCerrados = asignaciones.Count(a => a.IdTicketNavigation?.Estado == "Cerrado"),
-                AsignacionesPorSemana = OrganizarPorSemana(asignaciones.ToList())
-            };
-        }
-
-        public async Task<IEnumerable<AsignacionPorSemanaDTO>> GetAsignacionesPorSemanaAsync(int idTecnico)
-        {
-            var asignaciones = await _repository.ListByTecnicoAsync(idTecnico);
-            return OrganizarPorSemana(asignaciones.ToList());
-        }
-
-        #endregion
-
-        #region Asignación Automática (Autotriage)
-
+        /// <summary>
+        /// Asigna un ticket automáticamente usando el algoritmo de autotriage
+        /// Fórmula: Puntaje = (Prioridad × 1000) - TiempoRestanteSLA - (CargaTrabajo × 50) + BonusEspecialidad
+        /// </summary>
         public async Task<AsignacionResultDTO> AsignarAutomaticamenteAsync(int idTicket)
         {
             try
             {
-                // 1. Validar que el ticket existe y está pendiente
-                var ticket = await _ticketRepository.FindByIdAsync(idTicket);
+                // 1. Obtener el ticket con todas sus relaciones
+                var ticket = await _repoTicketes.FindByIdAsync(idTicket);
                 if (ticket == null)
                 {
                     return new AsignacionResultDTO
                     {
                         Exitoso = false,
-                        Mensaje = "El ticket no existe."
+                        Mensaje = "El ticket no existe"
                     };
                 }
 
+                // 2. Validar que el ticket esté pendiente
                 if (ticket.Estado != "Pendiente")
                 {
                     return new AsignacionResultDTO
                     {
                         Exitoso = false,
-                        Mensaje = $"El ticket debe estar en estado 'Pendiente'. Estado actual: {ticket.Estado}"
+                        Mensaje = $"El ticket está en estado '{ticket.Estado}' y no puede ser asignado automáticamente"
                     };
                 }
 
-                // 2. Obtener técnicos usando ListByRolAsync
-                var tecnicos = await _usuarioRepository.ListByRolAsync("Técnico");
-
+                // 3. Obtener técnicos disponibles
+                var tecnicos = await ObtenerTecnicosParaAsignacionAsync(idTicket);
                 if (!tecnicos.Any())
                 {
                     return new AsignacionResultDTO
                     {
                         Exitoso = false,
-                        Mensaje = "No hay técnicos disponibles en el sistema."
+                        Mensaje = "No hay técnicos disponibles para asignar este ticket"
                     };
                 }
 
-                // 3. Calcular puntajes para cada técnico
+                // 4. Calcular puntaje base del ticket
+                var puntajeBaseTicket = CalcularPuntajeTicket(ticket);
+
+                // 5. Calcular puntajes de cada técnico para este ticket
                 var puntajes = new List<PuntajeAsignacionDTO>();
                 foreach (var tecnico in tecnicos)
                 {
-                    var puntaje = await CalcularPuntajeAsync(tecnico.IdUsuario, ticket);
+                    var puntaje = await CalcularPuntajeTecnicoAsync(ticket, tecnico, puntajeBaseTicket);
                     puntajes.Add(puntaje);
                 }
 
-                // 4. Seleccionar el técnico con mayor puntaje
+                // 6. Seleccionar el técnico con mayor puntaje
                 var mejorTecnico = puntajes.OrderByDescending(p => p.Puntaje).First();
 
-                // 5. Actualizar estado del ticket PRIMERO
-                ticket.Estado = "Asignado";
-                ticket.IdUsuarioAsignado = mejorTecnico.IdTecnico;
-                ticket.FechaActualizacion = DateTime.Now;
-                await _ticketRepository.UpdateAsync(ticket);
-
-                // 6. Crear la asignación DESPUÉS
+                // 7. Crear la asignación
                 var asignacion = new AsignacionesTickets
                 {
                     IdTicket = idTicket,
                     IdUsuarioAsignado = mejorTecnico.IdTecnico,
-                    IdUsuarioAsignador = null, // Sistema - NULL es válido
                     TipoAsignacion = "Automatica",
                     FechaAsignacion = DateTime.Now,
                     PuntajeAsignacion = mejorTecnico.Puntaje,
                     Justificacion = mejorTecnico.Justificacion
                 };
 
-                await _repository.AddAsync(asignacion);
+                // 8. Guardar la asignación
+                await _repoAsignaciones.AddAsync(asignacion);
 
-                // 7. Registrar en historial
-                var historial = new Historial_Tickets
-                {
-                    IdTicket = idTicket,
-                    IdUsuario = mejorTecnico.IdTecnico,
-                    Accion = $"Asignación automática (Autotriage): {mejorTecnico.Justificacion}",
-                    FechaAccion = DateTime.Now
-                };
-                await _ticketRepository.AddHistorialAsync(historial);
+                // 9. Actualizar el estado del ticket
+                ticket.Estado = "Asignado";
+                ticket.IdUsuarioAsignado = mejorTecnico.IdTecnico;
+                ticket.FechaActualizacion = DateTime.Now;
+                await _repoTicketes.UpdateAsync(ticket);
 
-                // 8. Enviar notificaciones (con manejo de errores)
-                try
-                {
-                    var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante, mejorTecnico.IdTecnico };
-                    await _notificacionService.CrearCambioEstadoTicketAsync(
-                        usuariosDestino,
-                        ticket.IdTicket,
-                        "Pendiente",
-                        "Asignado",
-                        "Sistema",
-                        $"Asignación automática a {mejorTecnico.NombreTecnico}"
-                    );
-                }
-                catch (Exception notifEx)
-                {
-                    // Log pero no fallar la asignación
-                    Console.WriteLine($"Error al enviar notificación: {notifEx.Message}");
-                }
-
-                // 9. Recargar la asignación con sus relaciones
-                var asignacionCompleta = await _repository.FindByIdAsync(asignacion.IdAsignacion);
-
+                // 10. Retornar resultado exitoso
                 return new AsignacionResultDTO
                 {
                     Exitoso = true,
-                    Mensaje = "Asignación automática realizada exitosamente.",
-                    Asignacion = asignacionCompleta != null ? _mapper.Map<AsignacionesDTO>(asignacionCompleta) : null,
+                    Mensaje = $"Ticket #{idTicket} asignado exitosamente mediante Autotriage",
                     Puntaje = mejorTecnico.Puntaje,
                     Justificacion = mejorTecnico.Justificacion,
                     TecnicoSeleccionado = new TecnicoSeleccionadoDTO
                     {
                         IdTecnico = mejorTecnico.IdTecnico,
                         NombreTecnico = mejorTecnico.NombreTecnico,
+                        CorreoTecnico = tecnicos.First(t => t.IdTecnico == mejorTecnico.IdTecnico).CorreoTecnico,
                         CargaActual = mejorTecnico.CargaTrabajo,
                         Disponible = true
                     }
@@ -211,101 +140,296 @@ namespace ActivaPro.Application.Services.Implementations
                 return new AsignacionResultDTO
                 {
                     Exitoso = false,
-                    Mensaje = $"Error al asignar automáticamente: {ex.Message} | Inner: {ex.InnerException?.Message}"
+                    Mensaje = $"Error al asignar ticket automáticamente: {ex.Message}"
                 };
             }
         }
 
-        public async Task<IEnumerable<AsignacionResultDTO>> AsignarTodosPendientesAsync()
+        /// <summary>
+        /// Calcula el puntaje base del ticket según su prioridad y tiempo restante de SLA
+        /// Fórmula: Puntaje = (Prioridad × 1000) - TiempoRestanteSLA
+        /// Mayor puntaje = Mayor urgencia
+        /// </summary>
+        private int CalcularPuntajeTicket(Tickets ticket)
         {
-            var ticketsPendientes = await _ticketRepository.ListByEstadoAsync("Pendiente");
+            // Obtener valor de prioridad desde SLA
+            int valorPrioridad = 2; // Por defecto Media
+
+            if (ticket.SLA != null && !string.IsNullOrEmpty(ticket.SLA.prioridad))
+            {
+                valorPrioridad = ticket.SLA.prioridad switch
+                {
+                    "Crítica" => 4,
+                    "Alta" => 3,
+                    "Media" => 2,
+                    "Baja" => 1,
+                    _ => 2
+                };
+            }
+
+            int puntajePrioridad = valorPrioridad * PESO_PRIORIDAD;
+
+            // Calcular tiempo restante del SLA en horas
+            int tiempoRestanteHoras = 999; // Valor por defecto alto si no hay SLA
+
+            if (ticket.FechaLimiteResolucion.HasValue)
+            {
+                var tiempoRestante = ticket.FechaLimiteResolucion.Value - DateTime.Now;
+                tiempoRestanteHoras = Math.Max(0, (int)tiempoRestante.TotalHours);
+            }
+
+            // Fórmula principal: Mayor puntaje = Mayor urgencia
+            // Se resta el tiempo porque menos tiempo = más urgente
+            int puntajeTotal = puntajePrioridad - tiempoRestanteHoras;
+
+            return puntajeTotal;
+        }
+
+        /// <summary>
+        /// Calcula el puntaje de un técnico específico para asignarle un ticket
+        /// Considera: puntaje base del ticket, carga de trabajo y especialidad
+        /// </summary>
+        private async Task<PuntajeAsignacionDTO> CalcularPuntajeTecnicoAsync(
+            Tickets ticket,
+            TecnicoDisponibleDTO tecnico,
+            int puntajeBaseTicket)
+        {
+            // Iniciar con el puntaje base del ticket
+            decimal puntajeFinal = puntajeBaseTicket;
+
+            var justificaciones = new List<string>();
+
+            // CRITERIO 1: Puntaje base del ticket (prioridad - tiempo SLA)
+            justificaciones.Add($"Puntaje base del ticket: {puntajeBaseTicket} pts");
+
+            // CRITERIO 2: Ajustar por carga de trabajo (menos carga = mejor)
+            int penalizacionCarga = tecnico.TicketsActivos * PESO_CARGA_TRABAJO;
+            puntajeFinal -= penalizacionCarga;
+            justificaciones.Add($"Carga actual: {tecnico.TicketsActivos} tickets (-{penalizacionCarga} pts)");
+
+            // CRITERIO 3: Bonus por especialidad
+            if (tecnico.TieneEspecialidad)
+            {
+                puntajeFinal += BONUS_ESPECIALIDAD;
+                justificaciones.Add($"Especializado en '{ticket.Categoria?.nombre_categoria}' (+{BONUS_ESPECIALIDAD} pts)");
+            }
+            else
+            {
+                justificaciones.Add($"Sin especialidad en '{ticket.Categoria?.nombre_categoria}' (+0 pts)");
+            }
+
+            // Crear justificación completa y estructurada
+            var justificacionCompleta = GenerarJustificacionDetallada(
+                ticket,
+                tecnico,
+                puntajeBaseTicket,
+                justificaciones,
+                puntajeFinal
+            );
+
+            return new PuntajeAsignacionDTO
+            {
+                IdTecnico = tecnico.IdTecnico,
+                NombreTecnico = tecnico.NombreTecnico,
+                Puntaje = puntajeFinal,
+                ValorPrioridad = puntajeBaseTicket,
+                CargaTrabajo = tecnico.TicketsActivos,
+                TieneEspecialidad = tecnico.TieneEspecialidad,
+                Justificacion = justificacionCompleta
+            };
+        }
+
+        /// <summary>
+        /// Genera una justificación detallada y legible de la asignación
+        /// </summary>
+        private string GenerarJustificacionDetallada(
+            Tickets ticket,
+            TecnicoDisponibleDTO tecnico,
+            int puntajeBase,
+            List<string> justificaciones,
+            decimal puntajeFinal)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("╔══════════════════════════════════════════════════════════════╗");
+            sb.AppendLine("║       CÁLCULO DE ASIGNACIÓN AUTOMÁTICA (AUTOTRIAGE)         ║");
+            sb.AppendLine("╚══════════════════════════════════════════════════════════════╝");
+            sb.AppendLine();
+
+            sb.AppendLine("📋 INFORMACIÓN DEL TICKET:");
+            sb.AppendLine($"   • ID: #{ticket.IdTicket}");
+            sb.AppendLine($"   • Título: {ticket.Titulo}");
+            sb.AppendLine($"   • Prioridad: {ticket.SLA?.prioridad ?? "Sin SLA"}");
+            sb.AppendLine($"   • Categoría: {ticket.Categoria?.nombre_categoria ?? "Sin categoría"}");
+            if (ticket.FechaLimiteResolucion.HasValue)
+            {
+                var horasRestantes = (ticket.FechaLimiteResolucion.Value - DateTime.Now).TotalHours;
+                sb.AppendLine($"   • Tiempo restante SLA: {Math.Max(0, (int)horasRestantes)} horas");
+            }
+            sb.AppendLine();
+
+            sb.AppendLine("👤 TÉCNICO ASIGNADO:");
+            sb.AppendLine($"   • Nombre: {tecnico.NombreTecnico}");
+            sb.AppendLine($"   • Carga actual: {tecnico.TicketsActivos} tickets activos");
+            sb.AppendLine($"   • Nivel de carga: {tecnico.NivelCarga}");
+            sb.AppendLine($"   • Especialidad: {(tecnico.TieneEspecialidad ? "✓ Sí" : "✗ No")}");
+            sb.AppendLine();
+
+            sb.AppendLine("🔢 DESGLOSE DEL CÁLCULO:");
+            sb.AppendLine("   Fórmula: Puntaje = (Prioridad × 1000) - TiempoRestante_SLA - (Carga × 50) + Especialidad");
+            sb.AppendLine();
+            foreach (var justificacion in justificaciones)
+            {
+                sb.AppendLine($"   • {justificacion}");
+            }
+            sb.AppendLine();
+            sb.AppendLine("   ═══════════════════════════════════════════════════════════");
+            sb.AppendLine($"   ✨ PUNTAJE FINAL: {puntajeFinal:F2} puntos");
+            sb.AppendLine("   ═══════════════════════════════════════════════════════════");
+            sb.AppendLine();
+
+            sb.AppendLine("📊 CRITERIOS DE SELECCIÓN:");
+            sb.AppendLine("   ✓ Mayor puntaje entre todos los técnicos disponibles");
+            sb.AppendLine("   ✓ Dentro del límite de carga permitido (< 10 tickets)");
+            sb.AppendLine("   ✓ Estado activo y disponible para asignaciones");
+            sb.AppendLine();
+
+            sb.AppendLine($"⏰ Fecha de asignación: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+            sb.AppendLine($"🤖 Tipo de asignación: Automática (Autotriage)");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Obtiene los técnicos disponibles con su información de carga
+        /// </summary>
+        private async Task<List<TecnicoDisponibleDTO>> ObtenerTecnicosParaAsignacionAsync(int? idTicket = null)
+        {
+            // Obtener ticket si se proporciona ID
+            Tickets ticket = null;
+            if (idTicket.HasValue)
+            {
+                ticket = await _repoTicketes.FindByIdAsync(idTicket.Value);
+            }
+
+            // Obtener todos los técnicos activos usando el contexto
+            var tecnicos = await _context.Tecnico
+                .Include(t => t.Usuario)
+                    .ThenInclude(u => u.UsuarioRoles)
+                        .ThenInclude(ur => ur.Rol)
+                .Where(t => t.Disponible && t.Usuario != null)
+                .ToListAsync();
+
+            var tecnicosDisponibles = new List<TecnicoDisponibleDTO>();
+
+            foreach (var tecnico in tecnicos)
+            {
+                // Contar tickets activos del técnico
+                int ticketsActivos = await _context.Ticketes
+                    .Where(t => t.IdUsuarioAsignado == tecnico.IdUsuario
+                        && (t.Estado == "Asignado" || t.Estado == "En Proceso"))
+                    .CountAsync();
+
+                int ticketsPendientes = await _context.Ticketes
+                    .Where(t => t.IdUsuarioAsignado == tecnico.IdUsuario && t.Estado == "Asignado")
+                    .CountAsync();
+
+                int ticketsEnProceso = await _context.Ticketes
+                    .Where(t => t.IdUsuarioAsignado == tecnico.IdUsuario && t.Estado == "En Proceso")
+                    .CountAsync();
+
+                // Verificar especialidad si hay ticket
+                bool tieneEspecialidad = false;
+                var especialidades = new List<string>();
+
+                if (ticket?.IdCategoria != null)
+                {
+                    // Obtener especialidades del técnico usando Tecnico_Especialidad
+                    var especialidadesTecnico = await _context.Set<Tecnico_Especialidad>()
+                        .Include(te => te.EspecialidadU)
+                        .Where(te => te.IdTecnico == tecnico.IdTecnico)
+                        .ToListAsync();
+
+                    // Obtener especialidades de la categoría usando Categoria_Especialidad
+                    var especialidadesCategoria = await _context.Set<Categoria_Especialidad>()
+                        .Include(ce => ce.Especialidad)
+                        .Where(ce => ce.id_categoria == ticket.IdCategoria)
+                        .Select(ce => ce.Especialidad.NombreEspecialidad)
+                        .ToListAsync();
+
+                    especialidades = especialidadesTecnico
+                        .Select(e => e.EspecialidadU?.NombreEspecialidadU ?? "")
+                        .Where(n => !string.IsNullOrEmpty(n))
+                        .ToList();
+
+                    // Verificar coincidencia entre especialidades del técnico y de la categoría
+                    tieneEspecialidad = especialidadesTecnico
+                        .Any(te => especialidadesCategoria.Contains(te.EspecialidadU?.NombreEspecialidadU ?? ""));
+                }
+
+                // Determinar nivel de carga
+                string nivelCarga = ticketsActivos <= 3 ? "Baja" :
+                                  ticketsActivos <= 7 ? "Media" : "Alta";
+
+                // Validar disponibilidad (no sobrepasar límite)
+                bool disponible = ticketsActivos < LIMITE_CARGA_TECNICO;
+
+                tecnicosDisponibles.Add(new TecnicoDisponibleDTO
+                {
+                    IdTecnico = tecnico.IdUsuario,
+                    NombreTecnico = tecnico.Usuario?.Nombre ?? "Sin nombre",
+                    CorreoTecnico = tecnico.Usuario?.Correo ?? "Sin correo",
+                    TicketsActivos = ticketsActivos,
+                    TicketsPendientes = ticketsPendientes,
+                    TicketsEnProceso = ticketsEnProceso,
+                    Especialidades = especialidades,
+                    TieneEspecialidad = tieneEspecialidad,
+                    NivelCarga = nivelCarga,
+                    Disponible = disponible
+                });
+            }
+
+            // Retornar solo técnicos disponibles
+            return tecnicosDisponibles.Where(t => t.Disponible).ToList();
+        }
+
+        /// <summary>
+        /// Asigna todos los tickets pendientes automáticamente
+        /// </summary>
+        public async Task<List<AsignacionResultDTO>> AsignarTodosPendientesAsync()
+        {
             var resultados = new List<AsignacionResultDTO>();
+            var ticketsPendientes = await _repoTicketes.ListByEstadoAsync("Pendiente");
 
             foreach (var ticket in ticketsPendientes)
             {
                 var resultado = await AsignarAutomaticamenteAsync(ticket.IdTicket);
                 resultados.Add(resultado);
+
+                // Pequeña pausa para evitar sobrecarga
+                await Task.Delay(100);
             }
 
             return resultados;
         }
 
-        private async Task<PuntajeAsignacionDTO> CalcularPuntajeAsync(int idTecnico, Tickets ticket)
-        {
-            // 1. Obtener información del técnico
-            var tecnico = await _usuarioRepository.FindByIdAsync(idTecnico);
-            var cargaTrabajo = await _repository.CountTicketsActivosByTecnicoAsync(idTecnico);
+        // ========== ASIGNACIÓN MANUAL ==========
 
-            // 2. Calcular tiempo restante del SLA
-            int tiempoRestanteSLA = 0;
-            if (ticket.FechaLimiteResolucion.HasValue)
-            {
-                var diferencia = ticket.FechaLimiteResolucion.Value - DateTime.Now;
-                tiempoRestanteSLA = diferencia.TotalHours > 0 ? (int)diferencia.TotalHours : 0;
-            }
-            else if (ticket.SLA != null && ticket.SLA.tiempo_resolucion_horas.HasValue)
-            {
-                tiempoRestanteSLA = ticket.SLA.tiempo_resolucion_horas.Value;
-            }
-
-            // 3. Convertir prioridad a valor numérico
-            int valorPrioridad = ticket.SLA?.prioridad switch
-            {
-                "Crítica" => 4,
-                "Alta" => 3,
-                "Media" => 2,
-                "Baja" => 1,
-                _ => 2
-            };
-
-            // 4. Verificar especialidad (simplificado)
-            bool tieneEspecialidad = true;
-
-            // 5. Calcular puntaje según fórmula
-            decimal puntaje = (valorPrioridad * 1000) - tiempoRestanteSLA - (cargaTrabajo * 50);
-
-            // Bonus por especialidad
-            if (tieneEspecialidad)
-            {
-                puntaje += 100;
-            }
-
-            // 6. Generar justificación detallada
-            var justificacion = $"Prioridad: {ticket.SLA?.prioridad ?? "Media"} ({valorPrioridad * 1000} pts) | " +
-                              $"Tiempo restante SLA: {tiempoRestanteSLA}h (-{tiempoRestanteSLA} pts) | " +
-                              $"Carga actual: {cargaTrabajo} tickets (-{cargaTrabajo * 50} pts) | " +
-                              $"Especialidad: {(tieneEspecialidad ? "+100 pts" : "0 pts")} | " +
-                              $"Puntaje final: {puntaje}";
-
-            return new PuntajeAsignacionDTO
-            {
-                IdTecnico = idTecnico,
-                NombreTecnico = tecnico?.Nombre ?? "Sin nombre",
-                Puntaje = puntaje,
-                ValorPrioridad = valorPrioridad,
-                TiempoRestanteSLA = tiempoRestanteSLA,
-                CargaTrabajo = cargaTrabajo,
-                TieneEspecialidad = tieneEspecialidad,
-                Justificacion = justificacion
-            };
-        }
-
-        #endregion
-
-        #region Asignación Manual
-
+        /// <summary>
+        /// Asigna un ticket manualmente a un técnico específico
+        /// </summary>
         public async Task<AsignacionResultDTO> AsignarManualmenteAsync(AsignacionManualRequestDTO request)
         {
             try
             {
-                // 1. Validar que el ticket existe y está pendiente
-                var ticket = await _ticketRepository.FindByIdAsync(request.IdTicket);
+                // 1. Validar ticket
+                var ticket = await _repoTicketes.FindByIdAsync(request.IdTicket);
                 if (ticket == null)
                 {
                     return new AsignacionResultDTO
                     {
                         Exitoso = false,
-                        Mensaje = "El ticket no existe."
+                        Mensaje = "El ticket no existe"
                     };
                 }
 
@@ -314,41 +438,39 @@ namespace ActivaPro.Application.Services.Implementations
                     return new AsignacionResultDTO
                     {
                         Exitoso = false,
-                        Mensaje = $"Solo se pueden asignar tickets en estado 'Pendiente'. Estado actual: {ticket.Estado}"
+                        Mensaje = $"El ticket está en estado '{ticket.Estado}' y no puede ser asignado"
                     };
                 }
 
-                // 2. Validar que el técnico existe y tiene el rol correcto
-                var tecnico = await _usuarioRepository.FindByIdAsync(request.IdTecnico);
-                if (tecnico == null)
+                // 2. Validar técnico
+                var tecnico = await _context.Tecnico
+                    .Include(t => t.Usuario)
+                    .FirstOrDefaultAsync(t => t.IdUsuario == request.IdTecnico);
+
+                if (tecnico == null || tecnico.Usuario == null)
                 {
                     return new AsignacionResultDTO
                     {
                         Exitoso = false,
-                        Mensaje = "El técnico seleccionado no existe."
+                        Mensaje = "El técnico seleccionado no existe o no es válido"
                     };
                 }
 
-                bool esTecnico = tecnico.UsuarioRoles != null && tecnico.UsuarioRoles.Any(ur =>
-                    ur.Rol != null && (ur.Rol.NombreRol.ToLower() == "tecnico" ||
-                    ur.Rol.NombreRol.ToLower() == "técnico"));
+                // 3. Crear justificación
+                var justificacion = new StringBuilder();
+                justificacion.AppendLine("╔══════════════════════════════════════════════════════════════╗");
+                justificacion.AppendLine("║           ASIGNACIÓN MANUAL DE TICKET                        ║");
+                justificacion.AppendLine("╚══════════════════════════════════════════════════════════════╝");
+                justificacion.AppendLine();
+                justificacion.AppendLine($"📋 Ticket: #{ticket.IdTicket} - {ticket.Titulo}");
+                justificacion.AppendLine($"👤 Técnico asignado: {tecnico.Usuario.Nombre}");
+                justificacion.AppendLine($"👨‍💼 Asignado por: Usuario ID {request.IdUsuarioAsignador}");
+                justificacion.AppendLine($"⏰ Fecha: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+                justificacion.AppendLine();
+                justificacion.AppendLine("💬 Justificación:");
+                justificacion.AppendLine($"   {request.Justificacion ?? "Sin justificación específica"}");
 
-                if (!esTecnico)
-                {
-                    return new AsignacionResultDTO
-                    {
-                        Exitoso = false,
-                        Mensaje = "El usuario seleccionado no tiene el rol de técnico."
-                    };
-                }
-
-                // 3. Actualizar estado del ticket PRIMERO
-                ticket.Estado = "Asignado";
-                ticket.IdUsuarioAsignado = request.IdTecnico;
-                ticket.FechaActualizacion = DateTime.Now;
-                await _ticketRepository.UpdateAsync(ticket);
-
-                // 4. Crear la asignación DESPUÉS
+                // 4. Crear la asignación
                 var asignacion = new AsignacionesTickets
                 {
                     IdTicket = request.IdTicket,
@@ -356,56 +478,36 @@ namespace ActivaPro.Application.Services.Implementations
                     IdUsuarioAsignador = request.IdUsuarioAsignador,
                     TipoAsignacion = "Manual",
                     FechaAsignacion = DateTime.Now,
-                    PuntajeAsignacion = null,
-                    Justificacion = request.Justificacion ?? "Asignación manual realizada por administrador"
+                    Justificacion = justificacion.ToString()
                 };
 
-                await _repository.AddAsync(asignacion);
+                // 5. Guardar la asignación
+                await _repoAsignaciones.AddAsync(asignacion);
 
-                // 5. Registrar en historial
-                var historial = new Historial_Tickets
-                {
-                    IdTicket = request.IdTicket,
-                    IdUsuario = request.IdTecnico,
-                    Accion = $"Asignación manual: {asignacion.Justificacion}",
-                    FechaAccion = DateTime.Now
-                };
-                await _ticketRepository.AddHistorialAsync(historial);
+                // 6. Actualizar el ticket
+                ticket.Estado = "Asignado";
+                ticket.IdUsuarioAsignado = request.IdTecnico;
+                ticket.FechaActualizacion = DateTime.Now;
+                await _repoTicketes.UpdateAsync(ticket);
 
-                // 6. Enviar notificaciones (con manejo de errores)
-                try
-                {
-                    var usuariosDestino = new List<int> { ticket.IdUsuarioSolicitante, request.IdTecnico };
-                    await _notificacionService.CrearCambioEstadoTicketAsync(
-                        usuariosDestino,
-                        ticket.IdTicket,
-                        "Pendiente",
-                        "Asignado",
-                        request.IdUsuarioAsignador.ToString(),
-                        $"Asignación manual a {tecnico.Nombre}"
-                    );
-                }
-                catch (Exception notifEx)
-                {
-                    Console.WriteLine($"Error al enviar notificación: {notifEx.Message}");
-                }
+                // 7. Obtener carga actual
+                int cargaActual = await _context.Ticketes
+                    .Where(t => t.IdUsuarioAsignado == request.IdTecnico
+                        && (t.Estado == "Asignado" || t.Estado == "En Proceso"))
+                    .CountAsync();
 
-                // 7. Recargar asignación con relaciones
-                var asignacionCompleta = await _repository.FindByIdAsync(asignacion.IdAsignacion);
-                var cargaTrabajo = await _repository.CountTicketsActivosByTecnicoAsync(request.IdTecnico);
-
+                // 8. Retornar resultado
                 return new AsignacionResultDTO
                 {
                     Exitoso = true,
-                    Mensaje = "Asignación manual realizada exitosamente.",
-                    Asignacion = asignacionCompleta != null ? _mapper.Map<AsignacionesDTO>(asignacionCompleta) : null,
-                    Justificacion = asignacion.Justificacion,
+                    Mensaje = $"Ticket #{request.IdTicket} asignado manualmente",
+                    Justificacion = justificacion.ToString(),
                     TecnicoSeleccionado = new TecnicoSeleccionadoDTO
                     {
                         IdTecnico = tecnico.IdUsuario,
-                        NombreTecnico = tecnico.Nombre,
-                        CorreoTecnico = tecnico.Correo,
-                        CargaActual = cargaTrabajo,
+                        NombreTecnico = tecnico.Usuario.Nombre,
+                        CorreoTecnico = tecnico.Usuario.Correo,
+                        CargaActual = cargaActual,
                         Disponible = true
                     }
                 };
@@ -415,233 +517,237 @@ namespace ActivaPro.Application.Services.Implementations
                 return new AsignacionResultDTO
                 {
                     Exitoso = false,
-                    Mensaje = $"Error al asignar manualmente: {ex.Message} | Inner: {ex.InnerException?.Message}"
+                    Mensaje = $"Error al asignar ticket manualmente: {ex.Message}"
                 };
             }
         }
 
-        public async Task<IEnumerable<TecnicoDisponibleDTO>> GetTecnicosDisponiblesAsync(int? idTicket = null)
-        {
-            try
-            {
-                // Obtener técnicos usando ListByRolAsync que ya funciona correctamente
-                var tecnicos = await _usuarioRepository.ListByRolAsync("Técnico");
-
-                if (!tecnicos.Any())
-                {
-                    return new List<TecnicoDisponibleDTO>();
-                }
-
-                var tecnicosDisponibles = new List<TecnicoDisponibleDTO>();
-
-                string categoriaRequerida = null;
-                if (idTicket.HasValue)
-                {
-                    var ticket = await _ticketRepository.FindByIdAsync(idTicket.Value);
-                    categoriaRequerida = ticket?.Categoria?.nombre_categoria;
-                }
-
-                foreach (var tecnico in tecnicos)
-                {
-                    try
-                    {
-                        var ticketsActivos = await _repository.CountTicketsActivosByTecnicoAsync(tecnico.IdUsuario);
-                        var ticketsPendientes = await _repository.CountTicketsPendientesByTecnicoAsync(tecnico.IdUsuario);
-                        var ticketsEnProceso = await _repository.CountTicketsEnProcesoByTecnicoAsync(tecnico.IdUsuario);
-
-                        string nivelCarga = ticketsActivos switch
-                        {
-                            <= 2 => "Baja",
-                            <= 5 => "Media",
-                            _ => "Alta"
-                        };
-
-                        // Simplificamos especialidades por ahora
-                        var especialidades = new List<string> { "General" };
-                        bool tieneEspecialidad = true;
-
-                        tecnicosDisponibles.Add(new TecnicoDisponibleDTO
-                        {
-                            IdTecnico = tecnico.IdUsuario,
-                            NombreTecnico = tecnico.Nombre ?? "Sin nombre",
-                            CorreoTecnico = tecnico.Correo ?? "",
-                            TicketsActivos = ticketsActivos,
-                            TicketsPendientes = ticketsPendientes,
-                            TicketsEnProceso = ticketsEnProceso,
-                            Especialidades = especialidades,
-                            TieneEspecialidad = tieneEspecialidad,
-                            NivelCarga = nivelCarga,
-                            Disponible = ticketsActivos < 10
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error al procesar técnico {tecnico.IdUsuario}: {ex.Message}");
-                        continue;
-                    }
-                }
-
-                return tecnicosDisponibles.OrderBy(t => t.TicketsActivos).ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error en GetTecnicosDisponiblesAsync: {ex.Message}");
-                return new List<TecnicoDisponibleDTO>();
-            }
-        }
+        // ========== CONSULTAS ==========
 
         public async Task<IEnumerable<TicketPendienteAsignacionDTO>> GetTicketsPendientesAsync()
         {
-            var ticketsPendientes = await _ticketRepository.ListByEstadoAsync("Pendiente");
-            var ticketsDTO = new List<TicketPendienteAsignacionDTO>();
+            var ticketsPendientes = await _repoTicketes.ListByEstadoAsync("Pendiente");
 
-            foreach (var ticket in ticketsPendientes)
+            return ticketsPendientes.Select(t => new TicketPendienteAsignacionDTO
             {
-                int? horasRestantes = null;
-                if (ticket.FechaLimiteResolucion.HasValue)
+                IdTicket = t.IdTicket,
+                Titulo = t.Titulo,
+                Descripcion = t.Descripcion ?? "Sin descripción",
+                Categoria = t.Categoria?.nombre_categoria ?? "Sin categoría",
+                Prioridad = t.SLA?.prioridad ?? "Media",
+                Estado = t.Estado,
+                FechaLimiteResolucion = t.FechaLimiteResolucion,
+                HorasRestantes = t.FechaLimiteResolucion.HasValue
+                    ? Math.Max(0, (int)(t.FechaLimiteResolucion.Value - DateTime.Now).TotalHours)
+                    : null,
+                TiempoResolucionHoras = t.SLA?.tiempo_resolucion_horas,
+                ColorUrgencia = DeterminarColorUrgencia(t),
+                FechaCreacion = t.FechaCreacion
+            }).ToList();
+        }
+
+        public async Task<IEnumerable<TecnicoDisponibleDTO>> GetTecnicosDisponiblesAsync(int? idTicket = null)
+        {
+            return await ObtenerTecnicosParaAsignacionAsync(idTicket);
+        }
+
+        private string DeterminarColorUrgencia(Tickets ticket)
+        {
+            if (!ticket.FechaLimiteResolucion.HasValue)
+                return "secondary";
+
+            var horasRestantes = (ticket.FechaLimiteResolucion.Value - DateTime.Now).TotalHours;
+
+            if (horasRestantes <= 6) return "danger";
+            if (horasRestantes <= 24) return "warning";
+            return "success";
+        }
+
+        // Implementar métodos restantes de la interfaz según sea necesario...
+        public async Task<IEnumerable<TecnicoAsignacionesDTO>> GetAsignacionesPorTecnicoAsync()
+        {
+            try
+            {
+                // 1. Obtener todos los técnicos activos
+                var tecnicos = await _context.Tecnico
+                    .Include(t => t.Usuario)
+                    .Where(t => t.Disponible && t.Usuario != null)
+                    .ToListAsync();
+
+                var tecnicosDTOs = new List<TecnicoAsignacionesDTO>();
+
+                foreach (var tecnico in tecnicos)
                 {
-                    var diferencia = ticket.FechaLimiteResolucion.Value - DateTime.Now;
-                    horasRestantes = diferencia.TotalHours > 0 ? (int)diferencia.TotalHours : 0;
+                    // 2. Obtener asignaciones del técnico
+                    var asignaciones = await _repoAsignaciones.ListByTecnicoAsync(tecnico.IdUsuario);
+
+                    // 3. Calcular estadísticas
+                    var ticketsAsignados = asignaciones.Select(a => a.IdTicketNavigation).ToList();
+
+                    int totalTickets = ticketsAsignados.Count;
+                    int ticketsPendientes = ticketsAsignados.Count(t => t.Estado == "Asignado");
+                    int ticketsEnProceso = ticketsAsignados.Count(t => t.Estado == "En Proceso");
+                    int ticketsCerrados = ticketsAsignados.Count(t => t.Estado == "Cerrado");
+
+                    // 4. Agrupar asignaciones por semana
+                    var asignacionesPorSemana = asignaciones
+                        .Where(a => a.FechaAsignacion.HasValue)
+                        .GroupBy(a => new
+                        {
+                            Semana = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(
+                                a.FechaAsignacion.Value,
+                                CalendarWeekRule.FirstDay,
+                                DayOfWeek.Monday),
+                            Anio = a.FechaAsignacion.Value.Year
+                        })
+                        .OrderByDescending(g => g.Key.Anio)
+                        .ThenByDescending(g => g.Key.Semana)
+                        .Select(g => new AsignacionPorSemanaDTO
+                        {
+                            NumeroSemana = g.Key.Semana,
+                            Anio = g.Key.Anio,
+                            RangoFechas = CalcularRangoFechasSemana(g.Key.Semana, g.Key.Anio),
+                            Tickets = g.Select(a => MapearTicketAsignado(a.IdTicketNavigation, a.FechaAsignacion.Value)).ToList()
+                        })
+                        .ToList();
+
+                    // 5. Crear DTO del técnico
+                    tecnicosDTOs.Add(new TecnicoAsignacionesDTO
+                    {
+                        IdTecnico = tecnico.IdUsuario,
+                        NombreTecnico = tecnico.Usuario.Nombre,
+                        CorreoTecnico = tecnico.Usuario.Correo,
+                        TotalTicketsAsignados = totalTickets,
+                        TicketsPendientes = ticketsPendientes,
+                        TicketsEnProceso = ticketsEnProceso,
+                        TicketsCerrados = ticketsCerrados,
+                        AsignacionesPorSemana = asignacionesPorSemana
+                    });
                 }
 
-                var colorUrgencia = DeterminarColorUrgencia(horasRestantes, ticket.Estado);
-
-                ticketsDTO.Add(new TicketPendienteAsignacionDTO
-                {
-                    IdTicket = ticket.IdTicket,
-                    Titulo = ticket.Titulo,
-                    Descripcion = ticket.Descripcion,
-                    Categoria = ticket.Categoria?.nombre_categoria ?? "Sin categoría",
-                    Prioridad = ticket.SLA?.prioridad ?? "Media",
-                    Estado = ticket.Estado,
-                    FechaLimiteResolucion = ticket.FechaLimiteResolucion,
-                    HorasRestantes = horasRestantes,
-                    TiempoResolucionHoras = ticket.SLA?.tiempo_resolucion_horas,
-                    ColorUrgencia = colorUrgencia,
-                    FechaCreacion = ticket.FechaCreacion
-                });
+                return tecnicosDTOs.OrderBy(t => t.NombreTecnico);
             }
-
-            return ticketsDTO.OrderBy(t => t.HorasRestantes ?? int.MaxValue);
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener asignaciones por técnico: {ex.Message}", ex);
+            }
         }
 
-        #endregion
-
-        #region Métodos Auxiliares
-
-        private List<AsignacionPorSemanaDTO> OrganizarPorSemana(List<AsignacionesTickets> asignaciones)
+        public async Task<TecnicoAsignacionesDTO> GetAsignacionesByTecnicoIdAsync(int idTecnico)
         {
-            var semanas = asignaciones
-                .Where(a => a.FechaAsignacion.HasValue)
-                .GroupBy(a => new
-                {
-                    Semana = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(
-                        a.FechaAsignacion.Value,
-                        CalendarWeekRule.FirstDay,
-                        DayOfWeek.Monday),
-                    Anio = a.FechaAsignacion.Value.Year
-                })
-                .Select(g => new AsignacionPorSemanaDTO
-                {
-                    NumeroSemana = g.Key.Semana,
-                    Anio = g.Key.Anio,
-                    RangoFechas = ObtenerRangoSemana(g.Key.Anio, g.Key.Semana),
-                    Tickets = g.Select(a => MapearTicketAsignado(a)).ToList()
-                })
-                .OrderByDescending(s => s.Anio)
-                .ThenByDescending(s => s.NumeroSemana)
-                .ToList();
+            try
+            {
+                // 1. Obtener información del técnico
+                var tecnico = await _context.Tecnico
+                    .Include(t => t.Usuario)
+                    .FirstOrDefaultAsync(t => t.IdUsuario == idTecnico);
 
-            return semanas;
+                if (tecnico == null || tecnico.Usuario == null)
+                {
+                    throw new Exception($"No se encontró el técnico con ID {idTecnico}");
+                }
+
+                // 2. Obtener asignaciones del técnico
+                var asignaciones = await _repoAsignaciones.ListByTecnicoAsync(idTecnico);
+
+                // 3. Calcular estadísticas
+                var ticketsAsignados = asignaciones.Select(a => a.IdTicketNavigation).ToList();
+
+                int totalTickets = ticketsAsignados.Count;
+                int ticketsPendientes = ticketsAsignados.Count(t => t.Estado == "Asignado");
+                int ticketsEnProceso = ticketsAsignados.Count(t => t.Estado == "En Proceso");
+                int ticketsCerrados = ticketsAsignados.Count(t => t.Estado == "Cerrado");
+
+                // 4. Agrupar asignaciones por semana
+                var asignacionesPorSemana = asignaciones
+                    .Where(a => a.FechaAsignacion.HasValue)
+                    .GroupBy(a => new
+                    {
+                        Semana = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(
+                            a.FechaAsignacion.Value,
+                            CalendarWeekRule.FirstDay,
+                            DayOfWeek.Monday),
+                        Anio = a.FechaAsignacion.Value.Year
+                    })
+                    .OrderByDescending(g => g.Key.Anio)
+                    .ThenByDescending(g => g.Key.Semana)
+                    .Select(g => new AsignacionPorSemanaDTO
+                    {
+                        NumeroSemana = g.Key.Semana,
+                        Anio = g.Key.Anio,
+                        RangoFechas = CalcularRangoFechasSemana(g.Key.Semana, g.Key.Anio),
+                        Tickets = g.Select(a => MapearTicketAsignado(a.IdTicketNavigation, a.FechaAsignacion.Value)).ToList()
+                    })
+                    .ToList();
+
+                // 5. Crear DTO del técnico
+                return new TecnicoAsignacionesDTO
+                {
+                    IdTecnico = idTecnico,
+                    NombreTecnico = tecnico.Usuario.Nombre,
+                    CorreoTecnico = tecnico.Usuario.Correo,
+                    TotalTicketsAsignados = totalTickets,
+                    TicketsPendientes = ticketsPendientes,
+                    TicketsEnProceso = ticketsEnProceso,
+                    TicketsCerrados = ticketsCerrados,
+                    AsignacionesPorSemana = asignacionesPorSemana
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener asignaciones del técnico {idTecnico}: {ex.Message}", ex);
+            }
         }
 
-        private TicketAsignadoDTO MapearTicketAsignado(AsignacionesTickets asignacion)
+        // Método privado para calcular el rango de fechas de una semana específica de un año
+        private string CalcularRangoFechasSemana(int numeroSemana, int anio)
         {
-            var ticket = asignacion.IdTicketNavigation;
-            var horasRestantes = CalcularHorasRestantes(ticket?.FechaLimiteResolucion);
+            // Obtener el primer día del año
+            DateTime primerDiaAnio = new DateTime(anio, 1, 1);
+
+            // Calcular el número de días hasta el primer día de la semana (lunes)
+            int diasOffset = DayOfWeek.Monday - primerDiaAnio.DayOfWeek;
+            if (diasOffset < 0) diasOffset += 7;
+
+            // Obtener el primer lunes del año
+            DateTime primerLunes = primerDiaAnio.AddDays(diasOffset);
+
+            // Calcular la fecha de inicio de la semana deseada
+            DateTime fechaInicioSemana = primerLunes.AddDays((numeroSemana - 1) * 7);
+
+            // La fecha de fin es 6 días después
+            DateTime fechaFinSemana = fechaInicioSemana.AddDays(6);
+
+            // Ajustar si la semana cae fuera del año
+            if (fechaInicioSemana.Year < anio)
+                fechaInicioSemana = new DateTime(anio, 1, 1);
+            if (fechaFinSemana.Year > anio)
+                fechaFinSemana = new DateTime(anio, 12, 31);
+
+            return $"{fechaInicioSemana:dd/MM/yyyy} - {fechaFinSemana:dd/MM/yyyy}";
+        }
+
+        private TicketAsignadoDTO MapearTicketAsignado(Tickets ticket, DateTime fechaAsignacion)
+        {
+            if (ticket == null)
+                throw new ArgumentNullException(nameof(ticket));
 
             return new TicketAsignadoDTO
             {
-                IdTicket = ticket?.IdTicket ?? 0,
-                Titulo = ticket?.Titulo ?? "Sin título",
-                Categoria = ticket?.Categoria?.nombre_categoria ?? "Sin categoría",
-                Estado = ticket?.Estado ?? "Pendiente",
-                Prioridad = ticket?.SLA?.prioridad ?? "Media",
-                FechaLimiteResolucion = ticket?.FechaLimiteResolucion,
-                HorasRestantes = horasRestantes,
-                ColorUrgencia = DeterminarColorUrgencia(horasRestantes, ticket?.Estado),
-                IconoCategoria = ObtenerIconoCategoria(ticket?.Categoria?.nombre_categoria),
-                PorcentajeProgreso = CalcularPorcentajeProgreso(ticket?.Estado),
-                FechaAsignacion = asignacion.FechaAsignacion ?? DateTime.Now
+                IdTicket = ticket.IdTicket,
+                Titulo = ticket.Titulo,
+                Categoria = ticket.Categoria?.nombre_categoria ?? "Sin categoría",
+                Estado = ticket.Estado,
+                Prioridad = ticket.SLA?.prioridad ?? "Media",
+                FechaLimiteResolucion = ticket.FechaLimiteResolucion,
+                HorasRestantes = ticket.FechaLimiteResolucion.HasValue
+                    ? Math.Max(0, (int)(ticket.FechaLimiteResolucion.Value - DateTime.Now).TotalHours)
+                    : null,
+                ColorUrgencia = DeterminarColorUrgencia(ticket),
+                IconoCategoria = "", // Asignar el icono si aplica, o dejar vacío
+                PorcentajeProgreso = 0, // Asignar el progreso si aplica, o dejar en 0
+                FechaAsignacion = fechaAsignacion
             };
         }
-
-        private int? CalcularHorasRestantes(DateTime? fechaLimite)
-        {
-            if (!fechaLimite.HasValue)
-                return null;
-
-            var diferencia = fechaLimite.Value - DateTime.Now;
-            return diferencia.TotalHours > 0 ? (int)diferencia.TotalHours : 0;
-        }
-
-        private string DeterminarColorUrgencia(int? horasRestantes, string estado)
-        {
-            if (estado == "Cerrado")
-                return "success";
-
-            if (!horasRestantes.HasValue)
-                return "secondary";
-
-            if (horasRestantes <= 6)
-                return "danger";
-
-            if (horasRestantes <= 24)
-                return "warning";
-
-            return "info";
-        }
-
-        private string ObtenerIconoCategoria(string categoria)
-        {
-            return categoria switch
-            {
-                "Solicitar Inventario" => "bi-box-seam",
-                "Confirmacion de Pedido" => "bi-check-circle",
-                "Consultar Lote" => "bi-search",
-                "Problemas en Inventario" => "bi-exclamation-triangle",
-                "Satisfacción y experiencia" => "bi-star",
-                _ => "bi-ticket"
-            };
-        }
-
-        private int CalcularPorcentajeProgreso(string estado)
-        {
-            return estado switch
-            {
-                "Pendiente" => 0,
-                "Asignado" => 25,
-                "En Proceso" => 50,
-                "Cerrado" => 100,
-                _ => 0
-            };
-        }
-
-        private string ObtenerRangoSemana(int anio, int semana)
-        {
-            var primerDia = PrimerDiaDeSemana(anio, semana);
-            var ultimoDia = primerDia.AddDays(6);
-            return $"{primerDia:dd/MM} - {ultimoDia:dd/MM/yyyy}";
-        }
-
-        private DateTime PrimerDiaDeSemana(int anio, int semana)
-        {
-            var primerDiaDelAnio = new DateTime(anio, 1, 1);
-            var diasOffset = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek - primerDiaDelAnio.DayOfWeek;
-            var primerLunes = primerDiaDelAnio.AddDays(diasOffset);
-            return primerLunes.AddDays((semana - 1) * 7);
-        }
-
-        #endregion
     }
 }

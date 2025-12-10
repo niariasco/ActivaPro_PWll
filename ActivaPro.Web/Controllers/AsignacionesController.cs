@@ -228,17 +228,46 @@ namespace ActivaPro.Web.Controllers
         /// Vista para asignación manual de tickets
         /// Permite al administrador seleccionar manualmente el técnico para cada ticket
         /// Muestra información sobre la carga de trabajo y disponibilidad de cada técnico
-        /// Solo accesible para administradores
+        /// Solo accesible para administradores y coordinadores
         /// </summary>
-        [Authorize(Roles = "Administrador")]
-        public async Task<IActionResult> AsignacionManual()
+        /// <param name="ticketId">ID del ticket a asignar (opcional)</param>
+        [Authorize(Roles = "Administrador,Coordinador")]
+        public async Task<IActionResult> AsignacionManual(int? ticketId = null)
         {
             try
             {
                 var ticketsPendientes = await _service.GetTicketsPendientesAsync();
                 var tecnicosDisponibles = await _service.GetTecnicosDisponiblesAsync();
 
-                ViewBag.TicketsPendientes = ticketsPendientes?.ToList() ?? new List<TicketPendienteAsignacionDTO>();
+                // Si se proporciona un ticketId específico, filtrar para mostrar solo ese ticket
+                if (ticketId.HasValue)
+                {
+                    var ticketEspecifico = ticketsPendientes?.FirstOrDefault(t => t.IdTicket == ticketId.Value);
+
+                    if (ticketEspecifico != null)
+                    {
+                        // Mostrar solo el ticket específico
+                        ViewBag.TicketsPendientes = new List<TicketPendienteAsignacionDTO> { ticketEspecifico };
+                        ViewBag.TicketEspecifico = true;
+                        ViewBag.TicketId = ticketId.Value;
+                    }
+                    else
+                    {
+                        // El ticket no existe o ya está asignado
+                        TempData["Error"] = $"El ticket #{ticketId} no está disponible para asignación o ya fue asignado.";
+                        ViewBag.TicketsPendientes = ticketsPendientes?.ToList() ?? new List<TicketPendienteAsignacionDTO>();
+                        ViewBag.TicketEspecifico = false;
+                        ViewBag.TicketId = 0;
+                    }
+                }
+                else
+                {
+                    // Mostrar todos los tickets pendientes
+                    ViewBag.TicketsPendientes = ticketsPendientes?.ToList() ?? new List<TicketPendienteAsignacionDTO>();
+                    ViewBag.TicketEspecifico = false;
+                    ViewBag.TicketId = 0;
+                }
+
                 ViewBag.TecnicosDisponibles = tecnicosDisponibles?.ToList() ?? new List<TecnicoDisponibleDTO>();
                 ViewBag.IdUsuarioActual = GetCurrentUserId();
 
@@ -263,7 +292,7 @@ namespace ActivaPro.Web.Controllers
         /// <param name="idTecnico">ID del técnico al que se asignará el ticket</param>
         /// <param name="justificacion">Justificación opcional para la asignación manual</param>
         [HttpPost]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Roles = "Administrador,Coordinador")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AsignarTicketManualmente(int idTicket, int idTecnico, string justificacion)
         {
@@ -284,6 +313,8 @@ namespace ActivaPro.Web.Controllers
                 if (resultado.Exitoso)
                 {
                     TempData["Success"] = $"✓ {resultado.Mensaje} Ticket asignado a {resultado.TecnicoSeleccionado.NombreTecnico}";
+                    // Redirigir a la lista de tickets después de asignar exitosamente
+                    return RedirectToAction("Index", "Ticketes");
                 }
                 else
                 {

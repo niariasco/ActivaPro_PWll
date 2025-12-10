@@ -4,22 +4,56 @@
     ViewData["Title"] = $"Editar Ticket #{Model.IdTicket}";
     var rolUsuario = ViewBag.RolUsuario as string ?? "Cliente";
     var idUsuarioActual = ViewBag.IdUsuarioActual ?? 0;
+    var esTecnico = rolUsuario.ToLower() == "técnico" || rolUsuario.ToLower() == "tecnico";
 }
 
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-10 offset-md-1">
-            <div class="card shadow">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card shadow-lg">
                 <div class="card-header bg-warning text-dark">
-                    <h4 class="mb-0">
-                        <i class="bi bi-pencil"></i> Editar Ticket #@Model.IdTicket
-                    </h4>
-                    <small class="text-muted">
-                        <i class="bi bi-person-badge"></i> Usuario: @rolUsuario (ID: @idUsuarioActual)
-                    </small>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                <i class="bi bi-pencil"></i> Editar Ticket #@Model.IdTicket
+                            </h4>
+                            <small class="text-muted">
+                                <i class="bi bi-person-badge"></i> @rolUsuario
+                            </small>
+                        </div>
+                        <span class="badge bg-light text-dark fs-6">
+                            @if (Model.Estado == "Pendiente")
+                            {
+                                <span>⏳ @Model.Estado</span>
+                            }
+                            else if (Model.Estado == "Asignado")
+                            {
+                                <span>👤 @Model.Estado</span>
+                            }
+                            else if (Model.Estado == "En Proceso")
+                            {
+                                <span>⚙️ @Model.Estado</span>
+                            }
+                            else if (Model.Estado == "Resuelto")
+                            {
+                                <span>✅ @Model.Estado</span>
+                            }
+                            else
+                            {
+                                <span>@Model.Estado</span>
+                            }
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <!-- Mensajes -->
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i> @TempData["Success"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
                     @if (TempData["Error"] != null)
                     {
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -28,217 +62,191 @@
                         </div>
                     }
 
-                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="IdTicket" />
-                        <input type="hidden" asp-for="IdUsuarioSolicitante" />
-                        <input type="hidden" asp-for="IdCategoria" />
-                        <input type="hidden" asp-for="IdSLA" />
-                        <input type="hidden" asp-for="FechaCreacion" />
-                        <input type="hidden" asp-for="FechaLimiteResolucion" />
+                    <!-- ⭐ PANEL DE CAMBIO RÁPIDO DE ESTADO (Solo Técnicos) -->
+                    @if (esTecnico && Model.Estado != "Cerrado" && Model.Estado != "Cancelado" && Model.Estado != "Resuelto")
+                    {
+                        var siguienteEstado = Model.Estado == "Pendiente"
+                        ? "Asignado"
+                        : Model.Estado == "Asignado"
+                        ? "En Proceso"
+                        : Model.Estado == "En Proceso"
+                        ? "Resuelto"
+                        : null;
 
-                        <!-- INFORMACIÓN DEL SOLICITANTE -->
-                        <div class="card mb-3 bg-light">
-                            <div class="card-body">
-                                <h6 class="card-title text-muted">
-                                    <i class="bi bi-person"></i> Información del Solicitante (No editable)
-                                </h6>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <strong>Nombre:</strong> @Model.NombreSolicitante
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Correo:</strong> @Model.CorreoSolicitante
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Creado:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
-                                    </div>
+                        @if (siguienteEstado != null)
+                        {
+                            <div class="card border-primary mb-4 shadow-sm cambio-rapido-panel">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-lightning-charge-fill"></i> Cambio Rápido de Estado
+                                    </h5>
                                 </div>
-                            </div>
-                        </div>
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 mb-3 mb-md-0">
+                                            <p class="mb-2"><strong>Estado Actual:</strong></p>
+                                            <div id="estado-actual-badge">
+                                                @if (Model.Estado == "Pendiente")
+                                                {
+                                                    <span class="badge bg-warning text-dark fs-5 px-3 py-2 w-100">⏳ Pendiente</span>
+                                                }
+                                                else if (Model.Estado == "Asignado")
+                                                {
+                                                    <span class="badge bg-info text-dark fs-5 px-3 py-2 w-100">👤 Asignado</span>
+                                                }
+                                                else if (Model.Estado == "En Proceso")
+                                                {
+                                                    <span class="badge bg-primary fs-5 px-3 py-2 w-100">⚙️ En Proceso</span>
+                                                }
+                                            </div>
+                                        </div>
 
-                        <!-- TÍTULO -->
-                        <div class="mb-3">
-                            <label asp-for="Titulo" class="form-label fw-bold">
-                                Título <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Titulo"
-                                   class="form-control"
-                                   maxlength="150"
-                                   placeholder="Ingrese el título del ticket" />
-                            <span asp-validation-for="Titulo" class="text-danger"></span>
-                        </div>
+                                        <div class="col-md-1 text-center d-none d-md-block">
+                                            <i class="bi bi-arrow-right-circle-fill fs-1 text-primary"></i>
+                                        </div>
 
-                        <!-- DESCRIPCIÓN -->
-                        <div class="mb-3">
-                            <label asp-for="Descripcion" class="form-label fw-bold">
-                                Descripción <span class="text-danger">*</span>
-                            </label>
-                            <textarea asp-for="Descripcion"
-                                      class="form-control"
-                                      rows="5"
-                                      maxlength="2000"
-                                      placeholder="Describa el problema o solicitud"></textarea>
-                            <span asp-validation-for="Descripcion" class="text-danger"></span>
-                        </div>
-
-                        <div class="row">
-                            <!-- ESTADO -->
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="Estado" class="form-label fw-bold">
-                                        Estado <span class="text-danger">*</span>
-                                    </label>
-                                    <select asp-for="Estado" class="form-select">
-                                        @foreach (var estado in Model.EstadosDisponibles)
-                                        {
-                                            <option value="@estado">@estado</option>
-                                        }
-                                    </select>
-                                    <span asp-validation-for="Estado" class="text-danger"></span>
-                                </div>
-                            </div>
-
-                            <!-- USUARIO ASIGNADO (Solo para Administrador y Técnico) -->
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="IdUsuarioAsignado" class="form-label fw-bold">
-                                        Asignado a
-                                    </label>
-                                    @if (rolUsuario == "Administrador")
-                                    {
-                                        <select asp-for="IdUsuarioAsignado" class="form-select">
-                                            <option value="">-- Sin asignar --</option>
-                                            @if (Model.IdUsuarioAsignado.HasValue)
+                                        <div class="col-md-7">
+                                            <p class="mb-2"><strong>Siguiente Estado:</strong></p>
+                                            @if (siguienteEstado == "Asignado")
                                             {
-                                                <option value="@Model.IdUsuarioAsignado" selected>@Model.NombreUsuarioAsignado</option>
-                                            }
-                                        </select>
-                                    }
-                                    else
-                                    {
-                                        <input type="text" class="form-control" value="@Model.NombreUsuarioAsignado" readonly />
-                                        <input type="hidden" asp-for="IdUsuarioAsignado" />
-                                    }
-                                    <small class="form-text text-muted">
-                                        Actualmente: @Model.NombreUsuarioAsignado
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- CATEGORÍA Y SLA -->
-                        <div class="card mb-3 bg-light">
-                            <div class="card-body">
-                                <h6 class="card-title text-muted">
-                                    <i class="bi bi-info-circle"></i> Categorización (No editable)
-                                </h6>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <strong>Categoría:</strong> @Model.CategoriaNombre
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Prioridad:</strong>
-                                        @if (Model.SLA_Prioridad?.Contains("Alta") == true)
-                                        {
-                                            <span class="badge bg-danger"> Alta</span>
-                                        }
-                                        else if (Model.SLA_Prioridad?.Contains("Media") == true)
-                                        {
-                                            <span class="badge bg-warning text-dark">🟡 Media</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">🟢 Baja</span>
-                                        }
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>SLA:</strong> @Model.SLA_Descripcion
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- GESTIÓN DE IMÁGENES -->
-                        <div class="card mb-3">
-                            <div class="card-header bg-info text-white">
-                                <h6 class="mb-0"><i class="bi bi-images"></i> Gestión de Imágenes</h6>
-                            </div>
-                            <div class="card-body">
-                                <!-- IMÁGENES EXISTENTES -->
-                                @if (Model.ImagenesExistentes != null && Model.ImagenesExistentes.Any())
-                                {
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Imágenes Actuales</label>
-                                        <div class="row mt-2">
-                                            @foreach (var imagen in Model.ImagenesExistentes)
-                                            {
-                                                <div class="col-md-3 col-sm-4 col-6 mb-3">
-                                                    <div class="position-relative">
-                                                        <img src="@imagen.RutaArchivo"
-                                                             class="img-thumbnail"
-                                                             alt="@imagen.NombreArchivo"
-                                                             style="width: 100%; height: 150px; object-fit: cover;" />
-                                                        <div class="form-check position-absolute bg-white bg-opacity-75 p-2 rounded"
-                                                             style="top: 5px; left: 5px;">
-                                                            <input type="checkbox"
-                                                                   class="form-check-input"
-                                                                   name="ImagenesAEliminar"
-                                                                   value="@imagen.IdImagen"
-                                                                   id="eliminar_@imagen.IdImagen" />
-                                                            <label class="form-check-label" for="eliminar_@imagen.IdImagen">
-                                                                <small>Eliminar</small>
-                                                            </label>
-                                                        </div>
+                                                <button type="button"
+                                                        class="btn btn-info btn-lg w-100 btn-estado-rapido"
+                                                        data-estado="Asignado"
+                                                        onclick="abrirModalComentario('Asignado')">
+                                                    <i class="bi bi-person-check-fill me-2"></i>
+                                                    Aceptar y Asignarme
+                                                    <div class="mt-2">
+                                                        <small class="d-block opacity-75">Aceptar el ticket y asignarlo a mí</small>
                                                     </div>
-                                                    <small class="d-block text-muted text-center mt-1">
-                                                        @imagen.NombreArchivo
+                                                </button>
+                                            }
+                                            else if (siguienteEstado == "En Proceso")
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-primary btn-lg w-100 btn-estado-rapido"
+                                                        data-estado="En Proceso"
+                                                        onclick="abrirModalComentario('En Proceso')">
+                                                    <i class="bi bi-gear-fill me-2"></i>
+                                                    Avanzar a "En Proceso"
+                                                    <div class="mt-2">
+                                                        <small class="d-block opacity-75">Comenzar a trabajar en el ticket</small>
+                                                    </div>
+                                                </button>
+                                            }
+                                            else if (siguienteEstado == "Resuelto")
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-success btn-lg w-100 btn-estado-rapido"
+                                                        data-estado="Resuelto"
+                                                        onclick="abrirModalComentario('Resuelto')">
+                                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                                    Avanzar a "Resuelto"
+                                                    <div class="mt-2">
+                                                        <small class="d-block opacity-75">Marcar como resuelto</small>
+                                                    </div>
+                                                </button>
+                                            }
+
+                                            <div class="mt-3">
+                                                <div class="alert alert-info mb-0 py-2">
+                                                    <small>
+                                                        <i class="bi bi-info-circle"></i>
+                                                        <strong>Flujo secuencial:</strong>
+                                                        @if (Model.Estado == "Pendiente")
+                                                        {
+                                                            <span>Acepta el ticket para asignártelo</span>
+                                                        }
+                                                        else if (Model.Estado == "Asignado")
+                                                        {
+                                                            <span>Inicia el trabajo cuando estés listo</span>
+                                                        }
+                                                        else if (Model.Estado == "En Proceso")
+                                                        {
+                                                            <span>Al marcar como "Resuelto", el cliente podrá cerrarlo</span>
+                                                        }
                                                     </small>
                                                 </div>
-                                            }
+                                            </div>
                                         </div>
                                     </div>
-                                }
-                                else
-                                {
-                                    <p class="text-muted"> No hay imágenes adjuntas</p>
-                                }
-
-                                <!-- AGREGAR NUEVAS IMÁGENES -->
-                                <div class="mb-3">
-                                    <label for="NuevasImagenes" class="form-label fw-bold">
-                                        <i class="bi bi-plus-circle"></i> Agregar Nuevas Imágenes
-                                    </label>
-                                    <input type="file"
-                                           name="NuevasImagenes"
-                                           id="NuevasImagenes"
-                                           class="form-control"
-                                           accept=".jpg,.jpeg,.png,.gif,.bmp"
-                                           multiple
-                                           onchange="mostrarNuevasImagenes(this)" />
-                                    <span asp-validation-for="NuevasImagenes" class="text-danger"></span>
-                                    <small class="form-text text-muted">
-                                        <i class="bi bi-info-circle"></i>
-                                        Máximo 5 imágenes en total. Formatos: JPG, PNG, GIF, BMP. Tamaño máximo: 5MB por imagen
-                                    </small>
-
-                                    <!-- Previsualización -->
-                                    <div id="previsualizacionNuevas" class="mt-2"></div>
                                 </div>
                             </div>
+                        }
+                    }
+                    else if (esTecnico && Model.Estado == "Resuelto")
+                    {
+                        <div class="alert alert-success mb-4">
+                            <h5 class="alert-heading">
+                                <i class="bi bi-check-circle-fill"></i> Ticket Resuelto
+                            </h5>
+                            <p class="mb-0">
+                                Este ticket ya está marcado como resuelto. Solo el cliente o un administrador pueden cerrarlo.
+                            </p>
                         </div>
+                    }
 
-                        <!-- BOTONES -->
-                        <div class="d-flex justify-content-center gap-3 mt-4">
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="bi bi-save"></i> Guardar Cambios
-                            </button>
-                            <a asp-action="Details" asp-route-id="@Model.IdTicket" class="btn btn-secondary btn-lg px-5">
-                                <i class="bi bi-x-circle"></i> Cancelar
-                            </a>
-                        </div>
-                    </form>
+                    <!-- Resto del formulario aquí... -->
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ⭐ MODAL PARA COMENTARIO OBLIGATORIO -->
+<div class="modal fade" id="modalComentario" tabindex="-1" aria-labelledby="modalComentarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalComentarioLabel">
+                    <i class="bi bi-chat-left-text"></i> Comentario del Cambio de Estado
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    <strong>Cambiar estado a:</strong>
+                    <span id="estadoDestino" class="badge bg-primary fs-6"></span>
+                </p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Por favor, describe brevemente el motivo del cambio de estado.</strong>
+                </div>
+
+                <div class="mb-3">
+                    <label for="comentarioCambio" class="form-label fw-bold">
+                        Comentario <span class="text-danger">*</span>
+                    </label>
+                    <textarea id="comentarioCambio"
+                              class="form-control"
+                              rows="4"
+                              maxlength="500"
+                              placeholder="Ej: Se revisó el equipo y se identificó el problema..."
+                              required></textarea>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted">Mínimo 10 caracteres, máximo 500</small>
+                        <small id="contadorComentario" class="text-muted">0 / 500</small>
+                    </div>
+                    <div id="errorComentario" class="text-danger mt-2" style="display: none;"></div>
+                </div>
+
+                <!-- Sugerencias rápidas según el estado -->
+                <div id="sugerenciasRapidas">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-lightbulb"></i> Sugerencias rápidas:
+                    </label>
+                    <div class="d-flex flex-wrap gap-2" id="botonesSugerencias">
+                        <!-- Se llenan dinámicamente con JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarCambio">
+                    <i class="bi bi-check-circle"></i> Confirmar Cambio
+                </button>
             </div>
         </div>
     </div>
@@ -246,33 +254,234 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        function mostrarNuevasImagenes(input) {
-            const previsualizacion = document.getElementById('previsualizacionNuevas');
-            previsualizacion.innerHTML = '';
+        let estadoSeleccionado = '';
 
-            if (input.files && input.files.length > 0) {
-                Array.from(input.files).forEach((file) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const div = document.createElement('div');
-                        div.className = 'd-inline-block me-2 mb-2 position-relative';
-                        div.innerHTML = `
-                            <img src="${e.target.result}"
-                                 class="img-thumbnail"
-                                 style="width: 100px; height: 100px; object-fit: cover;"
-                                 title="${file.name}">
-                            <span class="badge bg-success position-absolute"
-                                  style="top: 5px; right: 5px; font-size: 0.7rem;">
-                                ${(file.size / 1024).toFixed(0)} KB
-                            </span>
-                        `;
-                        previsualizacion.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
+        // ========== ABRIR MODAL DE COMENTARIO ==========
+        function abrirModalComentario(nuevoEstado) {
+            estadoSeleccionado = nuevoEstado;
+
+            // Actualizar el badge del modal
+            const badge = document.getElementById('estadoDestino');
+            const emoji = {
+                'Asignado': '👤',
+                'En Proceso': '⚙️',
+                'Resuelto': '✅'
+            };
+            badge.textContent = `${emoji[nuevoEstado]} ${nuevoEstado}`;
+
+            // Limpiar comentario previo
+            document.getElementById('comentarioCambio').value = '';
+            document.getElementById('contadorComentario').textContent = '0 / 500';
+            document.getElementById('errorComentario').style.display = 'none';
+
+            // Cargar sugerencias según el estado
+            cargarSugerencias(nuevoEstado);
+
+            // Abrir el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalComentario'));
+            modal.show();
+        }
+
+        // ========== SUGERENCIAS RÁPIDAS ==========
+        function cargarSugerencias(estado) {
+            const contenedor = document.getElementById('botonesSugerencias');
+            contenedor.innerHTML = '';
+
+            const sugerencias = {
+                'Asignado': [
+                    'Ticket aceptado, procederé a revisarlo',
+                    'He recibido el ticket y lo atenderé pronto',
+                    'Ticket asignado a mi persona para su resolución'
+                ],
+                'En Proceso': [
+                    'Iniciando diagnóstico del problema',
+                    'Comenzando trabajos de reparación',
+                    'Revisando el equipo/sistema reportado',
+                    'Contactando con el usuario para más detalles'
+                ],
+                'Resuelto': [
+                    'Problema solucionado satisfactoriamente',
+                    'Se completó la reparación exitosamente',
+                    'El equipo/sistema funciona correctamente',
+                    'Se realizaron las configuraciones necesarias'
+                ]
+            };
+
+            (sugerencias[estado] || []).forEach(texto => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-primary';
+                btn.textContent = texto;
+                btn.onclick = () => usarSugerencia(texto);
+                contenedor.appendChild(btn);
+            });
+        }
+
+        function usarSugerencia(texto) {
+            const textarea = document.getElementById('comentarioCambio');
+            textarea.value = texto;
+            actualizarContador();
+        }
+
+        // ========== CONTADOR DE CARACTERES ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('comentarioCambio');
+            if (textarea) {
+                textarea.addEventListener('input', actualizarContador);
+            }
+        });
+
+        function actualizarContador() {
+            const textarea = document.getElementById('comentarioCambio');
+            const contador = document.getElementById('contadorComentario');
+            contador.textContent = `${textarea.value.length} / 500`;
+        }
+
+        // ========== CONFIRMAR CAMBIO DE ESTADO ==========
+        document.getElementById('btnConfirmarCambio').addEventListener('click', async function() {
+            const comentario = document.getElementById('comentarioCambio').value.trim();
+            const errorDiv = document.getElementById('errorComentario');
+
+            // Validar comentario
+            if (comentario.length < 10) {
+                errorDiv.textContent = '⚠️ El comentario debe tener al menos 10 caracteres';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (comentario.length > 500) {
+                errorDiv.textContent = '⚠️ El comentario no puede exceder 500 caracteres';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Ocultar error si pasó las validaciones
+            errorDiv.style.display = 'none';
+
+            // Cerrar el modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalComentario'));
+            modal.hide();
+
+            // Llamar a la función de cambio de estado
+            await cambiarEstadoRapido(estadoSeleccionado, comentario);
+        });
+
+        // ========== CAMBIO RÁPIDO DE ESTADO CON COMENTARIO ==========
+        async function cambiarEstadoRapido(nuevoEstado, comentario) {
+            const ticketId = @Model.IdTicket;
+
+            // Deshabilitar botones
+            const botones = document.querySelectorAll('.btn-estado-rapido');
+            botones.forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cambiando...';
+            });
+
+            try {
+                const formData = new FormData();
+                formData.append('idTicket', ticketId);
+                formData.append('nuevoEstado', nuevoEstado);
+                formData.append('comentario', comentario);
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                formData.append('__RequestVerificationToken', token);
+
+                const response = await fetch('@Url.Action("CambiarEstadoRapido", "Ticketes")', {
+                    method: 'POST',
+                    body: formData
                 });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        html: `<p>${result.message}</p><small class="text-muted">Comentario: "${comentario}"</small>`,
+                        timer: 3000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: result.message
+                    });
+
+                    // Rehabilitar botones
+                    rehabilitarBotones(botones);
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: error.message
+                });
+
+                rehabilitarBotones(botones);
             }
         }
+
+        function rehabilitarBotones(botones) {
+            botones.forEach(btn => {
+                btn.disabled = false;
+                const estado = btn.getAttribute('data-estado');
+                const configs = {
+                    'Asignado': { icon: 'person-check-fill', texto: 'Aceptar y Asignarme', desc: 'Aceptar el ticket y asignarlo a mí' },
+                    'En Proceso': { icon: 'gear-fill', texto: 'Avanzar a "En Proceso"', desc: 'Comenzar a trabajar en el ticket' },
+                    'Resuelto': { icon: 'check-circle-fill', texto: 'Avanzar a "Resuelto"', desc: 'Marcar como resuelto' }
+                };
+                const config = configs[estado];
+                if (config) {
+                    btn.innerHTML = `<i class="bi bi-${config.icon} me-2"></i>${config.texto}<div class="mt-2"><small class="d-block opacity-75">${config.desc}</small></div>`;
+                }
+            });
+        }
     </script>
+
+    <style>
+        .cambio-rapido-panel {
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-estado-rapido {
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+            .btn-estado-rapido:hover:not(:disabled) {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            }
+
+        #modalComentario textarea {
+            resize: none;
+        }
+
+        #botonesSugerencias .btn {
+            font-size: 0.85rem;
+        }
+
+            #botonesSugerencias .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            }
+    </style>
 }

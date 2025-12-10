@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace ActivaPro.Web.Controllers
 {
-    [Authorize] // Requiere autenticación para acceder a cualquier acción
+    [Authorize]
     public class TicketesController : Controller
     {
         private readonly ITicketesService _service;
@@ -29,55 +29,37 @@ namespace ActivaPro.Web.Controllers
             _webHostEnvironment = webHostEnvironment;
         }
 
-        // ========== MÉTODOS AUXILIARES PARA OBTENER USUARIO ACTUAL ==========
-
-        /// <summary>
-        /// Obtiene el ID del usuario autenticado desde los Claims
-        /// </summary>
+        // ========== MÉTODOS AUXILIARES ==========
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue("id_usuario") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(userIdClaim, out int userId))
                 return userId;
-
             throw new UnauthorizedAccessException("No se pudo obtener el ID del usuario autenticado");
         }
 
-        /// <summary>
-        /// Obtiene el rol del usuario autenticado desde los Claims
-        /// </summary>
         private string GetCurrentUserRole()
         {
             return User.FindFirstValue("rol") ?? User.FindFirstValue(ClaimTypes.Role) ?? "Cliente";
         }
 
-        /// <summary>
-        /// Obtiene el nombre del usuario autenticado desde los Claims
-        /// </summary>
         private string GetCurrentUserName()
         {
             return User.FindFirstValue(ClaimTypes.Name) ?? "Usuario";
         }
 
-        // ========== ACCIONES DEL CONTROLADOR ==========
-
-        /// <summary>
-        /// GET: Ticketes/Index - Lista todos los tickets según el rol del usuario
-        /// </summary>
+        // ========== INDEX ==========
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // Obtener información del usuario autenticado
             int idUsuarioActual = GetCurrentUserId();
             string rolUsuarioActual = GetCurrentUserRole();
             string nombreUsuarioActual = GetCurrentUserName();
 
-            // Pasar información a la vista
             ViewBag.IdUsuario = idUsuarioActual;
             ViewBag.RolUsuario = rolUsuarioActual;
             ViewBag.NombreUsuario = nombreUsuarioActual;
 
-            // Mensajes de TempData
             if (TempData["Success"] != null)
                 ViewBag.SuccessMessage = TempData["Success"];
             if (TempData["Error"] != null)
@@ -85,7 +67,6 @@ namespace ActivaPro.Web.Controllers
 
             try
             {
-                // Listar tickets según el rol del usuario
                 var tickets = await _service.ListByRolAsync(idUsuarioActual, rolUsuarioActual);
                 return View(tickets);
             }
@@ -96,20 +77,15 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Ticketes/Details/5 - Muestra los detalles de un ticket específico
-        /// </summary>
+        // ========== DETAILS ==========
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
             try
             {
-                // Obtener información del usuario autenticado
                 int idUsuarioActual = GetCurrentUserId();
                 string rolUsuarioActual = GetCurrentUserRole();
-                string nombreUsuarioActual = GetCurrentUserName();
 
-                // Obtener el ticket
                 var ticket = await _service.FindByIdAsync(id);
 
                 if (ticket == null)
@@ -120,32 +96,19 @@ namespace ActivaPro.Web.Controllers
 
                 // Validar acceso según rol
                 bool tieneAcceso = false;
-
                 switch (rolUsuarioActual.ToLower())
                 {
                     case "administrador":
                     case "coordinador":
-                        // Admin y Coordinador pueden ver TODOS los tickets
                         tieneAcceso = true;
                         break;
-
                     case "técnico":
                     case "tecnico":
-                        // Técnico puede ver:
-                        // 1. Tickets asignados a él
-                        // 2. Tickets sin asignar (para poder trabajarlos)
                         tieneAcceso = ticket.IdUsuarioAsignado == idUsuarioActual ||
-                                     ticket.IdUsuarioAsignado == null ||
-                                     !ticket.IdUsuarioAsignado.HasValue;
+                                     ticket.IdUsuarioAsignado == null;
                         break;
-
                     case "cliente":
-                        // Cliente solo puede ver sus propios tickets
                         tieneAcceso = ticket.IdUsuarioSolicitante == idUsuarioActual;
-                        break;
-
-                    default:
-                        tieneAcceso = false;
                         break;
                 }
 
@@ -155,23 +118,16 @@ namespace ActivaPro.Web.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Pasar datos a la vista
                 ViewBag.IdUsuario = idUsuarioActual;
                 ViewBag.RolUsuario = rolUsuarioActual;
-                ViewBag.NombreUsuario = nombreUsuarioActual;
+                ViewBag.NombreUsuario = GetCurrentUserName();
 
-                // Mensajes de TempData
                 if (TempData["Success"] != null)
                     ViewBag.SuccessMessage = TempData["Success"];
                 if (TempData["Error"] != null)
                     ViewBag.ErrorMessage = TempData["Error"];
 
                 return View(ticket);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                TempData["Error"] = "Debe iniciar sesión para ver los detalles del ticket.";
-                return RedirectToAction("Login", "Account");
             }
             catch (Exception ex)
             {
@@ -180,27 +136,12 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Ticketes/Create - Muestra el formulario para crear un nuevo ticket
-        /// </summary>
+        // ========== CREATE - GET ==========
         [HttpGet]
         public async Task<IActionResult> Create()
         {
             int idUsuarioActual = GetCurrentUserId();
             string rolUsuarioActual = GetCurrentUserRole();
-
-            // VALIDACIÓN: SOLO CLIENTES pueden crear tickets
-            if (rolUsuarioActual.ToLower() == "técnico" || rolUsuarioActual.ToLower() == "tecnico")
-            {
-                TempData["Error"] = "Los técnicos NO pueden crear tickets. Solo pueden editar y visualizar tickets asignados.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (rolUsuarioActual.ToLower() == "administrador")
-            {
-                TempData["Error"] = "Los administradores NO pueden crear tickets. Solo los clientes pueden crear tickets de soporte.";
-                return RedirectToAction(nameof(Index));
-            }
 
             if (rolUsuarioActual.ToLower() != "cliente")
             {
@@ -213,13 +154,7 @@ namespace ActivaPro.Web.Controllers
                 var dto = await _service.PrepareCreateDTOAsync(idUsuarioActual);
                 var etiquetas = await _etiquetaService.ListAsync();
                 ViewBag.Etiquetas = etiquetas;
-
                 return View(dto);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                TempData["Error"] = ex.Message;
-                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
@@ -228,28 +163,13 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// POST: Ticketes/Create - Procesa la creación de un nuevo ticket
-        /// </summary>
+        // ========== CREATE - POST ==========
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(TicketCreateDTO dto)
         {
             int idUsuarioActual = GetCurrentUserId();
             string rolUsuarioActual = GetCurrentUserRole();
-
-            // VALIDACIÓN: SOLO CLIENTES pueden crear tickets
-            if (rolUsuarioActual.ToLower() == "técnico" || rolUsuarioActual.ToLower() == "tecnico")
-            {
-                TempData["Error"] = "Los técnicos NO pueden crear tickets. Solo pueden editar y visualizar tickets asignados.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (rolUsuarioActual.ToLower() == "administrador")
-            {
-                TempData["Error"] = "Los administradores NO pueden crear tickets. Solo los clientes pueden crear tickets de soporte.";
-                return RedirectToAction(nameof(Index));
-            }
 
             if (rolUsuarioActual.ToLower() != "cliente")
             {
@@ -259,7 +179,6 @@ namespace ActivaPro.Web.Controllers
 
             dto.IdUsuarioSolicitante = idUsuarioActual;
 
-            // Validar imágenes adjuntas
             if (dto.ImagenesAdjuntas != null && dto.ImagenesAdjuntas.Any())
             {
                 if (dto.ImagenesAdjuntas.Count > 5)
@@ -281,7 +200,7 @@ namespace ActivaPro.Web.Controllers
                     if (!extensionesPermitidas.Contains(extension))
                     {
                         ModelState.AddModelError("ImagenesAdjuntas",
-                            $"La imagen '{imagen.FileName}' no tiene un formato válido. Solo se permiten: JPG, PNG, GIF, BMP");
+                            $"La imagen '{imagen.FileName}' no tiene un formato válido.");
                     }
                 }
             }
@@ -290,7 +209,6 @@ namespace ActivaPro.Web.Controllers
             {
                 var etiquetas = await _etiquetaService.ListAsync();
                 ViewBag.Etiquetas = etiquetas;
-                TempData["Error"] = "Por favor corrija los errores del formulario.";
                 return View(dto);
             }
 
@@ -304,13 +222,7 @@ namespace ActivaPro.Web.Controllers
 
                 int idTicketCreado = await _service.CreateTicketAsync(dto, uploadsFolder);
 
-                string mensajeExito = $"Ticket #{idTicketCreado} creado exitosamente";
-                if (dto.ImagenesAdjuntas != null && dto.ImagenesAdjuntas.Any())
-                {
-                    mensajeExito += $" con {dto.ImagenesAdjuntas.Count} imagen(es) adjuntada(s)";
-                }
-
-                TempData["Success"] = mensajeExito;
+                TempData["Success"] = $"Ticket #{idTicketCreado} creado exitosamente";
                 return RedirectToAction(nameof(Details), new { id = idTicketCreado });
             }
             catch (Exception ex)
@@ -322,9 +234,7 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Ticketes/Edit/5 - Muestra el formulario para editar un ticket
-        /// </summary>
+        // ========== EDIT - GET ==========
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -334,13 +244,13 @@ namespace ActivaPro.Web.Controllers
             // VALIDACIÓN: SOLO TÉCNICOS pueden editar tickets
             if (rolUsuarioActual.ToLower() == "cliente")
             {
-                TempData["Error"] = "Los clientes NO pueden editar tickets. Solo pueden visualizar y cerrar sus propios tickets.";
+                TempData["Error"] = "Los clientes NO pueden editar tickets.";
                 return RedirectToAction(nameof(Index));
             }
 
             if (rolUsuarioActual.ToLower() == "administrador")
             {
-                TempData["Error"] = "Los administradores NO pueden editar tickets. Solo pueden visualizar y cerrar tickets.";
+                TempData["Error"] = "Los administradores NO pueden editar tickets.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -366,7 +276,9 @@ namespace ActivaPro.Web.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var dto = await _service.PrepareEditDTOAsync(id);
+                // ⭐ PASAR EL ROL AL SERVICIO
+                var dto = await _service.PrepareEditDTOAsync(id, rolUsuarioActual);
+
                 var etiquetas = await _etiquetaService.ListAsync();
                 ViewBag.Etiquetas = etiquetas;
                 ViewBag.IdUsuarioActual = idUsuarioActual;
@@ -381,9 +293,7 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// POST: Ticketes/Edit/5 - Procesa la edición de un ticket
-        /// </summary>
+        // ========== EDIT - POST ==========
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TicketEditDTO dto)
@@ -391,26 +301,13 @@ namespace ActivaPro.Web.Controllers
             int idUsuarioActual = GetCurrentUserId();
             string rolUsuarioActual = GetCurrentUserRole();
 
-            // VALIDACIÓN: SOLO TÉCNICOS pueden editar tickets
-            if (rolUsuarioActual.ToLower() == "cliente")
-            {
-                TempData["Error"] = "Los clientes NO pueden editar tickets. Solo pueden visualizar y cerrar sus propios tickets.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (rolUsuarioActual.ToLower() == "administrador")
-            {
-                TempData["Error"] = "Los administradores NO pueden editar tickets. Solo pueden visualizar y cerrar tickets.";
-                return RedirectToAction(nameof(Index));
-            }
-
+            // VALIDACIÓN: SOLO TÉCNICOS
             if (rolUsuarioActual.ToLower() != "técnico" && rolUsuarioActual.ToLower() != "tecnico")
             {
                 TempData["Error"] = "Solo los técnicos pueden editar tickets.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Validar permisos antes de procesar
             var ticketExistente = await _service.FindByIdAsync(dto.IdTicket);
             if (ticketExistente == null)
             {
@@ -424,6 +321,23 @@ namespace ActivaPro.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Validar estado según flujo secuencial
+            var estadosPermitidos = TicketEditDTO.ObtenerEstadosSegunRol(rolUsuarioActual, ticketExistente.Estado);
+            if (!estadosPermitidos.Contains(dto.Estado))
+            {
+                var siguienteEstado = TicketEditDTO.ObtenerSiguienteEstadoPermitido(ticketExistente.Estado);
+                if (siguienteEstado != null)
+                {
+                    ModelState.AddModelError("Estado",
+                        $"Flujo inválido. Desde '{ticketExistente.Estado}' solo puedes cambiar a '{siguienteEstado}'.");
+                }
+                else
+                {
+                    ModelState.AddModelError("Estado",
+                        $"El ticket en estado '{ticketExistente.Estado}' no puede cambiar más. Solo un administrador o cliente puede cerrarlo.");
+                }
+            }
+
             // Validar imágenes
             if (dto.NuevasImagenes != null && dto.NuevasImagenes.Any())
             {
@@ -434,7 +348,7 @@ namespace ActivaPro.Web.Controllers
                 if (totalImagenes > 5)
                 {
                     ModelState.AddModelError("NuevasImagenes",
-                        "El total de imágenes no puede exceder 5. Elimine algunas imágenes existentes primero.");
+                        "El total de imágenes no puede exceder 5.");
                 }
 
                 foreach (var imagen in dto.NuevasImagenes.Where(i => i != null))
@@ -458,6 +372,8 @@ namespace ActivaPro.Web.Controllers
 
             if (!ModelState.IsValid)
             {
+                dto.EstadosDisponibles = TicketEditDTO.ObtenerEstadosSegunRol(rolUsuarioActual, ticketExistente.Estado);
+
                 var etiquetas = await _etiquetaService.ListAsync();
                 ViewBag.Etiquetas = etiquetas;
                 ViewBag.IdUsuarioActual = idUsuarioActual;
@@ -474,13 +390,27 @@ namespace ActivaPro.Web.Controllers
                     Directory.CreateDirectory(uploadsFolder);
                 }
 
-                await _service.UpdateTicketAsync(dto, uploadsFolder, idUsuarioActual);
+                // ⭐ PASAR EL ROL AL SERVICIO
+                await _service.UpdateTicketAsync(dto, uploadsFolder, idUsuarioActual, rolUsuarioActual);
 
-                TempData["Success"] = $"Ticket #{dto.IdTicket} actualizado exitosamente";
+                TempData["Success"] = $"✅ Ticket #{dto.IdTicket} actualizado exitosamente a estado: {dto.Estado}";
                 return RedirectToAction(nameof(Details), new { id = dto.IdTicket });
+            }
+            catch (InvalidOperationException ex)
+            {
+                dto.EstadosDisponibles = TicketEditDTO.ObtenerEstadosSegunRol(rolUsuarioActual, ticketExistente.Estado);
+
+                var etiquetas = await _etiquetaService.ListAsync();
+                ViewBag.Etiquetas = etiquetas;
+                ViewBag.IdUsuarioActual = idUsuarioActual;
+                ViewBag.RolUsuario = rolUsuarioActual;
+                TempData["Error"] = $"❌ Error de validación: {ex.Message}";
+                return View(dto);
             }
             catch (Exception ex)
             {
+                dto.EstadosDisponibles = TicketEditDTO.ObtenerEstadosSegunRol(rolUsuarioActual, ticketExistente.Estado);
+
                 var etiquetas = await _etiquetaService.ListAsync();
                 ViewBag.Etiquetas = etiquetas;
                 ViewBag.IdUsuarioActual = idUsuarioActual;
@@ -490,25 +420,118 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Ticketes/Close/5 - Muestra el formulario de confirmación para cerrar un ticket
-        /// </summary>
+        // ========== ⭐ CAMBIO RÁPIDO DE ESTADO CON COMENTARIO ==========
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstadoRapido(int idTicket, string nuevoEstado, string comentario)
+        {
+            int idUsuarioActual = GetCurrentUserId();
+            string rolUsuarioActual = GetCurrentUserRole();
+
+            // VALIDACIÓN: Solo técnicos
+            if (rolUsuarioActual.ToLower() != "técnico" && rolUsuarioActual.ToLower() != "tecnico")
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "⛔ Solo los técnicos pueden cambiar el estado de los tickets."
+                });
+            }
+
+            // VALIDACIÓN: Comentario obligatorio
+            if (string.IsNullOrWhiteSpace(comentario) || comentario.Length < 10)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "⚠️ El comentario es obligatorio y debe tener al menos 10 caracteres."
+                });
+            }
+
+            if (comentario.Length > 500)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "⚠️ El comentario no puede exceder 500 caracteres."
+                });
+            }
+
+            try
+            {
+                var ticket = await _service.FindByIdAsync(idTicket);
+                if (ticket == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "❌ El ticket no existe."
+                    });
+                }
+
+                // Llamar al servicio CON el comentario
+                await _service.CambiarEstadoRapidoAsync(idTicket, nuevoEstado, idUsuarioActual, comentario);
+
+                // Mensajes personalizados según el nuevo estado
+                string emoji = nuevoEstado switch
+                {
+                    "Asignado" => "👤",
+                    "En Proceso" => "⚙️",
+                    "Resuelto" => "✅",
+                    _ => "📝"
+                };
+
+                string mensaje = nuevoEstado switch
+                {
+                    "Asignado" => "Ticket asignado correctamente. Ahora puedes comenzar a trabajar en él.",
+                    "En Proceso" => "Estado cambiado a 'En Proceso'. ¡Estás trabajando en este ticket!",
+                    "Resuelto" => "Estado cambiado a 'Resuelto'. El cliente puede revisar y cerrar el ticket.",
+                    _ => $"Estado cambiado a '{nuevoEstado}' exitosamente."
+                };
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"{emoji} {mensaje}",
+                    nuevoEstado = nuevoEstado,
+                    comentario = comentario
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"❌ {ex.Message}"
+                });
+            }
+            catch (Exception ex)
+            {
+                // Logging detallado
+                System.Diagnostics.Debug.WriteLine($"❌ ERROR en CambiarEstadoRapido:");
+                System.Diagnostics.Debug.WriteLine($"   Message: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"   InnerException: {ex.InnerException?.Message}");
+                System.Diagnostics.Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+
+                return Json(new
+                {
+                    success = false,
+                    message = $"❌ Error inesperado: {ex.Message}",
+                    detalle = ex.InnerException?.Message
+                });
+            }
+        }
+
+        // ========== CLOSE - GET ==========
         [HttpGet]
         public async Task<IActionResult> Close(int id)
         {
             int idUsuarioActual = GetCurrentUserId();
             string rolUsuarioActual = GetCurrentUserRole();
 
-            // VALIDACIÓN: Solo Cliente o Administrador pueden cerrar tickets
             if (rolUsuarioActual.ToLower() == "técnico" || rolUsuarioActual.ToLower() == "tecnico")
             {
-                TempData["Error"] = "Los técnicos NO pueden cerrar tickets. Solo pueden editar y visualizar tickets asignados.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (rolUsuarioActual.ToLower() != "cliente" && rolUsuarioActual.ToLower() != "administrador")
-            {
-                TempData["Error"] = "Solo los clientes y administradores pueden cerrar tickets.";
+                TempData["Error"] = "Los técnicos NO pueden cerrar tickets.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -527,7 +550,6 @@ namespace ActivaPro.Web.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                // Si es cliente, validar que sea el solicitante
                 if (rolUsuarioActual.ToLower() == "cliente" && ticket.IdUsuarioSolicitante != idUsuarioActual)
                 {
                     TempData["Error"] = "Solo puede cerrar sus propios tickets.";
@@ -545,9 +567,7 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// POST: Ticketes/Close/5 - Procesa el cierre de un ticket
-        /// </summary>
+        // ========== CLOSE - POST ==========
         [HttpPost, ActionName("Close")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CloseConfirmed(int id)
@@ -555,16 +575,9 @@ namespace ActivaPro.Web.Controllers
             int idUsuarioActual = GetCurrentUserId();
             string rolUsuarioActual = GetCurrentUserRole();
 
-            // VALIDACIÓN: Solo Cliente o Administrador pueden cerrar
             if (rolUsuarioActual.ToLower() == "técnico" || rolUsuarioActual.ToLower() == "tecnico")
             {
-                TempData["Error"] = "Los técnicos NO pueden cerrar tickets. Solo pueden editar y visualizar tickets asignados.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (rolUsuarioActual.ToLower() != "cliente" && rolUsuarioActual.ToLower() != "administrador")
-            {
-                TempData["Error"] = "Solo los clientes y administradores pueden cerrar tickets.";
+                TempData["Error"] = "Los técnicos NO pueden cerrar tickets.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -577,29 +590,21 @@ namespace ActivaPro.Web.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Validar que no esté ya cerrado
                 if (ticket.Estado.ToLower() == "cerrado")
                 {
                     TempData["Error"] = $"El ticket #{id} ya está cerrado.";
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Si es cliente, validar que sea el propietario
                 if (rolUsuarioActual.ToLower() == "cliente" && ticket.IdUsuarioSolicitante != idUsuarioActual)
                 {
                     TempData["Error"] = "Solo puede cerrar sus propios tickets.";
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Cerrar el ticket
                 await _service.CloseTicketAsync(id, idUsuarioActual);
 
                 TempData["Success"] = $"Ticket #{id} cerrado exitosamente";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (InvalidOperationException ex)
-            {
-                TempData["Error"] = $"{ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
