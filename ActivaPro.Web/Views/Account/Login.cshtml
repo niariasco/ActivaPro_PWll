@@ -1,42 +1,57 @@
 @model ActivaPro.Application.DTOs.LoginDTO
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = Localizer["TituloLogin"].Value;
 }
+
 <div class="container mt-5" style="max-width:420px;">
-    <h4 class="mb-3" style="color:#1E4E8C;">Iniciar Sesión</h4>
+    <h4 class="mb-3" style="color:#1E4E8C;">@Localizer["IniciarSesion"]</h4>
 
     <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
 
     <form id="login-form" asp-action="Login" method="post" novalidate>
         @Html.AntiForgeryToken()
+
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
+        <!-- Correo -->
         <div class="mb-3">
-            <label class="form-label">Correo</label>
+            <label class="form-label">@Localizer["Correo"]</label>
             <input asp-for="Correo" type="email" class="form-control" />
             <span class="text-danger" asp-validation-for="Correo"></span>
         </div>
 
+        <!-- Contraseña -->
         <div class="mb-3">
-            <label class="form-label">Contraseña</label>
+            <label class="form-label">@Localizer["Contrasena"]</label>
             <input asp-for="Contrasena" type="password" class="form-control" />
             <span class="text-danger" asp-validation-for="Contrasena"></span>
         </div>
 
+        <!-- Recordarme -->
         <div class="form-check mb-3">
             <input asp-for="Recordarme" class="form-check-input" />
-            <label class="form-check-label" asp-for="Recordarme">Recordarme</label>
+            <label class="form-check-label" asp-for="Recordarme">@Localizer["Recordarme"]</label>
         </div>
 
         <div class="d-grid gap-2">
-            <button id="login-submit" type="submit" class="btn btn-primary">Ingresar</button>
+            <button id="login-submit" type="submit" class="btn btn-primary">
+                @Localizer["Ingresar"]
+            </button>
+
             <div class="d-flex justify-content-between">
-                <a asp-action="Register" class="btn btn-outline-primary">Registrate</a>
-                <a asp-action="ForgotPassword" class="btn btn-outline-secondary">¿Olvidaste tu contraseña?</a>
+                <a asp-action="Register" class="btn btn-outline-primary">
+                    @Localizer["Registrate"]
+                </a>
+                <a asp-action="ForgotPassword" class="btn btn-outline-secondary">
+                    @Localizer["OlvidasteContrasena"]
+                </a>
             </div>
         </div>
     </form>
 </div>
+
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
