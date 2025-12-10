@@ -8,19 +8,16 @@ using ActivaPro.Web.Hubs;
 using ActivaPro.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Localization;
-using System.Globalization;
 using Serilog;
 using Serilog.Events;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MVC + Localización de vistas
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-builder.Services.AddControllersWithViews().AddViewLocalization();
+// MVC + (opcional) filtro global de autorización
+builder.Services.AddControllersWithViews();
 
-// Autenticación (cookies)
+// AUTENTICACIÓN (cookie)
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(opt =>
@@ -29,7 +26,7 @@ builder.Services
         opt.LogoutPath = "/Account/Logout";
         opt.AccessDeniedPath = "/Account/AccessDenied";
         opt.SlidingExpiration = true;
-        opt.ExpireTimeSpan = TimeSpan.FromDays(7);
+        opt.ExpireTimeSpan = TimeSpan.FromDays(7); // duración para “Recordarme”
     });
 
 // Repositorios
@@ -92,19 +89,6 @@ builder.Host.UseSerilog(logger);
 var app = builder.Build();
 app.UseSerilogRequestLogging();
 
-// Localización: cookie y querystring antes de routing
-var supportedCultures = new[] { new CultureInfo("es"), new CultureInfo("en") };
-var locOptions = new RequestLocalizationOptions
-{
-    DefaultRequestCulture = new RequestCulture("es"),
-    SupportedCultures = supportedCultures,
-    SupportedUICultures = supportedCultures
-};
-locOptions.RequestCultureProviders.Clear();
-locOptions.RequestCultureProviders.Add(new CookieRequestCultureProvider());
-locOptions.RequestCultureProviders.Add(new QueryStringRequestCultureProvider());
-app.UseRequestLocalization(locOptions);
-
 // Error pages / HSTS
 if (!app.Environment.IsDevelopment())
 {
@@ -117,7 +101,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Autenticación y autorización
+// IMPORTANTE: Autenticación antes de Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -129,8 +113,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Redirección a Login (excepto rutas públicas)
-app.Use(async (ctx, next) =>
+ app.Use(async (ctx, next) =>
 {
     if (!ctx.User.Identity?.IsAuthenticated ?? true)
     {
@@ -138,8 +121,7 @@ app.Use(async (ctx, next) =>
         if (!path!.StartsWith("/account/login") &&
             !path.StartsWith("/account/register") &&
             !path.StartsWith("/account/accessdenied") &&
-            !path.StartsWith("/account/forgotpassword") &&
-            !path.StartsWith("/language/set") &&
+            !path.StartsWith("/account/forgotpassword") &&  
             !path.StartsWith("/css") &&
             !path.StartsWith("/js") &&
             !path.StartsWith("/lib") &&

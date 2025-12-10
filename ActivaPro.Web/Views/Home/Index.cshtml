@@ -1,84 +1,89 @@
-﻿@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer L
-@{
-    ViewData["Title"] = L["HomePageTitle"];
+﻿@{
+    ViewData["Title"] = "Home Page";
 }
+<!-- Título principal -->
 <div class="container my-3 text-center">
-    <h1 class="fw-bold" style="color:#1E4E8C; font-size:2.25rem;">
-        @L["MainHeading"]
+    <h1 class="fw-bold" style="color:#1E4E8C; max-height: 600px; font-size:2.25rem; overflow: hidden;">
+        Sistema de Tiquetes ActivaPro
     </h1>
 </div>
+
 
 <!-- Carrusel de Imágenes -->
 <div id="carouselActivaPro" class="carousel slide mb-4" data-bs-ride="carousel" style="max-height: 600px; overflow: hidden;">
     <div class="carousel-indicators">
-        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="0" class="active" aria-current="true" aria-label="@L["Slide"] 1"></button>
-        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="1" aria-label="@L["Slide"] 2"></button>
-        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="2" aria-label="@L["Slide"] 3"></button>
-        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="3" aria-label="@L["Slide"] 4"></button>
-        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="4" aria-label="@L["Slide"] 5"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="3" aria-label="Slide 4"></button>
+        <button type="button" data-bs-target="#carouselActivaPro" data-bs-slide-to="4" aria-label="Slide 5"></button>
     </div>
+
 
     <div class="carousel-inner">
         <div class="carousel-item active">
-            <img src="~/Imagenes/s1.png" class="d-block w-100" alt="@L["AltProteinBars"]" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <img src="~/Imagenes/s1.png" class="d-block w-100" alt="Barritas de Proteína ActivaPro" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-                <h5>@L["CaptionQuality"]</h5>
-                <p>@L["CaptionNaturalIngredients"]</p>
+                <h5>Nutrición de Alta Calidad</h5>
+                <p>Barritas de proteína con ingredientes naturales</p>
             </div>
         </div>
         <div class="carousel-item">
-            <img src="~/Imagenes/s2.png" class="d-block w-100" alt="@L["AltPlantProteins"]" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <img src="~/Imagenes/s2.png" class="d-block w-100" alt="Proteínas Vegetales" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-                <h5>@L["CaptionPlantProteins"]</h5>
-                <p>@L["CaptionForAthletes"]</p>
+                <h5>Proteínas Vegetales</h5>
+                <p>Perfectas para deportistas y personas activas</p>
             </div>
         </div>
         <div class="carousel-item">
-            <img src="~/Imagenes/s3.png" class="d-block w-100" alt="@L["AltHealthyLife"]" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <img src="~/Imagenes/s3.png" class="d-block w-100" alt="Vida Saludable" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-                <h5>@L["CaptionHealthyLifestyle"]</h5>
-                <p>@L["CaptionEnergyDaily"]</p>
+                <h5>Estilo de Vida Saludable</h5>
+                <p>Energía y nutrición para tu día a día</p>
             </div>
         </div>
         <div class="carousel-item">
-            <img src="~/Imagenes/s4.png" class="d-block w-100" alt="@L["AltFlavorVariety"]" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <img src="~/Imagenes/s4.png" class="d-block w-100" alt="Variedad de Sabores" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-                <h5>@L["CaptionFlavorVariety"]</h5>
-                <p>@L["CaptionFindFavorite"]</p>
+                <h5>Variedad de Sabores</h5>
+                <p>Encuentra tu favorita entre nuestras opciones</p>
             </div>
         </div>
         <div class="carousel-item">
-            <img src="~/Imagenes/s5.png" class="d-block w-100" alt="@L["AltSupport247"]" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+            <img src="~/Imagenes/s5.png" class="d-block w-100" alt="Soporte 24/7" style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-                <h5>@L["CaptionPersonalizedSupport"]</h5>
-                <p>@L["CaptionWeHelpAlways"]</p>
+                <h5>Atención Personalizada</h5>
+                <p>Estamos aquí para ayudarte en todo momento</p>
             </div>
         </div>
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#carouselActivaPro" data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">@L["Previous"]</span>
+        <span class="visually-hidden">Anterior</span>
     </button>
     <button class="carousel-control-next" type="button" data-bs-target="#carouselActivaPro" data-bs-slide="next">
         <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">@L["Next"]</span>
+        <span class="visually-hidden">Siguiente</span>
     </button>
 </div>
 
 <div class="container my-4">
     <div class="card main-card">
         <div class="card-body">
-            <h2 class="card-title text-primary">@L["WhoWeAreTitle"]</h2>
+            <h2 class="card-title text-primary">Quiénes Somos</h2>
             <p class="card-text">
-                @L["WhoWeAreText"]
+                ActivaPro es una empresa dedicada a la producción y comercialización de <strong>barritas de proteína</strong>, diseñadas para personas activas, deportistas y consumidores que buscan opciones saludables y funcionales.
+                Nos enfocamos en ofrecer productos de alta calidad, con ingredientes naturales y proteínas vegetales, adaptados a diferentes necesidades nutricionales y estilos de vida.
             </p>
-            <h2 class="card-title text-primary mt-4">@L["PurposeTitle"]</h2>
+            <h2 class="card-title text-primary mt-4">Propósito de Esta Página</h2>
             <p class="card-text">
-                @L["PurposeText1"]
+                Esta sección de <strong>Tickets</strong> está diseñada para que nuestros clientes puedan comunicarse de manera rápida y eficiente con nuestro equipo de soporte.
+                Aquí podrás <strong>crear, consultar y dar seguimiento</strong> a tus solicitudes relacionadas con pedidos, productos o cualquier consulta sobre nuestras barritas de proteína.
+                Nuestro objetivo es ofrecer un <strong>servicio ágil y personalizado</strong>, asegurando que cada requerimiento sea atendido con la máxima atención y rapidez.
             </p>
             <p class="card-text">
-                @L["PurposeText2"]
+                Utiliza este sistema para reportar incidencias, hacer preguntas, solicitar soporte técnico o logístico, y mantener una comunicación directa con nuestro equipo.
+                Cada ticket será registrado y gestionado para brindarte respuestas claras y soluciones efectivas.
             </p>
         </div>
     </div>
