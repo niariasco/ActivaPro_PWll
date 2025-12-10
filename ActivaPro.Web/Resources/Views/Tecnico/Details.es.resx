@@ -117,40 +117,55 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
+	<data name="Title" xml:space="preserve">
+    <value>Detalle Técnico</value>
   </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
+
+	<data name="Heading" xml:space="preserve">
+    <value>Detalle del Técnico</value>
   </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
+
+	<data name="IdTecnico" xml:space="preserve">
+    <value>ID Técnico</value>
   </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
+
+	<data name="Usuario" xml:space="preserve">
+    <value>Usuario</value>
   </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
+
+	<data name="NoDisponibleInfo" xml:space="preserve">
+    <value>N/D</value>
   </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
+
+	<data name="Disponible" xml:space="preserve">
+    <value>Disponible</value>
   </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
+
+	<data name="DisponibleSi" xml:space="preserve">
+    <value>Sí</value>
   </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
+
+	<data name="DisponibleNo" xml:space="preserve">
+    <value>No</value>
   </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
+
+	<data name="CargaTrabajo" xml:space="preserve">
+    <value>Carga Trabajo</value>
   </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
+
+	<data name="Especialidades" xml:space="preserve">
+    <value>Especialidades</value>
   </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
+
+	<data name="SinEspecialidades" xml:space="preserve">
+    <value>Sin especialidades</value>
   </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
+
+	<data name="BtnEditar" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+
+	<data name="BtnVolver" xml:space="preserve">
+    <value>Volver</value>
   </data>
 </root>

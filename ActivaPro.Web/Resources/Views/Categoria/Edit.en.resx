@@ -117,40 +117,57 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
-  </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
-  </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
-  </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
-  </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
-  </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
-  </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
-  </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
-  </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
-  </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
-  </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
-  </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
-  </data>
+	<data name="TituloEditarCategoria" xml:space="preserve">
+  <value>Edit Category</value>
+</data>
+
+	<data name="Error" xml:space="preserve">
+  <value>Error</value>
+</data>
+
+	<data name="ErroresValidacion" xml:space="preserve">
+  <value>Validation Errors</value>
+</data>
+
+	<data name="NombreCategoria" xml:space="preserve">
+  <value>Category Name</value>
+</data>
+
+	<data name="PlaceholderNombreCategoria" xml:space="preserve">
+  <value>Enter the category name</value>
+</data>
+
+	<data name="Etiquetas" xml:space="preserve">
+  <value>Tags</value>
+</data>
+
+	<data name="Especialidades" xml:space="preserve">
+  <value>Specialties</value>
+</data>
+
+	<data name="HintSeleccionMultiple" xml:space="preserve">
+  <value>Hold the Ctrl key (Cmd on Mac) to select multiple options</value>
+</data>
+
+	<data name="SLA" xml:space="preserve">
+  <value>SLA</value>
+</data>
+
+	<data name="SeleccioneSLA" xml:space="preserve">
+  <value>Select an SLA</value>
+</data>
+
+	<data name="SlaPersonalizado" xml:space="preserve">
+  <value>Set custom SLA</value>
+</data>
+
+	<data name="GuardarCambios" xml:space="preserve">
+  <value>Save Changes</value>
+</data>
+
+	<data name="Cancelar" xml:space="preserve">
+  <value>Cancel</value>
+</data>
+
+
 </root>
