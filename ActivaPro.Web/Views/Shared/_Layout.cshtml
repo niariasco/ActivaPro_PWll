@@ -118,9 +118,6 @@
                         <partial name="_NotificacionesPanel" />
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
-                            <a class="btn btn-link text-white p-0" asp-controller="Account" asp-action="Profile" title="Mi Perfil">
-                                <i class="bi bi-person-circle fs-5"></i>
-                            </a>
                             <form asp-controller="Account" asp-action="LogoutPost" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>

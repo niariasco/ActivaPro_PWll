@@ -48,12 +48,5 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
                 .Where(u => u.UsuarioRoles.Any(ur => ur.Rol.NombreRol.ToLower() == rol.ToLower()))
                 .ToListAsync();
         }
-
-        public async Task<int> GetMaxNumeroSucursalAsync()
-        {
-            // si no hay registros, devuelve 0
-            var max = await _ctx.Usuarios.Select(u => (int?)u.NumeroSucursal).MaxAsync();
-            return max ?? 0;
-        }
     }
 }

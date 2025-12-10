@@ -12,7 +12,5 @@ namespace ActivaPro.Infraestructure.Repository.Interfaces
         Task UpdateAsync(Usuarios usuario);
         Task<ICollection<Usuarios>> ListAsync();
         Task<ICollection<Usuarios>> ListByRolAsync(string rol);
-
-        Task<int> GetMaxNumeroSucursalAsync();
     }
 }
