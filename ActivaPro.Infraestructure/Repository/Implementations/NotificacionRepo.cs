@@ -41,5 +41,12 @@ namespace ActivaPro.Infraestructure.Repository.Implementations
             foreach (var n in list) n.Leido = true;
             return list.Count;
         }
+        public async Task<ICollection<Notificacion>> ListByTicketAsync(int idTicket)
+        {
+            return await _ctx.Notificaciones
+                .Where(n => n.IdTicket == idTicket)
+                .OrderByDescending(n => n.FechaEnvio)
+                .ToListAsync();
+        }
     }
 }

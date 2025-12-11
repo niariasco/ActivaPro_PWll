@@ -18,12 +18,14 @@ namespace ActivaPro.Application.Services.Implementations
         private readonly IRepoCategorias _categoriaRepository;
         private readonly IMapper _mapper;
         private readonly INotificacionService _notificacionService;
+        private readonly IRepoValoraciones _valoracionRepository;
 
         public TicketesService(
             IRepoTicketes repository,
             IRepoUsuarios usuarioRepository,
             IRepoEtiquetas etiquetaRepository,
             IRepoCategorias categoriaRepository,
+             IRepoValoraciones valoracionRepository,
             IMapper mapper,
             INotificacionService notificacionService)
         {
@@ -31,6 +33,7 @@ namespace ActivaPro.Application.Services.Implementations
             _usuarioRepository = usuarioRepository;
             _etiquetaRepository = etiquetaRepository;
             _categoriaRepository = categoriaRepository;
+            _valoracionRepository = valoracionRepository;
             _mapper = mapper;
             _notificacionService = notificacionService;
         }
@@ -39,18 +42,17 @@ namespace ActivaPro.Application.Services.Implementations
 
         public async Task<TicketesDTO?> FindByIdAsync(int id)
         {
-            //  Obtener el ticket
+            // 1️⃣ Obtener el ticket
             var ticket = await _repository.FindByIdAsync(id);
             if (ticket == null)
                 return null;
 
-            // Mapear el ticket (sin historial)
+            // 2️⃣ Mapear el ticket (sin historial ni valoración)
             var ticketDTO = _mapper.Map<TicketesDTO>(ticket);
 
-            // Obtener el historial directamente de la base de datos
+            // 3️⃣ Obtener el historial directamente de la base de datos
             var historialEntidades = await _repository.GetHistorialByTicketIdAsync(id);
 
-            //  Mapear el historial
             if (historialEntidades != null && historialEntidades.Any())
             {
                 ticketDTO.Historial = _mapper.Map<List<HistorialTicketDetalladoDTO>>(historialEntidades);
@@ -58,6 +60,23 @@ namespace ActivaPro.Application.Services.Implementations
             else
             {
                 ticketDTO.Historial = new List<HistorialTicketDetalladoDTO>();
+            }
+
+            // 4️⃣ ⭐ OBTENER LA VALORACIÓN SI EXISTE
+            if (ticket.Estado == "Cerrado")
+            {
+                var valoracion = await _valoracionRepository.FindByTicketIdAsync(id);
+
+                if (valoracion != null)
+                {
+                    ticketDTO.Valoracion = new ValoracionTicketDTO
+                    {
+                        IdValoracion = valoracion.IdValoracion,
+                        Puntaje = valoracion.Puntaje,
+                        Comentario = valoracion.Comentario ?? string.Empty,
+                        FechaValoracion = valoracion.FechaValoracion
+                    };
+                }
             }
 
             return ticketDTO;

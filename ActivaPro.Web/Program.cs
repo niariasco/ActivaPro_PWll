@@ -41,6 +41,8 @@ builder.Services.AddScoped<IRepoEtiquetas, EtiquetasRepo>();
 builder.Services.AddScoped<IRepoEspecialidades, EspecialidadesRepo>();
 builder.Services.AddScoped<IRepoSLA_Tickets, SLA_TicketsRepo>();
 builder.Services.AddScoped<IRepoUsuarios, UsuariosRepo>();
+builder.Services.AddScoped<IRepoValoraciones, ValoracionesRepo>();
+
 
 // Servicios
 builder.Services.AddTransient<ITecnicoService, TecnicoService>();
@@ -51,6 +53,9 @@ builder.Services.AddScoped<IEtiquetasService, EtiquetasService>();
 builder.Services.AddScoped<IEspecialidadesService, EspecialidadesService>();
 builder.Services.AddScoped<ISlaService, SlaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IValoracionesService, ValoracionesService>();
+
+
 
 // Notificaciones (SignalR)
 builder.Services.AddSignalR();

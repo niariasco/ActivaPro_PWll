@@ -1,0 +1,393 @@
+﻿@model ActivaPro.Application.DTOs.ValoracionDTO
+
+@{
+    ViewData["Title"] = "Detalle de Valoración";
+    var idUsuario = ViewBag.IdUsuario;
+    var rolUsuario = ViewBag.RolUsuario ?? "Cliente";
+    var nombreUsuario = ViewBag.NombreUsuario ?? "Usuario";
+    var ticket = ViewBag.Ticket as ActivaPro.Application.DTOs.TicketesDTO;
+}
+
+<div class="container-fluid py-4">
+    <!-- Mensajes de éxito/error -->
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@ViewBag.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>@ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                <i class="bi bi-star-fill text-warning me-2"></i>Valoración #@Model.IdValoracion
+            </h1>
+            <p class="text-muted mb-0">Ticket: @Model.TituloTicket</p>
+        </div>
+        <div>
+            @if (Model.Puntaje == 5)
+            {
+                <span class="badge bg-success fs-5 px-3 py-2">⭐⭐⭐⭐⭐ Excelente</span>
+            }
+            else if (Model.Puntaje == 4)
+            {
+                <span class="badge bg-info fs-5 px-3 py-2">⭐⭐⭐⭐ Muy Bueno</span>
+            }
+            else if (Model.Puntaje == 3)
+            {
+                <span class="badge bg-warning text-dark fs-5 px-3 py-2">⭐⭐⭐ Bueno</span>
+            }
+            else if (Model.Puntaje == 2)
+            {
+                <span class="badge bg-orange fs-5 px-3 py-2" style="background-color: #fd7e14;">⭐⭐ Regular</span>
+            }
+            else if (Model.Puntaje == 1)
+            {
+                <span class="badge bg-danger fs-5 px-3 py-2">⭐ Malo</span>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Columna Principal -->
+        <div class="col-lg-8">
+            <!-- Valoración -->
+            <div class="card shadow-sm mb-4 border-warning border-2">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-star-fill me-2"></i>Detalles de la Valoración
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3 text-muted">Puntaje</dt>
+                        <dd class="col-sm-9">
+                            <div class="d-flex align-items-center">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= Model.Puntaje)
+                                    {
+                                        <i class="bi bi-star-fill text-warning fs-3 me-1"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-star text-muted fs-3 me-1"></i>
+                                    }
+                                }
+                                <span class="ms-3 fw-bold fs-3 text-warning">@Model.Puntaje/5</span>
+                                <span class="ms-3 badge bg-@Model.ColorSatisfaccion fs-6">@Model.NivelSatisfaccion</span>
+                            </div>
+                        </dd>
+
+                        <dt class="col-sm-3 text-muted mt-3">Comentario</dt>
+                        <dd class="col-sm-9 mt-3">
+                            <div class="alert alert-light border-start border-warning border-4">
+                                <i class="bi bi-chat-left-quote me-2"></i>
+                                <span class="fst-italic">"@Model.Comentario"</span>
+                            </div>
+                        </dd>
+
+                        <dt class="col-sm-3 text-muted">Cliente</dt>
+                        <dd class="col-sm-9">
+                            <strong>@Model.NombreCliente</strong>
+                        </dd>
+
+                        <dt class="col-sm-3 text-muted">Fecha Valoración</dt>
+                        <dd class="col-sm-9">
+                            <i class="bi bi-calendar3 me-1"></i>@Model.FechaValoracion.ToString("dd/MM/yyyy")
+                            <i class="bi bi-clock ms-3 me-1"></i>@Model.FechaValoracion.ToString("HH:mm")
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Información del Ticket -->
+            @if (ticket != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-ticket-detailed me-2"></i>Información del Ticket
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3 text-muted">ID Ticket</dt>
+                            <dd class="col-sm-9">
+                                <a asp-controller="Ticketes" asp-action="Details" asp-route-id="@ticket.IdTicket" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>Ver Ticket #@ticket.IdTicket
+                                </a>
+                            </dd>
+
+                            <dt class="col-sm-3 text-muted">Título</dt>
+                            <dd class="col-sm-9 fw-bold">@ticket.Titulo</dd>
+
+                            <dt class="col-sm-3 text-muted">Descripción</dt>
+                            <dd class="col-sm-9">@ticket.Descripcion</dd>
+
+                            <dt class="col-sm-3 text-muted">Estado</dt>
+                            <dd class="col-sm-9">
+                                @if (ticket.Estado == "Cerrado")
+                                {
+                                    <span class="badge bg-dark">🔒 Cerrado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@ticket.Estado</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-3 text-muted">Categoría</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge bg-light text-dark border">@ticket.CategoriaNombre</span>
+                            </dd>
+
+                            @if (ticket.Etiquetas != null && ticket.Etiquetas.Any())
+                            {
+                                <dt class="col-sm-3 text-muted">Etiquetas</dt>
+                                <dd class="col-sm-9">
+                                    @foreach (var etiqueta in ticket.Etiquetas)
+                                    {
+                                        <span class="badge bg-secondary me-1">@etiqueta</span>
+                                    }
+                                </dd>
+                            }
+
+                            <dt class="col-sm-3 text-muted">Técnico Asignado</dt>
+                            <dd class="col-sm-9">
+                                @if (!string.IsNullOrEmpty(ticket.NombreAsignado))
+                                {
+                                    <strong>@ticket.NombreAsignado</strong>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Sin asignar</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Columna Lateral -->
+        <div class="col-lg-4">
+            <!-- Estadísticas Visuales -->
+            <div class="card shadow-sm mb-4 text-center">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Nivel de Satisfacción
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="display-1 text-@Model.ColorSatisfaccion mb-3">
+                        @Model.Puntaje<small class="fs-3 text-muted">/5</small>
+                    </div>
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar bg-@Model.ColorSatisfaccion"
+                             role="progressbar"
+                             style="width: @((Model.Puntaje * 20))%;"
+                             aria-valuenow="@Model.Puntaje"
+                             aria-valuemin="0"
+                             aria-valuemax="5">
+                            @((Model.Puntaje * 20))%
+                        </div>
+                    </div>
+                    <p class="mb-0 fw-bold">@Model.NivelSatisfaccion</p>
+                </div>
+            </div>
+
+            <!-- Fechas Importantes -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-event me-2"></i>Fechas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        @if (ticket != null)
+                        {
+                            <dt class="col-sm-6 text-muted">Creación Ticket</dt>
+                            <dd class="col-sm-6 text-end">
+                                <small>
+                                    📅 @ticket.FechaCreacion.ToString("dd/MM/yyyy")<br>
+                                    🕒 @ticket.FechaCreacion.ToString("HH:mm")
+                                </small>
+                            </dd>
+
+                            @if (ticket.FechaActualizacion != ticket.FechaCreacion)
+                            {
+                                <dt class="col-sm-6 text-muted">Cierre Ticket</dt>
+                                <dd class="col-sm-6 text-end">
+                                    <small>
+                                        📅 @ticket.FechaActualizacion.ToString("dd/MM/yyyy")<br>
+                                        🕒 @ticket.FechaActualizacion.ToString("HH:mm")
+                                    </small>
+                                </dd>
+                            }
+                        }
+
+                        <dt class="col-sm-6 text-muted">Valoración</dt>
+                        <dd class="col-sm-6 text-end">
+                            <small>
+                                📅 @Model.FechaValoracion.ToString("dd/MM/yyyy")<br>
+                                🕒 @Model.FechaValoracion.ToString("HH:mm")
+                            </small>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Tiempo de Resolución -->
+            @if (ticket != null && ticket.FechaActualizacion != ticket.FechaCreacion)
+            {
+                var tiempoResolucion = (ticket.FechaActualizacion - ticket.FechaCreacion).TotalHours;
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i>Tiempo de Resolución
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="display-4 text-primary mb-2">
+                            @if (tiempoResolucion < 24)
+                            {
+                                <text>@Math.Round(tiempoResolucion, 1) <small class="fs-5">horas</small></text>
+                            }
+                            else
+                            {
+                                var dias = Math.Floor(tiempoResolucion / 24);
+                                var horasRestantes = Math.Round(tiempoResolucion % 24, 1);
+                                <text>@dias <small class="fs-5">días</small> @horasRestantes <small class="fs-5">h</small></text>
+                            }
+                        </div>
+                        @if (ticket.SLA_TiempoResolucionHoras.HasValue)
+                        {
+                            var cumpleSLA = tiempoResolucion <= ticket.SLA_TiempoResolucionHoras.Value;
+                            <p class="mb-0">
+                                <span class="badge bg-@(cumpleSLA ? "success" : "danger")">
+                                    @(cumpleSLA ? "✅ Dentro del SLA" : "❌ Fuera del SLA")
+                                </span>
+                            </p>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="d-flex gap-2 mt-4 pb-4">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Volver al Listado
+        </a>
+
+        @if (ticket != null)
+        {
+            <a asp-controller="Ticketes" asp-action="Details" asp-route-id="@ticket.IdTicket" class="btn btn-primary">
+                <i class="bi bi-ticket-detailed me-2"></i>Ver Ticket Completo
+            </a>
+        }
+
+        @if (rolUsuario == "Administrador")
+        {
+            <a asp-action="Delete" asp-route-id="@Model.IdValoracion"
+               class="btn btn-outline-danger ms-auto"
+               onclick="return confirm('⚠️ ¿Está SEGURO de eliminar esta valoración?\n\nEsta acción NO se puede deshacer.');">
+                <i class="bi bi-trash me-2"></i>Eliminar
+            </a>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        console.log('⭐ Vista de detalles de valoración cargada correctamente');
+
+        // Auto-ocultar mensajes después de 5 segundos
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+
+        // Animación suave al cargar
+        document.querySelectorAll('.card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.4s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 50);
+        });
+
+        // Animación de las estrellas
+        document.querySelectorAll('.bi-star-fill').forEach((star, index) => {
+            setTimeout(() => {
+                star.style.animation = 'starPulse 0.5s ease-in-out';
+            }, index * 100);
+        });
+    </script>
+}
+
+<style>
+    @@keyframes starPulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    }
+
+    .card {
+        border: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
+
+    .badge {
+        font-size: 0.85em;
+        padding: 0.4em 0.6em;
+    }
+
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        font-weight: bold;
+        font-size: 1rem;
+        transition: width 1s ease-in-out;
+    }
+
+    .alert-light {
+        background-color: #f8f9fa;
+    }
+
+    .bg-orange {
+        background-color: #fd7e14 !important;
+    }
+</style>

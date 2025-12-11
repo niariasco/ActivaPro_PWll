@@ -1,0 +1,300 @@
+﻿@model ActivaPro.Application.DTOs.ValoracionCreateDTO
+
+@{
+    ViewData["Title"] = "Valorar Ticket";
+    var ticket = ViewBag.Ticket as ActivaPro.Application.DTOs.TicketesDTO;
+    var idUsuario = ViewBag.IdUsuario ?? 0;
+    var rolUsuario = ViewBag.RolUsuario as string ?? "Cliente";
+    var nombreUsuario = ViewBag.NombreUsuario as string ?? "Usuario";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- Header -->
+            <div class="card shadow-lg border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">
+                        <i class="bi bi-star-fill"></i> Valorar Servicio del Ticket
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Mensaje informativo -->
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>¿Cómo fue tu experiencia?</strong>
+                        <p class="mb-0 mt-2">
+                            Tu opinión es muy importante para nosotros. Por favor, valora el servicio que recibiste
+                            para este ticket y comparte tu experiencia.
+                        </p>
+                    </div>
+
+                    <!-- Información del Ticket -->
+                    @if (ticket != null)
+                    {
+                        <div class="card mb-4 border-primary">
+                            <div class="card-header bg-light">
+                                <strong>
+                                    <i class="bi bi-ticket-detailed"></i> Ticket #@ticket.IdTicket
+                                </strong>
+                                <span class="badge bg-success float-end">✅ @ticket.Estado</span>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">@ticket.Titulo</h5>
+                                <p class="card-text text-muted">@ticket.Descripcion</p>
+
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <i class="bi bi-tag"></i>
+                                            <strong>Categoría:</strong>
+                                            <span class="badge bg-light text-dark">@ticket.CategoriaNombre</span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="bi bi-wrench"></i>
+                                            <strong>Técnico:</strong> @ticket.NombreAsignado
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <i class="bi bi-calendar"></i>
+                                            <strong>Creado:</strong> @ticket.FechaCreacion.ToString("dd/MM/yyyy")
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="bi bi-clock"></i>
+                                            <strong>Resuelto:</strong> @ticket.FechaActualizacion.ToString("dd/MM/yyyy")
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Formulario de Valoración -->
+                    <form asp-action="Create" method="post" id="formValoracion">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="IdTicket" />
+                        <input type="hidden" asp-for="IdUsuarioSolicitante" />
+
+                        <!-- Puntaje con Estrellas Interactivas -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-star-fill text-warning"></i> Puntaje *
+                            </label>
+                            <div class="rating-container text-center py-3">
+                                <div class="star-rating" id="starRating">
+                                    <i class="bi bi-star star" data-value="1"></i>
+                                    <i class="bi bi-star star" data-value="2"></i>
+                                    <i class="bi bi-star star" data-value="3"></i>
+                                    <i class="bi bi-star star" data-value="4"></i>
+                                    <i class="bi bi-star star" data-value="5"></i>
+                                </div>
+                                <input type="hidden" asp-for="Puntaje" id="puntajeInput" />
+                                <div class="rating-text mt-3">
+                                    <h4 id="ratingText" class="text-muted">Selecciona una calificación</h4>
+                                </div>
+                            </div>
+                            <span asp-validation-for="Puntaje" class="text-danger"></span>
+                        </div>
+
+                        <!-- Comentario -->
+                        <div class="mb-4">
+                            <label asp-for="Comentario" class="form-label fw-bold">
+                                <i class="bi bi-chat-left-text"></i> Comentario *
+                            </label>
+                            <textarea asp-for="Comentario"
+                                      class="form-control"
+                                      rows="5"
+                                      placeholder="Cuéntanos tu experiencia con el servicio recibido..."
+                                      maxlength="500"
+                                      id="comentarioTextarea"></textarea>
+                            <div class="form-text">
+                                <span id="charCount">0</span> / 500 caracteres
+                            </div>
+                            <span asp-validation-for="Comentario" class="text-danger"></span>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between gap-3">
+                            <a asp-controller="Ticketes" asp-action="Details" asp-route-id="@Model.IdTicket"
+                               class="btn btn-secondary btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg px-5" id="btnSubmit">
+                                <i class="bi bi-send-fill"></i> Enviar Valoración
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información del usuario -->
+            <div class="alert alert-light mt-3">
+                <small class="text-muted">
+                    <i class="bi bi-person-badge"></i>
+                    <strong>Valorando como:</strong> @nombreUsuario (@rolUsuario)
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .star-rating {
+            font-size: 3rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .star {
+            color: #ddd;
+            transition: color 0.2s ease;
+            margin: 0 5px;
+        }
+
+            .star:hover,
+            .star.active {
+                color: #ffc107;
+            }
+
+            .star.hovered {
+                color: #ffc107;
+            }
+
+        .rating-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        #ratingText {
+            font-weight: bold;
+        }
+    </style>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+            let selectedRating = 0;
+            const stars = $('.star');
+            const ratingText = $('#ratingText');
+            const puntajeInput = $('#puntajeInput');
+
+            // Textos según calificación
+            const ratingTexts = {
+                1: '⭐ Malo - Servicio deficiente',
+                2: '⭐⭐ Regular - Necesita mejorar',
+                3: '⭐⭐⭐ Bueno - Servicio aceptable',
+                4: '⭐⭐⭐⭐ Muy Bueno - Excelente servicio',
+                5: '⭐⭐⭐⭐⭐ Excelente - Servicio excepcional'
+            };
+
+            const ratingColors = {
+                1: 'text-danger',
+                2: 'text-warning',
+                3: 'text-info',
+                4: 'text-primary',
+                5: 'text-success'
+            };
+
+            // Hover sobre estrellas
+            stars.on('mouseenter', function() {
+                const value = $(this).data('value');
+                stars.each(function(index) {
+                    if (index < value) {
+                        $(this).addClass('hovered');
+                    } else {
+                        $(this).removeClass('hovered');
+                    }
+                });
+            });
+
+            // Salir del hover
+            $('#starRating').on('mouseleave', function() {
+                stars.removeClass('hovered');
+                if (selectedRating > 0) {
+                    stars.each(function(index) {
+                        if (index < selectedRating) {
+                            $(this).addClass('active');
+                        }
+                    });
+                }
+            });
+
+            // Click en estrella
+            stars.on('click', function() {
+                selectedRating = $(this).data('value');
+                puntajeInput.val(selectedRating);
+
+                // Actualizar estrellas activas
+                stars.removeClass('active');
+                stars.each(function(index) {
+                    if (index < selectedRating) {
+                        $(this).addClass('active');
+                        $(this).removeClass('bi-star').addClass('bi-star-fill');
+                    } else {
+                        $(this).removeClass('bi-star-fill').addClass('bi-star');
+                    }
+                });
+
+                // Actualizar texto y color
+                ratingText.text(ratingTexts[selectedRating]);
+                ratingText.removeClass('text-danger text-warning text-info text-primary text-success text-muted');
+                ratingText.addClass(ratingColors[selectedRating]);
+            });
+
+            // Contador de caracteres
+            const comentario = $('#comentarioTextarea');
+            const charCount = $('#charCount');
+
+            comentario.on('input', function() {
+                const length = $(this).val().length;
+                charCount.text(length);
+
+                if (length > 450) {
+                    charCount.addClass('text-danger');
+                } else if (length > 400) {
+                    charCount.addClass('text-warning').removeClass('text-danger');
+                } else {
+                    charCount.removeClass('text-danger text-warning');
+                }
+            });
+
+            // Validación antes de enviar
+            $('#formValoracion').on('submit', function(e) {
+                if (selectedRating === 0) {
+                    e.preventDefault();
+                    alert('⚠️ Por favor selecciona una calificación de estrellas');
+                    return false;
+                }
+
+                if (comentario.val().trim().length < 10) {
+                    e.preventDefault();
+                    alert('⚠️ El comentario debe tener al menos 10 caracteres');
+                    comentario.focus();
+                    return false;
+                }
+
+                // Confirmación
+                const confirmacion = confirm(
+                    `¿Confirmas tu valoración de ${selectedRating}/5 estrellas?\n\n` +
+                    `Esta acción no se puede deshacer.`
+                );
+
+                if (!confirmacion) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Deshabilitar botón para evitar doble envío
+                $('#btnSubmit').prop('disabled', true).html('<i class="spinner-border spinner-border-sm"></i> Enviando...');
+            });
+        });
+    </script>
+}

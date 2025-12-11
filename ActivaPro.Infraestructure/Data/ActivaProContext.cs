@@ -36,6 +36,8 @@ public partial class ActivaProContext : DbContext
     public virtual DbSet<Historial_Tickets> Historial_Tickets { get; set; }
     public virtual DbSet<Imagenes_Tickets> Imagenes_Tickets { get; set; }
     public DbSet<Notificacion> Notificaciones { get; set; } = null!;
+    public virtual DbSet<Valoracion_Notificaciones> Valoracion_Notificaciones { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Usuarios
@@ -319,6 +321,42 @@ public partial class ActivaProContext : DbContext
                 .HasForeignKey(d => d.IdUsuarioAsignador)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Asignaciones_Tickets_Usuario_Asignador");
+        });
+        //Valoracion tikets
+        modelBuilder.Entity<Valoracion_Notificaciones>(entity =>
+        {
+            entity.HasKey(e => e.IdValoracion);
+
+            entity.Property(e => e.IdValoracion)
+                .HasColumnName("id_valoracion");
+
+            entity.Property(e => e.IdNotificacion)
+                .HasColumnName("id_notificacion");
+
+            entity.Property(e => e.IdUsuario)
+                .HasColumnName("id_usuario");
+
+            entity.Property(e => e.Puntaje)
+                .HasColumnName("puntaje");
+
+            entity.Property(e => e.Comentario)
+                .HasColumnName("comentario")
+                .HasMaxLength(500);
+
+            entity.Property(e => e.FechaValoracion)
+                .HasColumnName("fecha_valoracion")
+                .HasDefaultValueSql("(getdate())");
+
+            // Relaciones
+            entity.HasOne(d => d.IdNotificacionNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdNotificacion)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.IdUsuarioNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdUsuario)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         OnModelCreatingPartial(modelBuilder);

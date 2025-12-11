@@ -4,6 +4,7 @@
     ViewData["Title"] = $"Cerrar Ticket #{Model.IdTicket}";
     var rolUsuario = ViewBag.RolUsuario as string ?? "Cliente";
     var idUsuario = ViewBag.IdUsuario ?? 0;
+    var esCliente = rolUsuario.ToLower() == "cliente";
 }
 
 <div class="container mt-4">
@@ -16,11 +17,27 @@
                     </h4>
                 </div>
                 <div class="card-body">
-                    <!-- Alerta informativa -->
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Información:</strong> Al cerrar el ticket, este cambiará su estado a "Cerrado" y se registrará en el historial.
-                    </div>
+                    <!-- ⭐ ALERTA ESPECIAL PARA CLIENTES -->
+                    @if (esCliente)
+                    {
+                        <div class="alert alert-primary">
+                            <h5 class="mb-2">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <strong>¡Importante para ti!</strong>
+                            </h5>
+                            <p class="mb-0">
+                                Después de cerrar este ticket, te pediremos que <strong>valores el servicio</strong> recibido.
+                                Tu opinión es muy importante para nosotros y nos ayuda a mejorar.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Información:</strong> Al cerrar el ticket, este cambiará su estado a "Cerrado" y se registrará en el historial.
+                        </div>
+                    }
 
                     <h5 class="text-primary mb-3">
                         <i class="bi bi-question-circle"></i> ¿Está seguro que desea cerrar este ticket?
@@ -33,19 +50,15 @@
                                 <strong>Ticket #@Model.IdTicket</strong>
                                 @if (Model.Estado == "Pendiente")
                                 {
-                                    <span class="badge bg-warning text-dark"> @Model.Estado</span>
+                                    <span class="badge bg-warning text-dark">@Model.Estado</span>
                                 }
                                 else if (Model.Estado == "En Proceso")
                                 {
-                                    <span class="badge bg-info"> @Model.Estado</span>
-                                }
-                                else if (Model.Estado == "En Espera")
-                                {
-                                    <span class="badge bg-secondary"> @Model.Estado</span>
+                                    <span class="badge bg-info">@Model.Estado</span>
                                 }
                                 else if (Model.Estado == "Resuelto")
                                 {
-                                    <span class="badge bg-success"> @Model.Estado</span>
+                                    <span class="badge bg-success">@Model.Estado</span>
                                 }
                                 else
                                 {
@@ -55,7 +68,6 @@
                         </div>
                         <div class="card-body">
                             <h6 class="card-title fw-bold">@Model.Titulo</h6>
-
                             <p class="card-text">
                                 <strong>Descripción:</strong><br />
                                 <span class="text-muted">@Model.Descripcion</span>
@@ -74,17 +86,6 @@
                                         <strong>Categoría:</strong>
                                         <span class="badge bg-light text-dark">@Model.CategoriaNombre</span>
                                     </p>
-                                    @if (Model.Etiquetas != null && Model.Etiquetas.Any())
-                                    {
-                                        <p class="mb-2">
-                                            <i class="bi bi-tags"></i>
-                                            <strong>Etiquetas:</strong>
-                                            @foreach (var etiqueta in Model.Etiquetas)
-                                            {
-                                                <span class="badge bg-primary">@etiqueta</span>
-                                            }
-                                        </p>
-                                    }
                                 </div>
                                 <div class="col-md-6">
                                     <p class="mb-2">
@@ -92,57 +93,10 @@
                                         <strong>Asignado a:</strong> @Model.NombreAsignado
                                     </p>
                                     <p class="mb-2">
-                                        <i class="bi bi-flag"></i>
-                                        <strong>Prioridad:</strong>
-                                        @if (Model.SLA_Prioridad?.Contains("Alta") == true)
-                                        {
-                                            <span class="badge bg-danger"> Alta</span>
-                                        }
-                                        else if (Model.SLA_Prioridad?.Contains("Media") == true)
-                                        {
-                                            <span class="badge bg-warning text-dark"> Media</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary"> Baja</span>
-                                        }
-                                    </p>
-                                    <p class="mb-2">
                                         <i class="bi bi-calendar"></i>
                                         <strong>Creación:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
                                     </p>
-                                    @if (Model.FechaLimiteResolucion.HasValue)
-                                    {
-                                        <p class="mb-2">
-                                            <i class="bi bi-alarm"></i>
-                                            <strong>Límite:</strong> @Model.FechaLimiteResolucion.Value.ToString("dd/MM/yyyy HH:mm")
-                                        </p>
-                                    }
                                 </div>
-                            </div>
-
-                            <!-- Información adicional -->
-                            <div class="row mt-3">
-                                @if (Model.Imagenes != null && Model.Imagenes.Any())
-                                {
-                                    <div class="col-md-6">
-                                        <p class="mb-0">
-                                            <i class="bi bi-images"></i>
-                                            <strong>Imágenes:</strong>
-                                            <span class="badge bg-info">@Model.Imagenes.Count</span>
-                                        </p>
-                                    </div>
-                                }
-                                @if (Model.Historial != null && Model.Historial.Any())
-                                {
-                                    <div class="col-md-6">
-                                        <p class="mb-0">
-                                            <i class="bi bi-clock-history"></i>
-                                            <strong>Historial:</strong>
-                                            <span class="badge bg-info">@Model.Historial.Count registros</span>
-                                        </p>
-                                    </div>
-                                }
                             </div>
                         </div>
                     </div>
@@ -154,10 +108,15 @@
                         </div>
                         <div class="card-body">
                             <ul class="mb-0">
-                                <li> El estado cambiará a <strong>"Cerrado"</strong></li>
-                                <li> Se registrará la acción en el historial</li>
-                                <li> El ticket se conservará en el sistema</li>
-                                <li> Todas las imágenes y datos se mantendrán</li>
+                                <li>✅ El estado cambiará a <strong>"Cerrado"</strong></li>
+                                <li>📝 Se registrará la acción en el historial</li>
+                                @if (esCliente)
+                                {
+                                    <li class="text-primary fw-bold">
+                                        ⭐ Se te pedirá que <strong>valores el servicio</strong> recibido
+                                    </li>
+                                }
+                                <li>💾 Todas las imágenes y datos se mantendrán</li>
                                 @if (Model.FechaLimiteResolucion.HasValue)
                                 {
                                     var cumpleResolucion = DateTime.Now <= Model.FechaLimiteResolucion.Value;
@@ -188,9 +147,18 @@
                         <input type="hidden" name="id" value="@Model.IdTicket" />
 
                         <div class="d-flex justify-content-center gap-3">
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="bi bi-check-circle"></i> Sí, Cerrar Ticket
-                            </button>
+                            @if (esCliente)
+                            {
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-check-circle"></i> Cerrar y Valorar
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-check-circle"></i> Sí, Cerrar Ticket
+                                </button>
+                            }
                             <a asp-action="Details" asp-route-id="@Model.IdTicket"
                                class="btn btn-secondary btn-lg px-5">
                                 <i class="bi bi-x-circle"></i> Cancelar
@@ -204,7 +172,7 @@
             <div class="alert alert-light mt-3">
                 <small class="text-muted">
                     <i class="bi bi-person-badge"></i>
-                    <strong>Usuario actual:</strong> @ViewBag.RolUsuario (ID: @idUsuario)
+                    <strong>Usuario actual:</strong> @rolUsuario (ID: @idUsuario)
                 </small>
             </div>
         </div>
@@ -215,9 +183,20 @@
     <script>
         // Confirmación adicional con JavaScript
         document.querySelector('form').addEventListener('submit', function(e) {
-            const confirmacion = confirm(' ¿Está completamente seguro que desea cerrar este ticket?\n\n' +
-                                        'Esta acción cambiará el estado a "Cerrado".\n' +
-                                        'El ticket seguirá visible pero con estado cerrado.');
+            const esCliente = @(esCliente ? "true" : "false");
+
+            let mensaje = '⚠️ ¿Está completamente seguro que desea cerrar este ticket?\n\n';
+
+            if (esCliente) {
+                mensaje += '📋 Pasos siguientes:\n' +
+                          '1. El ticket se cerrará\n' +
+                          '2. Se te redirigirá a la página de valoración\n' +
+                          '3. Podrás calificar el servicio recibido\n\n';
+            }
+
+            mensaje += 'Esta acción cambiará el estado a "Cerrado".';
+
+            const confirmacion = confirm(mensaje);
 
             if (!confirmacion) {
                 e.preventDefault();

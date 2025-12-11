@@ -567,7 +567,7 @@ namespace ActivaPro.Web.Controllers
             }
         }
 
-        // ========== CLOSE - POST ==========
+        // ========== CLOSE - POST CON REDIRECCIÓN A VALORACIÓN ==========
         [HttpPost, ActionName("Close")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CloseConfirmed(int id)
@@ -602,9 +602,19 @@ namespace ActivaPro.Web.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                // ✅ CERRAR EL TICKET
                 await _service.CloseTicketAsync(id, idUsuarioActual);
 
-                TempData["Success"] = $"Ticket #{id} cerrado exitosamente";
+                TempData["Success"] = $"✅ Ticket #{id} cerrado exitosamente";
+
+                // ⭐ REDIRIGIR A VALORACIÓN SI ES CLIENTE
+                if (rolUsuarioActual.ToLower() == "cliente")
+                {
+                    TempData["Info"] = "Por favor, valora el servicio recibido para este ticket.";
+                    return RedirectToAction("Create", "Valoraciones", new { idTicket = id });
+                }
+
+                // Si no es cliente, volver al index
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)

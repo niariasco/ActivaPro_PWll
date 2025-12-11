@@ -1,21 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using ActivaPro.Infraestructure.Models;
 
-namespace ActivaPro.Infraestructure.Models;
-
-public partial class ValoracionTickets
+namespace ActivaPro.Infraestructure.Models
 {
-    [Key]
-    public int IdValoracion { get; set; }
+    [Table("Valoracion_Notificaciones")]
+    public class Valoracion_Notificaciones
+    {
+        [Key]
+        [Column("id_valoracion")]
+        public int IdValoracion { get; set; }
 
-    public int IdTicket { get; set; }
+        [Required]
+        [Column("id_notificacion")]
+        public int IdNotificacion { get; set; }
 
-    public byte Puntaje { get; set; }
+        [Required]
+        [Column("id_usuario")]
+        public int IdUsuario { get; set; }
 
-    public string Comentario { get; set; } = null!;
+        [Required]
+        [Column("puntaje")]
+        public byte Puntaje { get; set; } // 1 a 5
 
-    public DateTime? FechaValoracion { get; set; }
+        [Required]
+        [Column("comentario")]
+        [StringLength(500)]
+        public string Comentario { get; set; } = null!;
 
-    public virtual Tickets IdTicketNavigation { get; set; } = null!;
+        [Column("fecha_valoracion")]
+        public DateTime FechaValoracion { get; set; } = DateTime.Now;
+
+        // Navegaciones
+        [ForeignKey("IdNotificacion")]
+        public virtual Notificacion? IdNotificacionNavigation { get; set; }
+
+        [ForeignKey("IdUsuario")]
+        public virtual Usuarios? IdUsuarioNavigation { get; set; }
+    }
 }

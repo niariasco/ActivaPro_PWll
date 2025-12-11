@@ -147,5 +147,33 @@ namespace ActivaPro.Application.Services.Implementations
             Leido = n.Leido,
             FechaEnvio = n.FechaEnvio
         };
+
+        public async Task<Notificacion> ObtenerOCrearNotificacionParaTicketAsync(int idTicket, int idUsuario)
+        {
+            // No existe ListByTicketAsync en INotificacionRepo según la firma proporcionada.
+            // Usaremos ListAsync y filtraremos por ticket.
+            var notificaciones = await _repo.ListAsync(idUsuario, 0, 100); // Ajusta el 'take' si esperas más notificaciones
+            var notificacionExistente = notificaciones.FirstOrDefault(n => n.IdTicket == idTicket);
+
+            if (notificacionExistente != null)
+                return notificacionExistente;
+
+            // Crear nueva notificación para valoración
+            var nuevaNotificacion = new Notificacion
+            {
+                IdTicket = idTicket,
+                IdUsuario = idUsuario,
+                Accion = "Valoracion",
+                Mensaje = $"Preparado para valorar el ticket #{idTicket}",
+                Leido = true, // Marcar como leído porque es una notificación interna para valoración
+                FechaEnvio = DateTime.Now
+            };
+
+            await _repo.AddAsync(nuevaNotificacion);
+            await _repo.SaveAsync();
+
+            return nuevaNotificacion;
+        }
+
     }
 }

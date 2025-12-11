@@ -69,6 +69,8 @@
             margin-top: 20px;
         }
     </style>
+    @* Renderizar estilos adicionales de vistas individuales *@
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <header>
@@ -105,6 +107,12 @@
                                 <i class="bi bi-person-lines-fill"></i> @L["NavMyAssignments"]
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Valoraciones" asp-action="Index">
+                                <i class="bi bi-star-fill"></i> @L["Valoracion"]
+                            </a>
+                        </li>
+                       
                     </ul>
 
                     <div class="d-flex align-items-center gap-3">
