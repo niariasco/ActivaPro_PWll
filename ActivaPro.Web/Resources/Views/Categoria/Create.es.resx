@@ -117,40 +117,40 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
+	<data name="CreateCategory" xml:space="preserve">
+    <value>Crear Categoría</value>
   </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
+	<data name="Name" xml:space="preserve">
+    <value>Nombre</value>
   </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
+	<data name="TagsMultiple" xml:space="preserve">
+    <value>Etiquetas (múltiple)</value>
   </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
+	<data name="SpecialtiesMultiple" xml:space="preserve">
+    <value>Especialidades (múltiple)</value>
   </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
+	<data name="MultipleSelectionHelp" xml:space="preserve">
+    <value>Usa Ctrl / Cmd para seleccionar varias.</value>
   </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
+	<data name="SelectSLA" xml:space="preserve">
+    <value>Seleccione un SLA</value>
   </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
+	<data name="CustomSLA" xml:space="preserve">
+    <value>SLA personalizado...</value>
   </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
+	<data name="CustomSLATitle" xml:space="preserve">
+    <value>Definir SLA Personalizado</value>
   </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
+	<data name="Description" xml:space="preserve">
+    <value>Descripción</value>
   </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
+	<data name="SLAPlaceholder" xml:space="preserve">
+    <value>Ej: Atención estándar</value>
   </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
+	<data name="Save" xml:space="preserve">
+    <value>Guardar</value>
   </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
-  </data>
+	<data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>	
 </root>

@@ -1,7 +1,10 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
+
 <div class="notif-wrapper">
     <button type="button"
             class="btn btn-link p-0 notif-bell-btn"
-            title="Notificaciones"
+            title="@L["NotifTitle"]"
             onclick="document.getElementById('notif-dropdown').classList.toggle('show')">
         <span class="position-relative">
             <i class="bi bi-bell fs-4 notif-bell-icon"></i>
@@ -12,11 +15,14 @@
 
     <div id="notif-dropdown" class="notif-dropdown">
         <ul id="notif-list" class="list-unstyled m-0 p-2"></ul>
-        <div id="notif-empty" class="px-3 pb-3 text-light-50" style="display:none;">
-            No hay notificaciones.
+        <div id="notif-empty"
+             class="px-3 pb-3 text-light-50"
+             style="display:none;">
+            @L["NotifEmpty"]
         </div>
     </div>
 </div>
+
 
 <style>
     .notif-wrapper { position:relative; }

@@ -117,40 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
-  </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
-  </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
-  </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
-  </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
-  </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
-  </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
-  </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
-  </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
-  </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
-  </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
-  </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
-  </data>
+	<data name="TituloLogin" xml:space="preserve">
+  <value>Iniciar Sesión</value>
+</data>
+	<data name="IniciarSesion" xml:space="preserve">
+  <value>Iniciar Sesión</value>
+</data>
+	<data name="Correo" xml:space="preserve">
+  <value>Correo</value>
+</data>
+	<data name="Contrasena" xml:space="preserve">
+  <value>Contraseña</value>
+</data>
+	<data name="Recordarme" xml:space="preserve">
+  <value>Recordarme</value>
+</data>
+	<data name="Ingresar" xml:space="preserve">
+  <value>Ingresar</value>
+</data>
+	<data name="Registrate" xml:space="preserve">
+  <value>Regístrate</value>
+</data>
+	<data name="OlvidasteContrasena" xml:space="preserve">
+  <value>¿Olvidaste tu contraseña?</value>
+</data>
 </root>

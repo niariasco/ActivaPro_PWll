@@ -117,40 +117,50 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
-  </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
-  </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
-  </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
-  </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
-  </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
-  </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
-  </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
-  </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
-  </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
-  </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
-  </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
-  </data>
+	<data name="TituloCrearTecnico" xml:space="preserve">
+  <value>Crear Técnico</value>
+</data>
+
+	<data name="NombreUsuario" xml:space="preserve">
+  <value>Nombre de Usuario</value>
+</data>
+
+	<data name="Correo" xml:space="preserve">
+  <value>Correo</value>
+</data>
+
+	<data name="EspecialidadesMultiple" xml:space="preserve">
+  <value>Especialidades (múltiple)</value>
+</data>
+
+	<data name="HintSeleccionMultiple" xml:space="preserve">
+  <value>Ctrl/Cmd para seleccionar varias.</value>
+</data>
+
+	<data name="Disponible" xml:space="preserve">
+  <value>Disponible</value>
+</data>
+
+	<data name="Si" xml:space="preserve">
+  <value>Sí</value>
+</data>
+
+	<data name="No" xml:space="preserve">
+  <value>No</value>
+</data>
+
+	<data name="CargaTrabajo" xml:space="preserve">
+  <value>Carga de Trabajo (solo lectura)</value>
+</data>
+
+	<data name="Guardar" xml:space="preserve">
+  <value>Guardar</value>
+</data>
+
+	<data name="Cancelar" xml:space="preserve">
+  <value>Cancelar</value>
+</data>
+
+
+
 </root>

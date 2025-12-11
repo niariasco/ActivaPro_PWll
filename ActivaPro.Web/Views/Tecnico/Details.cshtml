@@ -1,30 +1,38 @@
 ﻿@model ActivaPro.Application.DTOs.TecnicosDTO
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-        ViewData["Title"] = "Detalle Técnico";
+    ViewData["Title"] = Localizer["TituloDetalleTecnico"];
 }
 
-<h2 class="mb-4">Detalle del Técnico</h2>
+<h2 class="mb-4">@Localizer["TituloDetalleTecnico"]</h2>
 
 <div class="card">
     <div class="card-body">
         <dl class="row mb-0">
-            <dt class="col-sm-3">ID Técnico</dt>
+            <!-- Id -->
+            <dt class="col-sm-3">@Localizer["IdTecnico"]</dt>
             <dd class="col-sm-9">@Model.IdTecnico</dd>
 
-            <dt class="col-sm-3">Usuario</dt>
+            <!-- Usuario -->
+            <dt class="col-sm-3">@Localizer["Usuario"]</dt>
             <dd class="col-sm-9">
-                <strong>@(Model.NombreUsuario ?? "N/D")</strong><br />
+                <strong>@(Model.NombreUsuario ?? Localizer["NoDisponible"].Value)</strong><br />
                 <small class="text-muted">@Model.CorreoUsuario</small>
             </dd>
 
-            <dt class="col-sm-3">Disponible</dt>
-            <dd class="col-sm-9">@(Model.Disponible ? "Sí" : "No")</dd>
+            <!-- Disponible -->
+            <dt class="col-sm-3">@Localizer["Disponible"]</dt>
+            <dd class="col-sm-9">
+                @(Model.Disponible? Localizer["DisponibleSi"] : Localizer["DisponibleNo"])
+            </dd>
 
-            <dt class="col-sm-3">Carga Trabajo</dt>
+            <!-- Carga Trabajo -->
+            <dt class="col-sm-3">@Localizer["CargaTrabajo"]</dt>
             <dd class="col-sm-9">@Model.CargaTrabajo</dd>
 
-            <dt class="col-sm-3">Especialidades</dt>
+            <!-- Especialidades -->
+            <dt class="col-sm-3">@Localizer["Especialidades"]</dt>
             <dd class="col-sm-9">
                 @if (Model.EspecialidadesNombres != null && Model.EspecialidadesNombres.Any())
                 {
@@ -32,14 +40,19 @@
                 }
                 else
                 {
-                    <span class="text-muted">Sin especialidades</span>
+                    <span class="text-muted">@Localizer["SinEspecialidades"]</span>
                 }
             </dd>
         </dl>
 
         <div class="mt-3">
-            <a asp-action="Edit" asp-route-id="@Model.IdTecnico" class="btn btn-warning me-2">Editar</a>
-            <a asp-action="Index" class="btn btn-secondary">Volver</a>
+            <a asp-action="Edit" asp-route-id="@Model.IdTecnico" class="btn btn-warning me-2">
+                @Localizer["BtnEditar"]
+            </a>
+
+            <a asp-action="Index" class="btn btn-secondary">
+                @Localizer["BtnVolver"]
+            </a>
         </div>
     </div>
 </div>

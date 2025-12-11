@@ -1,11 +1,14 @@
 ﻿@model ActivaPro.Application.DTOs.TecnicosDTO
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
+
 @{
-    ViewData["Title"] = "Editar Técnico";
+    ViewData["Title"] = L["EditTechnician"];
     var catalogo = ViewBag.EspecialidadesCatalogo as IEnumerable<dynamic>;
     var selected = ViewBag.SelectedIds as List<int> ?? new();
 }
 
-<h2>Editar Técnico</h2>
+<h2>@L["EditTechnician"]</h2>
 
 @if (TempData["Error"] != null)
 {
@@ -19,23 +22,27 @@
 <form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
     <input type="hidden" asp-for="IdTecnico" />
     <input type="hidden" asp-for="IdUsuario" />
 
+    <!-- Nombre usuario -->
     <div class="mb-3">
-        <label asp-for="NombreUsuario" class="form-label">Nombre de Usuario</label>
+        <label asp-for="NombreUsuario" class="form-label">@L["Username"]</label>
         <input asp-for="NombreUsuario" class="form-control" />
         <span asp-validation-for="NombreUsuario" class="text-danger"></span>
     </div>
 
+    <!-- Correo -->
     <div class="mb-3">
-        <label asp-for="CorreoUsuario" class="form-label">Correo</label>
+        <label asp-for="CorreoUsuario" class="form-label">@L["Email"]</label>
         <input asp-for="CorreoUsuario" class="form-control" />
         <span asp-validation-for="CorreoUsuario" class="text-danger"></span>
     </div>
 
+    <!-- Especialidades -->
     <div class="mb-3">
-        <label class="form-label">Especialidades (múltiple)</label>
+        <label class="form-label">@L["SpecialtiesMultiple"]</label>
         <select asp-for="EspecialidadesIds" multiple class="form-select" size="7">
             @if (catalogo != null)
             {
@@ -45,30 +52,35 @@
                 }
             }
         </select>
-        <small class="text-muted">Ctrl/Cmd para seleccionar varias.</small>
+        <small class="text-muted">@L["MultipleSelectionHelp"]</small>
         <span asp-validation-for="EspecialidadesIds" class="text-danger"></span>
     </div>
 
+    <!-- Disponible -->
     <div class="mb-3">
-        <label asp-for="Disponible" class="form-label">Disponible</label>
+        <label class="form-label">@L["Available"]</label>
+
         <div class="form-check">
             <input class="form-check-input" type="radio" asp-for="Disponible" id="DisponibleTrue" value="true" />
-            <label class="form-check-label" for="DisponibleTrue">Sí</label>
+            <label class="form-check-label" for="DisponibleTrue">@L["Yes"]</label>
         </div>
+
         <div class="form-check">
             <input class="form-check-input" type="radio" asp-for="Disponible" id="DisponibleFalse" value="false" />
-            <label class="form-check-label" for="DisponibleFalse">No</label>
+            <label class="form-check-label" for="DisponibleFalse">@L["No"]</label>
         </div>
+
         <span asp-validation-for="Disponible" class="text-danger"></span>
     </div>
 
+    <!-- Carga trabajo -->
     <div class="mb-3">
-        <label class="form-label">Carga de Trabajo (solo lectura)</label>
+        <label class="form-label">@L["WorkloadReadOnly"]</label>
         <input asp-for="CargaTrabajo" class="form-control" readonly />
     </div>
 
-    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">@L["SaveChanges"]</button>
+    <a asp-action="Index" class="btn btn-secondary">@L["Cancel"]</a>
 </form>
 
 @section Scripts {

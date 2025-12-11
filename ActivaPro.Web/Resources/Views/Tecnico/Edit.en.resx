@@ -117,40 +117,39 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NavHome" xml:space="preserve">
-    <value>Inicio</value>
+	<data name="EditTechnician" xml:space="preserve">
+    <value>Edit Technician</value>
   </data>
-  <data name="NavPrivacy" xml:space="preserve">
-    <value>Privacidad</value>
+	<data name="Username" xml:space="preserve">
+    <value>Username</value>
   </data>
-  <data name="NavCategories" xml:space="preserve">
-    <value>Categorías</value>
+	<data name="Email" xml:space="preserve">
+    <value>Email</value>
   </data>
-  <data name="NavTechnicians" xml:space="preserve">
-    <value>Técnicos</value>
+	<data name="SpecialtiesMultiple" xml:space="preserve">
+    <value>Specialties (multiple)</value>
   </data>
-  <data name="NavTickets" xml:space="preserve">
-    <value>Tickets</value>
+	<data name="MultipleSelectionHelp" xml:space="preserve">
+    <value>Ctrl/Cmd to select multiple.</value>
   </data>
-  <data name="NavAssignments" xml:space="preserve">
-    <value>Asignaciones</value>
+	<data name="Available" xml:space="preserve">
+    <value>Available</value>
   </data>
-  <data name="NavMyAssignments" xml:space="preserve">
-    <value>Mis Asignaciones</value>
+	<data name="Yes" xml:space="preserve">
+    <value>Yes</value>
   </data>
-  <data name="NavProfile" xml:space="preserve">
-    <value>Mi Perfil</value>
+	<data name="No" xml:space="preserve">
+    <value>No</value>
   </data>
-  <data name="NavLogout" xml:space="preserve">
-    <value>Salir</value>
+	<data name="WorkloadReadOnly" xml:space="preserve">
+    <value>Workload (read-only)</value>
   </data>
-  <data name="NavLogin" xml:space="preserve">
-    <value>Entrar</value>
+	<data name="SaveChanges" xml:space="preserve">
+    <value>Save Changes</value>
   </data>
-  <data name="NotifTitle" xml:space="preserve">
-    <value>Notificaciones</value>
+	<data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
-  <data name="NotifEmpty" xml:space="preserve">
-    <value>No hay notificaciones.</value>
-  </data>
+	
+	
 </root>
